@@ -1,0 +1,2 @@
+Incluye el software y firmware del sistema de monitoreo de salud estructural del edificio de la CS. 
+Consiste en la adaptación del sistema de registro continuo para obtener la información de varios acelerómetros a la vez.
