@@ -1,0 +1,610 @@
+#line 1 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 1 "c:/users/ivan/desktop/milton muñoz/proyectos/git/saludestructuralcs/firmware/nodoacelerometro/adxl355_spi.c"
+#line 96 "c:/users/ivan/desktop/milton muñoz/proyectos/git/saludestructuralcs/firmware/nodoacelerometro/adxl355_spi.c"
+sbit CS_ADXL355 at LATA3_bit;
+unsigned short axisAddresses[] = { 0x08 ,  0x09 ,  0x0A ,  0x0B ,  0x0C ,  0x0D ,  0x0E ,  0x0F ,  0x10 };
+
+void ADXL355_init();
+void ADXL355_write_byte(unsigned char address, unsigned char value);
+unsigned char ADXL355_read_byte(unsigned char address);
+unsigned int ADXL355_read_data(unsigned char *vectorMuestra);
+unsigned int ADXL355_read_FIFO(unsigned char *vectorFIFO);
+
+
+void ADXL355_init(short tMuestreo){
+ ADXL355_write_byte( 0x2F ,0x52);
+ Delay_ms(10);
+ ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
+ ADXL355_write_byte( 0x2C ,  0x01 );
+ switch (tMuestreo){
+ case 1:
+ ADXL355_write_byte( 0x28 ,  0x00 | 0x04 );
+ break;
+ case 2:
+ ADXL355_write_byte( 0x28 ,  0x00 | 0x05 );
+ break;
+ case 4:
+ ADXL355_write_byte( 0x28 ,  0x00 | 0x06 );
+ break;
+ case 8:
+ ADXL355_write_byte( 0x28 ,  0x00 | 0x07  );
+ break;
+ }
+}
+
+
+void ADXL355_write_byte(unsigned char address, unsigned char value){
+ address = (address<<1)&0xFE;
+ CS_ADXL355=0;
+ SPI2_Write(address);
+ SPI2_Write(value);
+ CS_ADXL355=1;
+}
+
+
+unsigned char ADXL355_read_byte(unsigned char address){
+ unsigned char value = 0x00;
+ address=(address<<1)|0x01;
+ CS_ADXL355=0;
+ SPI2_Write(address);
+ value=SPI2_Read(0);
+ CS_ADXL355=1;
+ return value;
+}
+
+
+unsigned int ADXL355_read_data(unsigned char *vectorMuestra){
+ unsigned short j;
+ unsigned short muestra;
+ if((ADXL355_read_byte( 0x04 )&0x01)==1){
+ CS_ADXL355=0;
+ for (j=0;j<9;j++){
+ muestra = ADXL355_read_byte(axisAddresses[j]);
+ vectorMuestra[j] = muestra;
+ }
+ CS_ADXL355=1;
+ } else {
+ for (j=0;j<9;j++){
+ vectorMuestra[j] = 0;
+ }
+ }
+ return;
+}
+
+
+unsigned int ADXL355_read_FIFO(unsigned char *vectorFIFO){
+ unsigned char add;
+ add = ( 0x11 <<1)|0x01;
+ CS_ADXL355 = 0;
+ SPI2_Write(add);
+
+ vectorFIFO[0] = SPI2_Read(0);
+ vectorFIFO[1] = SPI2_Read(1);
+ vectorFIFO[2] = SPI2_Read(2);
+
+ vectorFIFO[3] = SPI2_Read(0);
+ vectorFIFO[4] = SPI2_Read(1);
+ vectorFIFO[5] = SPI2_Read(2);
+
+ vectorFIFO[6] = SPI2_Read(0);
+ vectorFIFO[7] = SPI2_Read(1);
+ vectorFIFO[8] = SPI2_Read(2);
+ CS_ADXL355 = 1;
+ Delay_us(5);
+ return;
+}
+#line 1 "c:/users/ivan/desktop/milton muñoz/proyectos/git/saludestructuralcs/firmware/nodoacelerometro/tiempo_gps.c"
+
+
+
+
+void ConfigurarGPS(){
+ UART1_Write_Text("$PMTK605*31\r\n");
+ UART1_Write_Text("$PMTK220,1000*1F\r\n");
+ UART1_Write_Text("$PMTK251,115200*1F\r\n");
+ Delay_ms(1000);
+ UART1_Init(115200);
+ UART1_Write_Text("$PMTK313,1*2E\r\n");
+ UART1_Write_Text("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n");
+ UART1_Write_Text("$PMTK319,1*24\r\n");
+ UART1_Write_Text("$PMTK413*34\r\n");
+ UART1_Write_Text("$PMTK513,1*28\r\n");
+ Delay_ms(1000);
+}
+
+
+
+
+unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS){
+
+ unsigned long tramaFecha[4];
+ unsigned long fechaGPS;
+ char datoStringF[3];
+ char *ptrDatoStringF = &datoStringF;
+ datoStringF[2] = '\0';
+ tramaFecha[3] = '\0';
+
+
+ datoStringF[0] = tramaDatosGPS[6];
+ datoStringF[1] = tramaDatosGPS[7];
+ tramaFecha[0] = atoi(ptrDatoStringF);
+
+
+ datoStringF[0] = tramaDatosGPS[8];
+ datoStringF[1] = tramaDatosGPS[9];
+ tramaFecha[1] = atoi(ptrDatoStringF);
+
+
+ datoStringF[0] = tramaDatosGPS[10];
+ datoStringF[1] = tramaDatosGPS[11];
+ tramaFecha[2] = atoi(ptrDatoStringF);
+
+ fechaGPS = (tramaFecha[0]*10000)+(tramaFecha[1]*100)+(tramaFecha[2]);
+
+ return fechaGPS;
+
+}
+
+
+
+
+unsigned long RecuperarHoraGPS(unsigned char *tramaDatosGPS){
+
+ unsigned long tramaTiempo[4];
+ unsigned long horaGPS;
+ char datoString[3];
+ char *ptrDatoString = &datoString;
+ datoString[2] = '\0';
+ tramaTiempo[3] = '\0';
+
+
+ datoString[0] = tramaDatosGPS[0];
+ datoString[1] = tramaDatosGPS[1];
+ tramaTiempo[0] = atoi(ptrDatoString);
+
+
+ datoString[0] = tramaDatosGPS[2];
+ datoString[1] = tramaDatosGPS[3];
+ tramaTiempo[1] = atoi(ptrDatoString);
+
+
+ datoString[0] = tramaDatosGPS[4];
+ datoString[1] = tramaDatosGPS[5];
+ tramaTiempo[2] = atoi(ptrDatoString);
+
+ horaGPS = (tramaTiempo[0]*3600)+(tramaTiempo[1]*60)+(tramaTiempo[2]);
+ return horaGPS;
+
+}
+
+
+
+
+unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi){
+
+ unsigned long fechaRPi;
+
+ fechaRPi = ((long)tramaTiempoRpi[0]*10000)+((long)tramaTiempoRpi[1]*100)+((long)tramaTiempoRpi[2]);
+
+
+ return fechaRPi;
+
+}
+
+
+
+
+unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi){
+
+ unsigned long horaRPi;
+
+ horaRPi = ((long)tramaTiempoRpi[3]*3600)+((long)tramaTiempoRpi[4]*60)+((long)tramaTiempoRpi[5]);
+
+
+ return horaRPi;
+
+}
+
+
+
+
+void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema){
+
+ unsigned char hora;
+ unsigned char minuto;
+ unsigned char segundo;
+ unsigned char dia;
+ unsigned char mes;
+ unsigned char anio;
+
+ hora = longHora / 3600;
+ minuto = (longHora%3600) / 60;
+ segundo = (longHora%3600) % 60;
+
+ dia = longFecha / 10000;
+ mes = (longFecha%10000) / 100;
+ anio = (longFecha%10000) % 100;
+
+ tramaTiempoSistema[0] = dia;
+ tramaTiempoSistema[1] = mes;
+ tramaTiempoSistema[2] = anio;
+ tramaTiempoSistema[3] = hora;
+ tramaTiempoSistema[4] = minuto;
+ tramaTiempoSistema[5] = segundo;
+
+
+}
+#line 18 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+sbit RP1 at LATA4_bit;
+sbit RP1_Direction at TRISA4_bit;
+sbit RP2 at LATB4_bit;
+sbit RP2_Direction at TRISB4_bit;
+sbit TEST at LATB12_bit;
+sbit TEST_Direction at TRISB12_bit;
+
+unsigned char tramaGPS[70];
+unsigned char datosGPS[13];
+unsigned short tiempo[6];
+unsigned short tiempoRPI[6];
+unsigned char datosLeidos[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+unsigned char datosFIFO[243];
+unsigned char tramaCompleta[2506];
+unsigned char tramaSalida[2506];
+unsigned short numFIFO, numSetsFIFO;
+unsigned short contTimer1;
+
+unsigned int i, x, y, i_gps, j;
+unsigned short buffer;
+unsigned short contMuestras;
+unsigned short contCiclos;
+unsigned int contFIFO;
+short tasaMuestreo;
+short numTMR1;
+
+unsigned short banUTI, banUTC;
+unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
+unsigned short banMuestrear, banLeer, banConf;
+
+unsigned char byteUART, banTIGPS, banTFGPS, banTCGPS;
+unsigned long horaSistema, fechaSistema;
+
+unsigned char byteUART1;
+unsigned char tramaUART1[12];
+unsigned int i_uart;
+
+
+
+
+
+
+void ConfiguracionPrincipal();
+void Muestrear();
+void ConfigurarGPS();
+unsigned long RecuperarHoraGPS(unsigned char *tramaDatosGPS);
+unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS);
+unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi);
+unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi);
+void AjustarTiempoSistema(unsigned long hGPS, unsigned long fGPS, unsigned char *tramaTiempoSistema);
+void InterrupcionP2();
+EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload);
+
+
+
+
+
+void main() {
+
+ ConfiguracionPrincipal();
+
+
+ tasaMuestreo = 1;
+ ADXL355_init(tasaMuestreo);
+ numTMR1 = (tasaMuestreo*10)-1;
+
+ banUTI = 0;
+ banUTC = 0;
+
+ banLec = 0;
+ banEsc = 0;
+ banCiclo = 0;
+ banSetReloj = 0;
+ banSetGPS = 0;
+ banTIGPS = 0;
+ banTFGPS = 0;
+ banTCGPS = 0;
+
+ banMuestrear = 0;
+ banInicio = 0;
+ banLeer = 0;
+ banConf = 0;
+
+ i = 0;
+ x = 0;
+ y = 0;
+ i_gps = 0;
+ i_uart = 0;
+ horaSistema = 0;
+
+ contMuestras = 0;
+ contCiclos = 0;
+ contFIFO = 0;
+ numFIFO = 0;
+ numSetsFIFO = 0;
+ contTimer1 = 0;
+
+ byteUART = 0;
+
+ RP1 = 0;
+ RP2 = 0;
+ TEST = 1;
+
+ SPI1BUF = 0x00;
+
+ while(1){
+
+ }
+
+}
+
+
+
+
+
+
+
+
+void ConfiguracionPrincipal(){
+
+
+ CLKDIVbits.FRCDIV = 0;
+ CLKDIVbits.PLLPOST = 0;
+ CLKDIVbits.PLLPRE = 5;
+ PLLFBDbits.PLLDIV = 150;
+
+
+ ANSELA = 0;
+ ANSELB = 0;
+ TRISA3_bit = 0;
+ TRISA4_bit = 0;
+ TRISB4_bit = 0;
+ TRISB12_bit = 0;
+ TRISB10_bit = 1;
+ TRISB11_bit = 1;
+ TRISB13_bit = 1;
+ INTCON2.GIE = 1;
+
+
+ RPINR18bits.U1RXR = 0x2F;
+ RPOR1bits.RP36R = 0x01;
+ UART1_Init_Advanced(2000000, 2, 1, 1);
+ U1RXIE_bit = 1;
+ U1RXIF_bit = 0;
+ IPC2bits.U1RXIP = 0x04;
+ U1STAbits.URXISEL = 0x00;
+
+
+ RPINR22bits.SDI2R = 0x21;
+ RPOR2bits.RP38R = 0x08;
+ RPOR1bits.RP37R = 0x09;
+ SPI2STAT.SPIEN = 1;
+ SPI2_Init();
+
+
+ ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
+
+
+ RPINR0 = 0x2E00;
+ INT1IE_bit = 0;
+ INT1IF_bit = 0;
+ IPC5bits.INT1IP = 0x01;
+
+
+ T1CON = 0x0020;
+ T1CON.TON = 0;
+ T1IE_bit = 1;
+ T1IF_bit = 0;
+ PR1 = 62500;
+ IPC0bits.T1IP = 0x02;
+
+ Delay_ms(200);
+
+}
+
+
+
+
+void Muestrear(){
+
+ if (banCiclo==0){
+
+ ADXL355_write_byte( 0x2D ,  0x04 | 0x00 );
+ T1CON.TON = 1;
+
+ } else if (banCiclo==1) {
+
+ banCiclo = 2;
+
+ tramaCompleta[0] = contCiclos;
+ numFIFO = ADXL355_read_byte( 0x05 );
+ numSetsFIFO = (numFIFO)/3;
+
+
+ for (x=0;x<numSetsFIFO;x++){
+ ADXL355_read_FIFO(datosLeidos);
+ for (y=0;y<9;y++){
+ datosFIFO[y+(x*9)] = datosLeidos[y];
+ }
+ }
+
+
+ for (x=0;x<(numSetsFIFO*9);x++){
+ if ((x==0)||(x%9==0)){
+ tramaCompleta[contFIFO+contMuestras+x] = contMuestras;
+ tramaCompleta[contFIFO+contMuestras+x+1] = datosFIFO[x];
+ contMuestras++;
+ } else {
+ tramaCompleta[contFIFO+contMuestras+x] = datosFIFO[x];
+ }
+ }
+
+
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ for (x=0;x<6;x++){
+ tramaCompleta[2500+x] = tiempo[x];
+ }
+
+ contMuestras = 0;
+ contFIFO = 0;
+ T1CON.TON = 1;
+
+ banLec = 1;
+
+ RP1 = 1;
+ Delay_us(20);
+ RP1 = 0;
+
+ }
+
+ contCiclos++;
+
+}
+
+
+
+
+void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload){
+
+ unsigned int iDatos;
+
+ if (puertoUART == 1){
+ UART1_Write(0x3A);
+ UART1_Write(direccion);
+ UART1_Write(numDatos);
+ UART1_Write(funcion);
+ for (iDatos=0;iDatos<numDatos;iDatos++){
+ UART1_Write(payload[iDatos]);
+ }
+ UART1_Write(0x0D);
+ UART1_Write(0x0A);
+ }
+
+ if (puertoUART == 2){
+ UART2_Write(0x3A);
+ UART2_Write(direccion);
+ UART2_Write(numDatos);
+ UART2_Write(funcion);
+ for (iDatos=0;iDatos<numDatos;iDatos++){
+ UART2_Write(payload[iDatos]);
+ }
+ UART2_Write(0x0D);
+ UART2_Write(0x0A);
+ }
+
+}
+
+
+
+
+
+
+
+
+
+void int_1() org IVT_ADDR_INT1INTERRUPT {
+
+ INT1IF_bit = 0;
+
+
+ horaSistema++;
+
+ if (horaSistema==86400){
+ horaSistema = 0;
+ }
+
+ if (banInicio==1){
+ Muestrear();
+ }
+
+}
+
+
+
+
+void Timer1Int() org IVT_ADDR_T1INTERRUPT{
+
+ T1IF_bit = 0;
+
+ numFIFO = ADXL355_read_byte( 0x05 );
+ numSetsFIFO = (numFIFO)/3;
+
+
+ for (x=0;x<numSetsFIFO;x++){
+ ADXL355_read_FIFO(datosLeidos);
+ for (y=0;y<9;y++){
+ datosFIFO[y+(x*9)] = datosLeidos[y];
+ }
+ }
+
+
+ for (x=0;x<(numSetsFIFO*9);x++){
+ if ((x==0)||(x%9==0)){
+ tramaCompleta[contFIFO+contMuestras+x] = contMuestras;
+ tramaCompleta[contFIFO+contMuestras+x+1] = datosFIFO[x];
+ contMuestras++;
+ } else {
+ tramaCompleta[contFIFO+contMuestras+x] = datosFIFO[x];
+ }
+ }
+
+ contFIFO = (contMuestras*9);
+
+ contTimer1++;
+
+ if (contTimer1==numTMR1){
+ T1CON.TON = 0;
+ banCiclo = 1;
+ contTimer1 = 0;
+ }
+
+}
+
+
+
+
+void urx_1() org IVT_ADDR_U1RXINTERRUPT {
+
+ U1RXIF_bit = 0;
+
+ byteUART = U1RXREG;
+ OERR_bit = 0;
+
+ if ((banUTI==0)&&(byteUART==0x3A)){
+ banUTI = 1;
+ i_uart = 0;
+ }
+ if (banUTI==1){
+ if (byteUART!=0x0A){
+ tramaUART1[i_uart] = byteUART;
+ i_uart++;
+ } else {
+ banUTI = 0;
+ banUTC = 1;
+ }
+ }
+
+ if (banUTC==1){
+
+ TEST = ~TEST;
+ for (x=0;x<6;x++) {
+ tiempo[x] = tramaUART1[x+4];
+ }
+ banSetReloj=1;
+#line 390 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+ EnviarTramaUART(1, 255, 6, 2, tiempo);
+
+
+ banUTC = 0;
+ }
+
+
+}

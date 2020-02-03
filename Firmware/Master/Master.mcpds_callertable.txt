@@ -1,0 +1,30 @@
+main
+	ConfiguracionPrincipal
+		UART1_Init
+			Get_Fosc_kHz
+			Get_Fosc_Per_Cyc
+			Delay_100ms
+			_Multiply_32x32
+			_Modulus_32x32
+			_Divide_32x32
+		UART2_Init_Advanced
+			Get_Fosc_kHz
+			Get_Fosc_Per_Cyc
+			Delay_100ms
+			_Multiply_32x32
+			_Modulus_32x32
+			_Divide_32x32
+		SPI1_Init_Advanced
+urx_2
+int_1
+spi_1
+	RecuperarHoraRPI
+		_Multiply_32x32
+	RecuperarFechaRPI
+		_Multiply_32x32
+	AjustarTiempoSistema
+		_Divide_32x32
+		_Modulus_32x32
+	EnviarTramaUART
+		UART1_Write
+		UART2_Write
