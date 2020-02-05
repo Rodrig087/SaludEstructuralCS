@@ -1296,6 +1296,7 @@ bantcgps
 bantfgps
 bantigps
 banutc
+banutf
 banuti
 bcd2dec
 bcd2dec16
@@ -6146,6 +6147,7 @@ nullw_dma0con_bit
 nullw_dma1con_bit
 nullw_dma2con_bit
 nullw_dma3con_bit
+numdatospyload
 numfifo
 numsetsfifo
 numtmr1
@@ -11365,10 +11367,9 @@ ton_t3con_bit
 ton_t4con_bit
 ton_t5con_bit
 toupper
-tramacompleta
+tramacabecerauart
 tramagps
-tramasalida
-tramauart2
+tramapyloaduart
 trapr
 trapr
 trapr_bit

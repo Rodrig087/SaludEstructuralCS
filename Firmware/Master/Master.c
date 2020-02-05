@@ -4,6 +4,12 @@ Fecha de creacion: 14/03/2019
 Configuracion: dsPIC33EP256MC202, XT=80MHz
 ---------------------------------------------------------------------------------------------------------------------------*/
 
+/////////////////////// /// Formato de la trama de datos //////////////////////////
+//|  Cabecera  |                        PDU                        |      Fin     |
+//|   1 byte   |   1 byte  |  1 byte  |  1 byte  |     n bytes     |    2 bytes   |
+//|    0x3A    | Dirección |  #Datos  | Función  |      DataN      |  0Dh  |  0Ah |
+
+
 ////////////////////////////////////////////////////         Librerias         /////////////////////////////////////////////////////////////
 
 #include <TIEMPO_GPS.c>
@@ -25,8 +31,6 @@ unsigned short tiempo[6];                                                       
 unsigned short tiempoRPI[6];                                                    //Vector para recuperar el tiempo enviado desde la RPi
 unsigned char datosLeidos[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned char datosFIFO[243];                                                   //Vector para almacenar 27 muestras de 3 ejes del vector FIFO
-unsigned char tramaCompleta[2506];                                              //Vector para almacenar 10 vectores datosFIFO, 250 cabeceras de muestras y el vector tiempo
-unsigned char tramaSalida[2506];
 unsigned short numFIFO, numSetsFIFO;                                            //Variablea para almacenar el numero de muestras y sets recuperados del buffer FIFO
 unsigned short contTimer1;                                                      //Variable para contar el numero de veces que entra a la interrupcion por Timer 1
 
@@ -38,7 +42,7 @@ unsigned int contFIFO;
 short tasaMuestreo;
 short numTMR1;
 
-unsigned short banUTI, banUTC;                                                  //Banderas de control de la trama UART
+unsigned short banUTI, banUTF, banUTC;                                                  //Banderas de control de la trama UART
 unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
 unsigned short banMuestrear, banLeer, banConf;
 
@@ -46,8 +50,10 @@ unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
 unsigned long horaSistema, fechaSistema;
 
 unsigned char byteUART2;
-unsigned char tramaUART2[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+unsigned char tramaCabeceraUART[4];
+unsigned char tramaPyloadUART[2506];
 unsigned int i_uart;
+unsigned int numDatosPyload;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -76,6 +82,7 @@ void main() {
      
      //Banderas de control de la trama UART:
      banUTI = 0;
+     banUTF = 0;
      banUTC = 0;
 
      banLec = 0;
@@ -98,6 +105,7 @@ void main() {
      i_gps = 0;
      horaSistema = 0;
      i_uart = 0;
+     numDatosPyload = 0;
 
      contMuestras = 0;
      contCiclos = 0;
@@ -163,18 +171,9 @@ void ConfiguracionPrincipal(){
      IPC7bits.U2RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U2STAbits.URXISEL = 0x00;
 
-     /*//Configuracion del puerto UART1
-     RPINR18bits.U1RXR = 0x25;
-     RPOR0bits.RP35R = 0x01;
-     UART1_Init_Advanced(2000000, 2, 1, 1);
-     U1RXIE_bit = 0;
-     U1RXIF_bit = 0;
-     IPC2bits.U1RXIP = 0x04;
-     U1STAbits.URXISEL = 0x00;*/
-
      //Configuracion del puerto SPI1 en modo Esclavo
      SPI1STAT.SPIEN = 1;                                                        //Habilita el SPI1 *
-     SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);        //*
+     SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
      SPI1IE_bit = 1;                                                            //Habilita la interrupcion por SPI1  *
      SPI1IF_bit = 0;                                                            //Limpia la bandera de interrupcion por SPI *
      IPC2bits.SPI1IP = 0x03;                                                    //Prioridad de la interrupcion SPI1
@@ -307,10 +306,10 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      if ((banLec==1)&&(buffer==0xB0)){                                          //Verifica si la bandera de inicio de trama esta activa
         banLec = 2;                                                             //Activa la bandera de lectura
         i = 0;
-        SPI1BUF = tramaCompleta[i];
+        SPI1BUF = tramaPyloadUART[i];
      }
      if ((banLec==2)&&(buffer!=0xB1)){
-        SPI1BUF = tramaCompleta[i];
+        SPI1BUF = tramaPyloadUART[i];
         i++;
      }
      if ((banLec==2)&&(buffer==0xB1)){                                          //Si detecta el delimitador de final de trama:
@@ -430,30 +429,46 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
 //Interrupcion UART2
 void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
 
+     //Recupera el byte recibido en cada interrupcion:
      U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
-
      byteUART2 = U2RXREG;                                                       //Lee el byte de la trama enviada por el GPS
      U2STA.OERR = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
 
-     if ((banUTI==0)&&(byteUART2==0x3A)){                                       //Verifica si el primer byte recibido sea la cabecera de trama
-        banUTI = 1;
-        i_uart = 0;
-     }
-     if (banUTI==1){
-        if (byteUART2!=0x0A){
-           tramaUART2[i_uart] = byteUART2;                                      //Almacena el byte recibido en la trama, mientras este sea diferente del segundo byte del delimitador de final de trama
+     //Recupera el pyload de la trama UART:                                     //Aqui deberia entrar despues de recuperar la cabecera de trama
+     if (banUTI==2){
+        if (i_uart<numDatosPyload){
+           tramaPyloadUART[i_uart] = byteUART2;
            i_uart++;
         } else {
            banUTI = 0;                                                          //Limpia la bandera de inicio de trama
            banUTC = 1;                                                          //Activa la bandera de trama completa
         }
      }
+
+     //Recupera la cabecera de la trama UART:                                   //Aqui deberia entrar primero cada vez que se recibe una trama nueva
+     if ((banUTI==0)&&(banUTC==0)){
+        if (byteUART2==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
+           banUTI = 1;
+           i_uart = 0;
+        }
+     }
+     if ((banUTI==1)&&(i_uart<4)){
+        tramaCabeceraUART[i_uart] = byteUART2;                                  //Recupera los datos de cabecera de la trama UART
+        i_uart++;
+     }
+     if ((banUTI==1)&&(i_uart==4)){
+        numDatosPyload = tramaCabeceraUART[2];
+        banUTI = 2;
+        i_uart = 0;
+     }
      
+     //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
      if (banUTC==1){
+     
          //PRUEBA//
          TEST = ~TEST;                                                          //Indica si se completo la trama
          for (x=0;x<6;x++) {
-             tiempo[x] = tramaUART2[x+4];                                       //LLeno la trama tiempo con el payload de la trama recuperada
+             tiempo[x] = tramaPyloadUART[x];                                    //LLeno la trama tiempo con el payload de la trama recuperada
          }
          banSetReloj=1;                                                         //Activa la bandera para enviar la hora a la RPI por SPI
          //Genera el pulso P2 para producir la interrupcion externa en la RPi:
@@ -461,6 +476,7 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
          Delay_us(20);
          RP1 = 0;
          //FIN PRUEBA//
+         
          banUTC = 0;
      }
 

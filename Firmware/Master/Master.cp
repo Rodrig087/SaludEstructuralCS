@@ -140,7 +140,7 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
 
 
 }
-#line 17 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 23 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/Master/Master.c"
 sbit RP1 at LATA4_bit;
 sbit RP1_Direction at TRISA4_bit;
 sbit TEST at LATB12_bit;
@@ -152,8 +152,6 @@ unsigned short tiempo[6];
 unsigned short tiempoRPI[6];
 unsigned char datosLeidos[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned char datosFIFO[243];
-unsigned char tramaCompleta[2506];
-unsigned char tramaSalida[2506];
 unsigned short numFIFO, numSetsFIFO;
 unsigned short contTimer1;
 
@@ -165,7 +163,7 @@ unsigned int contFIFO;
 short tasaMuestreo;
 short numTMR1;
 
-unsigned short banUTI, banUTC;
+unsigned short banUTI, banUTF, banUTC;
 unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
 unsigned short banMuestrear, banLeer, banConf;
 
@@ -173,8 +171,10 @@ unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
 unsigned long horaSistema, fechaSistema;
 
 unsigned char byteUART2;
-unsigned char tramaUART2[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+unsigned char tramaCabeceraUART[4];
+unsigned char tramaPyloadUART[2506];
 unsigned int i_uart;
+unsigned int numDatosPyload;
 
 
 
@@ -203,6 +203,7 @@ void main() {
 
 
  banUTI = 0;
+ banUTF = 0;
  banUTC = 0;
 
  banLec = 0;
@@ -225,6 +226,7 @@ void main() {
  i_gps = 0;
  horaSistema = 0;
  i_uart = 0;
+ numDatosPyload = 0;
 
  contMuestras = 0;
  contCiclos = 0;
@@ -289,7 +291,8 @@ void ConfiguracionPrincipal(){
  U2RXIF_bit = 0;
  IPC7bits.U2RXIP = 0x04;
  U2STAbits.URXISEL = 0x00;
-#line 176 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/Master/Master.c"
+
+
  SPI1STAT.SPIEN = 1;
  SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
  SPI1IE_bit = 1;
@@ -424,10 +427,10 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banLec==1)&&(buffer==0xB0)){
  banLec = 2;
  i = 0;
- SPI1BUF = tramaCompleta[i];
+ SPI1BUF = tramaPyloadUART[i];
  }
  if ((banLec==2)&&(buffer!=0xB1)){
- SPI1BUF = tramaCompleta[i];
+ SPI1BUF = tramaPyloadUART[i];
  i++;
  }
  if ((banLec==2)&&(buffer==0xB1)){
@@ -456,7 +459,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  }
 
 }
-#line 431 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 430 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/Master/Master.c"
 void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  U2RXIF_bit = 0;
@@ -464,13 +467,9 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  byteUART2 = U2RXREG;
  U2STA.OERR = 0;
 
- if ((banUTI==0)&&(byteUART2==0x3A)){
- banUTI = 1;
- i_uart = 0;
- }
- if (banUTI==1){
- if (byteUART2!=0x0A){
- tramaUART2[i_uart] = byteUART2;
+ if (banUTI==2){
+ if (i_uart<numDatosPyload){
+ tramaPyloadUART[i_uart] = byteUART2;
  i_uart++;
  } else {
  banUTI = 0;
@@ -478,12 +477,29 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  }
  }
 
+ if ((banUTI==0)&&(banUTC==0)){
+ if (byteUART2==0x3A){
+ banUTI = 1;
+ i_uart = 0;
+ }
+ }
+ if ((banUTI==1)&&(i_uart<4)){
+ tramaCabeceraUART[i_uart] = byteUART2;
+ i_uart++;
+ }
+ if ((banUTI==1)&&(i_uart==4)){
+ numDatosPyload = tramaCabeceraUART[2];
+ banUTI = 2;
+ i_uart = 0;
+ }
+
  if (banUTC==1){
 
  TEST = ~TEST;
  for (x=0;x<6;x++) {
- tiempo[x] = tramaUART2[x+4];
+ tiempo[x] = tramaPyloadUART[x];
  }
+
  banSetReloj=1;
 
  RP1 = 1;
