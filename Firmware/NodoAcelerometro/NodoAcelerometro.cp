@@ -269,8 +269,10 @@ unsigned char byteUART, banTIGPS, banTFGPS, banTCGPS;
 unsigned long horaSistema, fechaSistema;
 
 unsigned char byteUART1;
-unsigned char tramaUART1[12];
+unsigned char tramaCabeceraUART[4];
+unsigned char tramaPyloadUART[2506];
 unsigned int i_uart;
+unsigned int numDatosPyload;
 
 
 
@@ -324,6 +326,7 @@ void main() {
  i_gps = 0;
  i_uart = 0;
  horaSistema = 0;
+ numDatosPyload = 0;
 
  contMuestras = 0;
  contCiclos = 0;
@@ -573,18 +576,15 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 
 void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
- U1RXIF_bit = 0;
 
+ U1RXIF_bit = 0;
  byteUART = U1RXREG;
  OERR_bit = 0;
 
- if ((banUTI==0)&&(byteUART==0x3A)){
- banUTI = 1;
- i_uart = 0;
- }
- if (banUTI==1){
- if (byteUART!=0x0A){
- tramaUART1[i_uart] = byteUART;
+
+ if (banUTI==2){
+ if (i_uart<numDatosPyload){
+ tramaPyloadUART[i_uart] = byteUART;
  i_uart++;
  } else {
  banUTI = 0;
@@ -592,19 +592,39 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  }
 
+
+ if ((banUTI==0)&&(banUTC==0)){
+ if (byteUART==0x3A){
+ banUTI = 1;
+ i_uart = 0;
+ }
+ }
+ if ((banUTI==1)&&(i_uart<4)){
+ tramaCabeceraUART[i_uart] = byteUART;
+ i_uart++;
+ }
+ if ((banUTI==1)&&(i_uart==4)){
+ numDatosPyload = tramaCabeceraUART[2];
+ banUTI = 2;
+ i_uart = 0;
+ }
+
+
  if (banUTC==1){
+
 
  TEST = ~TEST;
  for (x=0;x<6;x++) {
- tiempo[x] = tramaUART1[x+4];
+ tiempo[x] = tramaPyloadUART[x];
+ if (tiempo[x]<59){
+ tiempo[x] = tiempo[x]+1;
+ }
  }
  banSetReloj=1;
-#line 390 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  EnviarTramaUART(1, 255, 6, 2, tiempo);
 
 
  banUTC = 0;
  }
-
 
 }

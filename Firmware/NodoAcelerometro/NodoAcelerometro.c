@@ -49,8 +49,10 @@ unsigned char byteUART, banTIGPS, banTFGPS, banTCGPS;
 unsigned long horaSistema, fechaSistema;
 
 unsigned char byteUART1;
-unsigned char tramaUART1[12];
+unsigned char tramaCabeceraUART[4];
+unsigned char tramaPyloadUART[2506];
 unsigned int i_uart;
+unsigned int numDatosPyload;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -104,6 +106,7 @@ void main() {
      i_gps = 0;
      i_uart = 0;
      horaSistema = 0;
+     numDatosPyload = 0;
 
      contMuestras = 0;
      contCiclos = 0;
@@ -353,47 +356,57 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 //Interrupcion UART1
 void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
+     //Recupera el byte recibido en cada interrupcion:
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART
-
      byteUART = U1RXREG;
      OERR_bit = 0;                                                              //Limpia este bit para limpiar el FIFO UART
 
-     if ((banUTI==0)&&(byteUART==0x3A)){                                        //Verifica si el primer byte recibido sea la cabecera de trama
-        banUTI = 1;
-        i_uart = 0;
-     }
-     if (banUTI==1){
-        if (byteUART!=0x0A){
-           tramaUART1[i_uart] = byteUART;                                       //Almacena el byte recibido en la trama, mientras este sea diferente del segundo byte del delimitador de final de trama
+     //Recupera el pyload de la trama UART:                                     //Aqui deberia entrar despues de recuperar la cabecera de trama
+     if (banUTI==2){
+        if (i_uart<numDatosPyload){
+           tramaPyloadUART[i_uart] = byteUART;
            i_uart++;
         } else {
            banUTI = 0;                                                          //Limpia la bandera de inicio de trama
            banUTC = 1;                                                          //Activa la bandera de trama completa
         }
      }
-
+     
+     //Recupera la cabecera de la trama UART:                                   //Aqui deberia entrar primero cada vez que se recibe una trama nueva
+     if ((banUTI==0)&&(banUTC==0)){
+        if (byteUART==0x3A){                                                    //Verifica si el primer byte recibido sea la cabecera de trama
+           banUTI = 1;
+           i_uart = 0;
+        }
+     }
+     if ((banUTI==1)&&(i_uart<4)){
+        tramaCabeceraUART[i_uart] = byteUART;                                   //Recupera los datos de cabecera de la trama UART
+        i_uart++;
+     }
+     if ((banUTI==1)&&(i_uart==4)){
+        numDatosPyload = tramaCabeceraUART[2];
+        banUTI = 2;
+        i_uart = 0;
+     }
+     
+     //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
      if (banUTC==1){
+
          //PRUEBA//
          TEST = ~TEST;                                                          //Indica si se completo la trama
          for (x=0;x<6;x++) {
-             tiempo[x] = tramaUART1[x+4];                                       //LLeno la trama tiempo con el payload de la trama recuperada
+             tiempo[x] = tramaPyloadUART[x];                                    //LLeno la trama tiempo con el payload de la trama recuperada
+             if (tiempo[x]<59){
+                tiempo[x] = tiempo[x]+1;                                        //prueba para distinguir los datos
+             }
          }
          banSetReloj=1;                                                         //Activa la bandera para enviar la hora a la RPI por SPI
-
-         /*tiempo[0] = 22;
-         tiempo[1] = 12;
-         tiempo[2] = 16;
-         tiempo[3] = 20;
-         tiempo[4] = 19;
-         tiempo[5] = 18;*/
-
          EnviarTramaUART(1, 255, 6, 2, tiempo);
-
          //FIN PRUEBA//
+
          banUTC = 0;
      }
 
-     
 }
 //*****************************************************************************************************************************************
 

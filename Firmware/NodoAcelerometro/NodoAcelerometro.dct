@@ -6146,6 +6146,7 @@ nullw_dma0con_bit
 nullw_dma1con_bit
 nullw_dma2con_bit
 nullw_dma3con_bit
+numdatospyload
 numfifo
 numsetsfifo
 numtmr1
@@ -11356,10 +11357,11 @@ ton_t3con_bit
 ton_t4con_bit
 ton_t5con_bit
 toupper
+tramacabecerauart
 tramacompleta
 tramagps
+tramapyloaduart
 tramasalida
-tramauart1
 trapr
 trapr
 trapr_bit
