@@ -1,32 +1,28 @@
 /*-------------------------------------------------------------------------------------------------------------------------
-Autor: Milton Munoz, email: miltonrodrigomunoz@gmail.com, github: https://github.com/Rodrig087/SaludEstructuralCS.git
-Fecha de creacion: 16/01/2020
+Autor: Milton Munoz, email: miltonrodrigomunoz@gmail.com
+Fecha de creacion: 14/03/2019
 Configuracion: dsPIC33EP256MC202, XT=80MHz
 ---------------------------------------------------------------------------------------------------------------------------*/
-
-/////////////////////// /// Formato de la trama de datos //////////////////////////
-//|  Cabecera  |                        PDU                        |      Fin     |
-//|   1 byte   |   1 byte  |  1 byte  |  1 byte  |     n bytes     |    2 bytes   |
-//|    0x3A    | Dirección |  #Datos  | Función  |      DataN      |  0Dh  |  0Ah |
 
 
 ////////////////////////////////////////////////////         Librerias         /////////////////////////////////////////////////////////////
 
-#include <TIEMPO_RTC.c>
-#include <TIEMPO_GPS.c>
-#include <TIEMPO_RPI.c>
 #include <ADXL355_SPI.c>
+#include <TIEMPO_GPS.c>
+#include <TIEMPO_RTC.c>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////// Declaracion de variables //////////////////////////////////////////////////////////////
 
-//Variables y constantes para la peticion y respuesta de datos
+//Variables y contantes para la peticion y respuesta de datos
 sbit RP1 at LATA4_bit;                                                          //Definicion del pin P1
 sbit RP1_Direction at TRISA4_bit;
-sbit TEST at LATA1_bit;                                                        //Definicion del pin Test
-sbit TEST_Direction at TRISA1_bit;
+sbit RP2 at LATB4_bit;                                                          //Definicion del pin P2
+sbit RP2_Direction at TRISB4_bit;
+sbit TEST at LATB12_bit;                                                        //Definicion del pin P2
+sbit TEST_Direction at TRISB12_bit;
 
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
@@ -34,11 +30,10 @@ unsigned short tiempo[6];                                                       
 unsigned short tiempoRPI[6];                                                    //Vector para recuperar el tiempo enviado desde la RPi
 unsigned char datosLeidos[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned char datosFIFO[243];                                                   //Vector para almacenar 27 muestras de 3 ejes del vector FIFO
-unsigned short numFIFO, numSetsFIFO;                                            //Variablea para almacenar el numero de muestras y sets recuperados del buffer FIFO
-unsigned short contTimer1;
 unsigned char tramaCompleta[2506];                                              //Vector para almacenar 10 vectores datosFIFO, 250 cabeceras de muestras y el vector tiempo
-unsigned char tramaSalida[2506];                                                //Variable para contar el numero de veces que entra a la interrupcion por Timer 1
-unsigned char tramaPrueba[10];                                                  //Trama de 10 elementos para probar la comunicacion RS485
+unsigned char tramaSalida[2506];
+unsigned short numFIFO, numSetsFIFO;                                            //Variablea para almacenar el numero de muestras y sets recuperados del buffer FIFO
+unsigned short contTimer1;                                                      //Variable para contar el numero de veces que entra a la interrupcion por Timer 1
 
 unsigned int i, x, y, i_gps, j;
 unsigned short buffer;
@@ -48,21 +43,14 @@ unsigned int contFIFO;
 short tasaMuestreo;
 short numTMR1;
 
-unsigned short banUTI, banUTF, banUTC;                                                  //Banderas de control de la trama UART
+unsigned short banTC, banTI, banTF;                                             //Banderas de trama completa, inicio de trama y final de trama
 unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
 unsigned short banMuestrear, banLeer, banConf;
-unsigned short banOperacion, tipoOperacion;
-unsigned short banCheck;
 
-unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
-unsigned short fuenteReloj;
+unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS, stsGPS;
+unsigned short fuenteReloj;                                                     //Indiaca la fuente de reloj 0:RTC 1:GPS
+short confGPS[2];
 unsigned long horaSistema, fechaSistema;
-
-unsigned char byteUART2;
-unsigned char tramaCabeceraUART[4];
-unsigned char tramaPyloadUART[2506];
-unsigned int i_uart;
-unsigned int numDatosPyload;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -71,8 +59,13 @@ unsigned int numDatosPyload;
 /////////////////////////////////////////////////////////  Declaracion de funciones  /////////////////////////////////////////////////////////
 void ConfiguracionPrincipal();
 void Muestrear();
-void InterrupcionP1();
-void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload);
+void ConfigurarGPS();
+unsigned long RecuperarHoraGPS(unsigned char *tramaDatosGPS);
+unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS);
+unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi);
+unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi);
+void AjustarTiempoSistema(unsigned long hGPS, unsigned long fGPS, unsigned char *tramaTiempoSistema);
+void InterrupcionP2();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -81,25 +74,23 @@ void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsign
 void main() {
 
      ConfiguracionPrincipal();
-     DS3234_init();
-     //GPS_init(1,1);
+     DS3234_init();                                                             //inicializa el RTC
 
-     //Banderas de control de la trama UART:
-     banOperacion = 0;
-     tipoOperacion = 0;
+     tasaMuestreo = 1;                                                          //1=250Hz, 2=125Hz, 4=62.5Hz, 8=31.25Hz
+     ADXL355_init(tasaMuestreo);                                                //Inicializa el modulo ADXL con la tasa de muestreo requerida:
+     numTMR1 = (tasaMuestreo*10)-1;                                             //Calcula el numero de veces que tienen que desbordarse el TMR1 para cada tasa de muestreo
      
-     banUTI = 0;
-     banUTF = 0;
-     banUTC = 0;
-
+     banTI = 0;
      banLec = 0;
      banEsc = 0;
      banCiclo = 0;
      banSetReloj = 0;
+     
      banSetGPS = 0;
      banTIGPS = 0;
      banTFGPS = 0;
      banTCGPS = 0;
+     stsGPS = 0;
      fuenteReloj = 0;
 
      banMuestrear = 0;                                                          //Inicia el programa con esta bandera en bajo para permitir que la RPi envie la peticion de inicio de muestreo
@@ -107,15 +98,11 @@ void main() {
      banLeer = 0;
      banConf = 0;
 
-     banCheck = 0;
-
      i = 0;
      x = 0;
      y = 0;
      i_gps = 0;
      horaSistema = 0;
-     i_uart = 0;
-     numDatosPyload = 0;
 
      contMuestras = 0;
      contCiclos = 0;
@@ -127,6 +114,7 @@ void main() {
      byteGPS = 0;
 
      RP1 = 0;
+     RP2 = 0;
      TEST = 1;
 
      SPI1BUF = 0x00;
@@ -142,7 +130,7 @@ void main() {
 
 //////////////////////////////////////////////////////////////// Funciones ////////////////////////////////////////////////////////////////
 
-//*****************************************************************************************************************************************
+//****************************************************************************************************************************************
 // Funcion para realizar la configuracion principal
 void ConfiguracionPrincipal(){
      
@@ -155,8 +143,6 @@ void ConfiguracionPrincipal(){
      //Configuracion de puertos
      ANSELA = 0;                                                                //Configura PORTA como digital     *
      ANSELB = 0;                                                                //Configura PORTB como digital     *
-     
-     TRISA1_bit = 0;                                                            //Configura el pin A2 como salida  *
      TRISA2_bit = 0;                                                            //Configura el pin A2 como salida  *
      TRISA3_bit = 0;                                                            //Configura el pin A3 como salida  *
      TRISA4_bit = 0;                                                            //Configura el pin A4 como salida  *
@@ -168,30 +154,21 @@ void ConfiguracionPrincipal(){
      TRISB13_bit = 1;                                                           //Configura el pin B13 como entrada *
      TRISB14_bit = 1;
      TRISB15_bit = 1;                                                           //Configura el pin B15 como entrada *
-
+     
      INTCON2.GIE = 1;                                                           //Habilita las interrupciones globales *
      
-    //Configuracion del puerto UART1
-     RPINR18bits.U1RXR = 0x22;                                                  //Configura el pin RB2/RPI34 como Rx1
-     RPOR0bits.RP35R = 0x01;                                                    //Configura el Tx1 en el pin RB3/RP35
-     UART1_Init(9600);                                                        //Inicializa el UART1 con una velocidad de 115200 baudios
-     U1RXIE_bit = 0;                                                            //Desabilita la interrupcion por UART1 RX
-     U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
+     //Configuracion del puerto UART1
+     RPINR18bits.U1RXR = 0x22;                                                  //Configura el pin RB2/RPI34 como Rx1 *
+     RPOR0bits.RP35R = 0x01;                                                    //Configura el Tx1 en el pin RB3/RP35 *
+     UART1_Init(115200);                                                        //Inicializa el UART1 con una velocidad de 115200 baudios
+     U1RXIE_bit = 0;                                                            //Desabilita la interrupcion por UART1 RX *
+     U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX *
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U1STAbits.URXISEL = 0x00;
-/*
-     //Configuracion del puerto UART2
-     RPINR19bits.U2RXR = 0x2F;                                                  //Configura el pin RB15/RPI47 como Rx2
-     RPOR1bits.RP36R = 0x03;                                                    //Configura el Tx2 en el pin RB4/RP36
-     UART2_Init_Advanced(2000000, 2, 1, 1);                                     //Inicializa el UART2 con una velocidad de 2Mbps
-     U2RXIE_bit = 0;                                                            //Desabilita la interrupcion por UART2 RX
-     U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
-     IPC7bits.U2RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
-     U2STAbits.URXISEL = 0x00;
-*/
+
      //Configuracion del puerto SPI1 en modo Esclavo
      SPI1STAT.SPIEN = 1;                                                        //Habilita el SPI1 *
-     SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
+     SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);        //*
      SPI1IE_bit = 1;                                                            //Habilita la interrupcion por SPI1  *
      SPI1IF_bit = 0;                                                            //Limpia la bandera de interrupcion por SPI *
      IPC2bits.SPI1IP = 0x03;                                                    //Prioridad de la interrupcion SPI1
@@ -203,76 +180,110 @@ void ConfiguracionPrincipal(){
      SPI2STAT.SPIEN = 1;                                                        //Habilita el SPI2 *
      SPI2_Init();                                                               //Inicializa el modulo SPI2
      CS_DS3234 = 1;                                                             //Pone en alto el CS del RTC
+     CS_ADXL355 = 1;                                                            //Pone en alto el CS del acelerometro
+     
+     //Configuracion del acelerometro
+     ADXL355_write_byte(POWER_CTL, DRDY_OFF|STANDBY);                           //Coloco el ADXL en modo STANDBY para pausar las conversiones y limpiar el FIFO
 
      //Configuracion de la interrupcion externa INT1
-     RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
+     //RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46 (PPS)
+     RPINR0 = 0x2F00;                                                           //Asigna INT1 al RB15/RPI47 (SQW)
      INT1IE_bit = 0;                                                            //Habilita la interrupcion externa INT1
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
      IPC5bits.INT1IP = 0x01;                                                    //Prioridad en la interrupocion externa 1
 
+     //Configuracion del TMR1 con un tiempo de 100ms
+     T1CON = 0x0020;
+     T1CON.TON = 0;                                                             //Apaga el Timer1
+     T1IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR1
+     T1IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR1
+     PR1 = 62500;                                                               //Car ga el preload para un tiempo de 100ms
+     IPC0bits.T1IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR1
+
      Delay_ms(200);                                                             //Espera hasta que se estabilicen los cambios
 
 }
-//*****************************************************************************************************************************************
+//****************************************************************************************************************************************
 
-//*****************************************************************************************************************************************
+//****************************************************************************************************************************************
+//Funcion para relizar el muesteo
+void Muestrear(){
+
+     if (banCiclo==0){
+
+         ADXL355_write_byte(POWER_CTL, DRDY_OFF|MEASURING);                     //Coloca el ADXL en modo medicion
+         T1CON.TON = 1;                                                         //Enciende el Timer1
+
+     } else if (banCiclo==1) {
+
+         banCiclo = 2;                                                          //Limpia la bandera de ciclo completo
+
+         tramaCompleta[0] = contCiclos;                                         //LLena el primer elemento de la tramaCompleta con el contador de ciclos
+         numFIFO = ADXL355_read_byte(FIFO_ENTRIES);
+         numSetsFIFO = (numFIFO)/3;                                             //Lee el numero de sets disponibles en el FIFO
+
+         //Este bucle recupera tantos sets de mediciones del buffer FIFO como indique la variable anterior
+         for (x=0;x<numSetsFIFO;x++){
+             ADXL355_read_FIFO(datosLeidos);                                    //Lee una sola posicion del FIFO
+             for (y=0;y<9;y++){
+                 datosFIFO[y+(x*9)] = datosLeidos[y];                           //LLena la trama datosFIFO
+             }
+         }
+
+         //Este bucle rellena la trama completa intercalando el numero de muestra correspondientes
+         for (x=0;x<(numSetsFIFO*9);x++){
+             if ((x==0)||(x%9==0)){
+                tramaCompleta[contFIFO+contMuestras+x] = contMuestras;          //Funciona bien
+                tramaCompleta[contFIFO+contMuestras+x+1] = datosFIFO[x];
+                contMuestras++;
+             } else {
+                tramaCompleta[contFIFO+contMuestras+x] = datosFIFO[x];
+             }
+         }
+
+         //LLena la trama tiempo con el valor del tiempo actual del sistema y luega rellena la tramaCompleta con los valores de esta trama
+         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+         for (x=0;x<6;x++){
+             tramaCompleta[2500+x] = tiempo[x];
+         }
+
+         contMuestras = 0;                                                      //Limpia el contador de muestras
+         contFIFO = 0;                                                          //Limpia el contador de FIFOs
+         T1CON.TON = 1;                                                         //Enciende el Timer1
+         
+         banLec = 1;                                                            //Activa la bandera de lectura para enviar la trama
+         RP1 = 1;                                                               //Genera el pulso P1 para producir la interrupcion en la RPi
+         Delay_us(20);
+         RP1 = 0;
+         
+         TEST = 0;
+         
+     }
+
+     contCiclos++;                                                              //Incrementa el contador de ciclos
+
+}
+//****************************************************************************************************************************************
+
+//****************************************************************************************************************************************
 //Funcion para realizar la interrupcion en la RPi
- void InterrupcionP1(unsigned short operacion){
-     //Si se ejecuta una operacion de tiempo, habilita la interrupcion INT1 para incrementar la hora del sistema con cada pulso PPS
-     if (operacion==0xB2){
-        if (INT1IE_bit==0){
-           INT1IE_bit = 1;
-        }
+ void InterrupcionP2(){
+     //Habilita la interrupcion INT1 para incrementar la hora del sistema con cada pulso PPS
+     if (INT1IE_bit==0){
+        INT1IE_bit = 1;
      }
-     banOperacion = 0;                                                          //Encera la bandera para permitir una nueva peticion de operacion
-     tipoOperacion = operacion;                                                 //Carga en la variable el tipo de operacion requerido
-     //Genera el pulso P1 para producir la interrupcion externa en la RPi
-     RP1 = 1;
+     //Genera el pulso P2 para producir la interrupcion externa en la RPi
+     RP2 = 1;
      Delay_us(20);
-     RP1 = 0;
+     RP2 = 0;
 }
-//*****************************************************************************************************************************************
-
-//*****************************************************************************************************************************************
-//Funcion para enviar una trama de n datos a travez del UART
-void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload){
-     
-     unsigned int iDatos;
-     
-     if (puertoUART == 1){
-        UART1_Write(0x3A);                                                      //Envia la cabecera de la trama
-        UART1_Write(direccion);                                                 //Envia la direccion del destinatario
-        UART1_Write(numDatos);                                                  //Envia el numero de datos
-        UART1_Write(funcion);                                                   //Envia el codigo de la funcion
-        for (iDatos=0;iDatos<numDatos;iDatos++){                                //Envia la carga util de datos
-            UART1_Write(payload[iDatos]);
-        }
-        UART1_Write(0x0D);                                                      //Envia el primer delimitador de final de la trama
-        UART1_Write(0x0A);                                                      //Envia el segundo delimitador de final de la trama
-     }
-     
-     if (puertoUART == 2){
-        UART2_Write(0x3A);                                                      //Envia la cabecera de la trama
-        UART2_Write(direccion);                                                 //Envia la direccion del destinatario
-        UART2_Write(numDatos);                                                  //Envia el numero de datos
-        UART2_Write(funcion);                                                   //Envia el codigo de la funcion
-        for (iDatos=0;iDatos<numDatos;iDatos++){                                //Envia la carga util de datos
-            UART2_Write(payload[iDatos]);
-        }
-        UART2_Write(0x0D);                                                      //Envia el primer delimitador de final de la trama
-        UART2_Write(0x0A);                                                      //Envia el segundo delimitador de final de la trama
-     }
-
-}
-
-//*****************************************************************************************************************************************
+//****************************************************************************************************************************************
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////// Interrupciones /////////////////////////////////////////////////////////////
 
-//*****************************************************************************************************************************************
 //Interrupcion SPI1
 void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
 
@@ -280,25 +291,60 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      buffer = SPI1BUF;                                                          //Guarda el contenido del bufeer (lectura)
 
      //************************************************************************************************************************************
-     //Rutina para enviar la peticion de operacion a la RPi  (C:0xA0   F:0xF0)
-     if ((banOperacion==0)&&(buffer==0xA0)) {
-        banOperacion = 1;                                                       //Activa la bandera para enviar el tipo de operacion requerido a la RPi
-        SPI1BUF = tipoOperacion;                                                //Carga en el buffer el tipo de operacion requerido
+     //Rutina para inicio del muestreo (C:0xA1   F:0xF1):
+     if ((banMuestrear==0)&&(buffer==0xA1)){
+        banMuestrear = 1;                                                       //Cambia el estado de la bandera para que no inicie el muestreo mas de una vez de manera consecutiva
+        banCiclo = 0;
+        contMuestras = 0;
+        contCiclos = 0;
+        contFIFO = 0;
+        numFIFO = 0;
+        numSetsFIFO = 0;
+        contTimer1 = 0;
+        banInicio = 1;                                                          //Bandera que permite el inicio del muestreo dentro de la interrupcion INT1
+        if (INT1IE_bit==0){
+           INT1IE_bit = 1;
+        }
      }
-     if ((banOperacion==1)&&(buffer==0xF0)){
-        banOperacion = 0;                                                       //Limpia la bandera
-        tipoOperacion = 0;                                                      //Limpia la variable de tipo de operacion
-     }
-     //************************************************************************************************************************************
      
-     //************************************************************************************************************************************
-     //Rutinas de control del acelerometro:
+     //Rutina para detener el muestreo (C:0xA2   F:0xF2):
+     if ((banMuestrear==1)&&(buffer==0xA2)){
+        banInicio = 0;                                                          //Bandera que permite el inicio del muestreo dentro de la interrupcion INT1
+        banMuestrear = 0;                                                       //Cambia el estado de la bandera para permitir que inicie el muestreo de nuevo en el futuro
+           
+        banTI = 0;
+        banLec = 0;
+        banEsc = 0;
+        banSetReloj = 0;
+        banSetGPS = 0;
+        banTIGPS = 0;
+        banTFGPS = 0;
+        banTCGPS = 0;
+        banLeer = 0;
+        banConf = 0;
+        i = 0;
+        x = 0;
+        y = 0;
+        i_gps = 0;
+        contTimer1 = 0;
+        byteGPS = 0;
+           
+        ADXL355_write_byte(POWER_CTL, DRDY_OFF|STANDBY);                        //Coloco el ADXL en modo STANDBY para pausar las conversiones y limpiar el FIFO
+        //Desabilita la interrupcion INT1 si esta habilitada:
+        if (INT1IE_bit==1){
+           INT1IE_bit = 0;
+        }
+        //Desabilita la interrupcion TMR1 si esta habilitada:
+        if (T1CON.TON==1){
+           T1CON.TON = 0;
+        }
+     }
      
      //Rutina de lectura de los datos del acelerometro (C:0xA3   F:0xF3):
      if ((banLec==1)&&(buffer==0xA3)){                                          //Verifica si la bandera de inicio de trama esta activa
         banLec = 2;                                                             //Activa la bandera de lectura
         i = 0;
-        SPI1BUF = tramaCompleta[i];                                             //**Duda
+        SPI1BUF = tramaCompleta[i];
      }
      if ((banLec==2)&&(buffer!=0xF3)){
         SPI1BUF = tramaCompleta[i];
@@ -311,8 +357,6 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //************************************************************************************************************************************
 
      //************************************************************************************************************************************
-     //Rutinas de manejo de tiempo:
-     
      //Rutina para obtener la hora de la RPi (C:0xA4   F:0xF4):
      if ((banSetReloj==0)&&(buffer==0xA4)){
          banEsc = 1;
@@ -325,16 +369,15 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      if ((banEsc==1)&&(buffer==0xF4)){
         horaSistema = RecuperarHoraRPI(tiempoRPI);                              //Recupera la hora de la RPi
         fechaSistema = RecuperarFechaRPI(tiempoRPI);                            //Recupera la fecha de la RPi
-        //**Esta fallando de nuevo el chip DS3234
-        //DS3234_setDate(horaSistema, fechaSistema);                              //Configura la hora en el RTC
-        //horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
-        //fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
+        DS3234_setDate(horaSistema, fechaSistema);                              //Configura la hora en el RTC
+        horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
+        fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
         banEsc = 0;
         banSetReloj = 1;
-        InterrupcionP1(0XB2);                                                   //Envia la hora local a la RPi
+        InterrupcionP2();
      }
-
+     
      //Rutina para enviar la hora local a la RPi (C:0xA5   F:0xF5):
      if ((banSetReloj==1)&&(buffer==0xA5)){
         banSetReloj = 2;
@@ -349,11 +392,11 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         banSetReloj = 0;                                                        //Limpia la bandera de lectura
         SPI1BUF = 0xFF;
      }
-
-     //Rutina para obtener la hora del GPS(C:0xA6   F:0xF6):
+     
      if ((banSetReloj==0)&&(buffer==0xA6)){
+        stsGPS = 0;
         //ConfigurarGPS(confGPS[0],confGPS[1]);                                   //Configura el GPS (Configurar,NMA)
-        GPS_init(1,1);
+        ConfigurarGPS(0,1);
         banTIGPS = 0;                                                           //Limpia la bandera de inicio de trama  del GPS
         banTCGPS = 0;                                                           //Limpia la bandera de trama completa
         i_gps = 0;                                                              //Limpia el subindice de la trama GPS
@@ -371,43 +414,13 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
         fuenteReloj = 0;
         banSetReloj = 1;
-        InterrupcionP1(0xB2);                                                   //Envia la hora local a la RPi
+        InterrupcionP2();
      }
      //************************************************************************************************************************************
-     
-     //************************************************************************************************************************************
-     //Rutinas de testeo:
-     
-     //Rutina para testeo de la comunicacion RS485 (C:0xA8   F:0xF8):
-     if ((banCheck==0)&&(buffer==0xA8)){
-        InterrupcionP1(0xB3);                                                   //Envia una solicitud de prueba
-        banCheck = 1;
-        //**Aqui debo incluir la rutina de peticion de la trama de prueba al nodo por medio de RS485
-        for (x=0;x<10;x++){
-            tramaPrueba[x] = x;
-        }
-     }
-     
-     //Rutina para enviar la trama de prueba (C:0xA9   F:0xF9):
-     if ((banCheck==1)&&(buffer==0xA9)){
-        j = 0;
-        SPI1BUF = tramaPrueba[j];
-        j++;
-     }
-     if ((banCheck==1)&&(buffer!=0xA9)&&(buffer!=0xF9)){
-        SPI1BUF = tramaPrueba[j];
-        j++;
-     }
-     if ((banCheck==1)&&(buffer==0xF9)){
-        banCheck = 0;
-     }
-     
-     //************************************************************************************************************************************
-     
 }
-//*****************************************************************************************************************************************
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//*****************************************************************************************************************************************
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Interrupcion INT1
 void int_1() org IVT_ADDR_INT1INTERRUPT {
      
@@ -421,13 +434,52 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
      }
      
      if (banInicio==1){
-        //Muestrear();
+        Muestrear();
      }
      
 }
-//*****************************************************************************************************************************************
 
-//*****************************************************************************************************************************************
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Interrupcion por desbordamiento del Timer1
+void Timer1Int() org IVT_ADDR_T1INTERRUPT{
+     
+     T1IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer1
+     
+     numFIFO = ADXL355_read_byte(FIFO_ENTRIES); //75                            //Lee el numero de muestras disponibles en el FIFO
+     numSetsFIFO = (numFIFO)/3;                 //25                            //Lee el numero de sets disponibles en el FIFO
+
+     //Este bucle recupera tantos sets de mediciones del buffer FIFO como indique la variable anterior
+     for (x=0;x<numSetsFIFO;x++){
+         ADXL355_read_FIFO(datosLeidos);                                        //Lee una sola posicion del FIFO
+         for (y=0;y<9;y++){
+             datosFIFO[y+(x*9)] = datosLeidos[y];                               //LLena la trama datosFIFO
+         }
+     }
+     
+     //Este bucle rellena la trama completa intercalando el numero de muestra correspondientes
+     for (x=0;x<(numSetsFIFO*9);x++){      //0-224
+         if ((x==0)||(x%9==0)){
+            tramaCompleta[contFIFO+contMuestras+x] = contMuestras;
+            tramaCompleta[contFIFO+contMuestras+x+1] = datosFIFO[x];
+            contMuestras++;
+         } else {
+            tramaCompleta[contFIFO+contMuestras+x] = datosFIFO[x];
+         }
+     }
+
+     contFIFO = (contMuestras*9);                                               //Incrementa el contador de FIFOs
+
+     contTimer1++;                                                              //Incrementa una unidad cada vez que entra a la interrupcion por Timer1
+     
+     if (contTimer1==numTMR1){                                                  //Verifica si se cumplio el numero de interrupciones por TMR1 para la tasa de muestreo seleccionada
+        T1CON.TON = 0;                                                          //Apaga el Timer1
+        banCiclo = 1;                                                           //Activa la bandera que indica que se completo un ciclo de medicion
+        contTimer1 = 0;                                                         //Limpia el contador de interrupciones por Timer1
+     }
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Interrupcion UART1
 void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
@@ -444,10 +496,9 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            horaSistema = RecuperarHoraRTC();                                    //Recupera la hora del RTC
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
-           //fuenteReloj = 0;
-           fuenteReloj = 2;                                                     //Se queda aqui
+           fuenteReloj = 0;
            banSetReloj = 1;                                                     //Activa la bandera para hacer uso de la hora GPS
-           InterrupcionP1(0xB2);                                                //Envia la hora local a la RPi
+           InterrupcionP2();
            U1RXIE_bit = 0;
         }
      }
@@ -477,7 +528,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            for (x=0;x<6;x++){
                datosGPS[x] = tramaGPS[7+x];                                     //Guarda los datos de hhmmss
            }
-
+           
            for (x=50;x<60;x++){
                if (tramaGPS[x]==0x2C){                                          //Busca el simbolo "," a partir de la posicion 50
                    for (y=0;y<6;y++){
@@ -490,82 +541,19 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            fechaSistema = RecuperarFechaGPS(datosGPS);                          //Recupera la fecha del GPS
            DS3234_setDate(horaSistema, fechaSistema);                           //Configura la hora en el RTC con la hora recuperada de la RPi
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del gps
-           fuenteReloj = 1;                                                     //Indica que se obtuvo la hora del GPS
+           fuenteReloj = 1;
         } else {
            //Recupera la hora del RTC:
            horaSistema = RecuperarHoraRTC();                                    //Recupera la hora del RTC
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
-           fuenteReloj = 0;                                                     //Indica que se obtuvo la hora del RTC
+           fuenteReloj = 0;
         }
-
-        banSetReloj = 1;                                                        //Activa la bandera para hacer uso de la hora
-        InterrupcionP1(0xB2);                                                   //Envia la hora local a la RPi
+        
+        banSetReloj = 1;                                                        //Activa la bandera para hacer uso de la hora GPS
+        InterrupcionP2();                                                       //Genera el pulso P2 para producir la interrupcion en la RPi
         U1RXIE_bit = 0;
      }
 
 }
-//*****************************************************************************************************************************************
-
-/*
-
-//*****************************************************************************************************************************************
-//Interrupcion UART2
-void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
-
-     //Recupera el byte recibido en cada interrupcion:
-     U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
-     byteUART2 = U2RXREG;                                                       //Lee el byte de la trama enviada por el GPS
-     U2STA.OERR = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
-
-     //Recupera el pyload de la trama UART:                                     //Aqui deberia entrar despues de recuperar la cabecera de trama
-     if (banUTI==2){
-        if (i_uart<numDatosPyload){
-           tramaPyloadUART[i_uart] = byteUART2;
-           i_uart++;
-        } else {
-           banUTI = 0;                                                          //Limpia la bandera de inicio de trama
-           banUTC = 1;                                                          //Activa la bandera de trama completa
-        }
-     }
-
-     //Recupera la cabecera de la trama UART:                                   //Aqui deberia entrar primero cada vez que se recibe una trama nueva
-     if ((banUTI==0)&&(banUTC==0)){
-        if (byteUART2==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           banUTI = 1;
-           i_uart = 0;
-        }
-     }
-     if ((banUTI==1)&&(i_uart<4)){
-        tramaCabeceraUART[i_uart] = byteUART2;                                  //Recupera los datos de cabecera de la trama UART
-        i_uart++;
-     }
-     if ((banUTI==1)&&(i_uart==4)){
-        numDatosPyload = tramaCabeceraUART[2];
-        banUTI = 2;
-        i_uart = 0;
-     }
-     
-     //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
-     if (banUTC==1){
-     
-         //PRUEBA//
-         TEST = ~TEST;                                                          //Indica si se completo la trama
-         for (x=0;x<6;x++) {
-             tiempo[x] = tramaPyloadUART[x];                                    //LLeno la trama tiempo con el payload de la trama recuperada
-         }
-         banSetReloj=1;                                                         //Activa la bandera para enviar la hora a la RPI por SPI
-         //Genera el pulso P1 para producir la interrupcion externa en la RPi:
-         RP1 = 1;
-         Delay_us(20);
-         RP1 = 0;
-         //FIN PRUEBA//
-         
-         banUTC = 0;
-     }
-
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-*/

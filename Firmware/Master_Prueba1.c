@@ -25,8 +25,8 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 //Variables y constantes para la peticion y respuesta de datos
 sbit RP1 at LATA4_bit;                                                          //Definicion del pin P1
 sbit RP1_Direction at TRISA4_bit;
-sbit TEST at LATA1_bit;                                                        //Definicion del pin Test
-sbit TEST_Direction at TRISA1_bit;
+sbit TEST at LATB12_bit;                                                        //Definicion del pin Test
+sbit TEST_Direction at TRISB12_bit;
 
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
@@ -37,8 +37,7 @@ unsigned char datosFIFO[243];                                                   
 unsigned short numFIFO, numSetsFIFO;                                            //Variablea para almacenar el numero de muestras y sets recuperados del buffer FIFO
 unsigned short contTimer1;
 unsigned char tramaCompleta[2506];                                              //Vector para almacenar 10 vectores datosFIFO, 250 cabeceras de muestras y el vector tiempo
-unsigned char tramaSalida[2506];                                                //Variable para contar el numero de veces que entra a la interrupcion por Timer 1
-unsigned char tramaPrueba[10];                                                  //Trama de 10 elementos para probar la comunicacion RS485
+unsigned char tramaSalida[2506];                                                      //Variable para contar el numero de veces que entra a la interrupcion por Timer 1
 
 unsigned int i, x, y, i_gps, j;
 unsigned short buffer;
@@ -52,7 +51,6 @@ unsigned short banUTI, banUTF, banUTC;                                          
 unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
 unsigned short banMuestrear, banLeer, banConf;
 unsigned short banOperacion, tipoOperacion;
-unsigned short banCheck;
 
 unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
 unsigned short fuenteReloj;
@@ -81,9 +79,9 @@ void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsign
 void main() {
 
      ConfiguracionPrincipal();
-     DS3234_init();
-     //GPS_init(1,1);
-
+     GPS_init(0,1);                                                             //El primer valor es 1 cuando el gps se configura por primera vez, el segundo valor es 1 para trama tipo GPRMC
+     
+     
      //Banderas de control de la trama UART:
      banOperacion = 0;
      tipoOperacion = 0;
@@ -100,14 +98,11 @@ void main() {
      banTIGPS = 0;
      banTFGPS = 0;
      banTCGPS = 0;
-     fuenteReloj = 0;
 
      banMuestrear = 0;                                                          //Inicia el programa con esta bandera en bajo para permitir que la RPi envie la peticion de inicio de muestreo
      banInicio = 0;                                                             //Bandera de inicio de muestreo
      banLeer = 0;
      banConf = 0;
-
-     banCheck = 0;
 
      i = 0;
      x = 0;
@@ -155,31 +150,23 @@ void ConfiguracionPrincipal(){
      //Configuracion de puertos
      ANSELA = 0;                                                                //Configura PORTA como digital     *
      ANSELB = 0;                                                                //Configura PORTB como digital     *
-     
-     TRISA1_bit = 0;                                                            //Configura el pin A2 como salida  *
-     TRISA2_bit = 0;                                                            //Configura el pin A2 como salida  *
      TRISA3_bit = 0;                                                            //Configura el pin A3 como salida  *
      TRISA4_bit = 0;                                                            //Configura el pin A4 como salida  *
-     TRISB4_bit = 0;                                                            //Configura el pin B4 como salida  *
      TRISB12_bit = 0;                                                           //Configura el pin B12 como salida *
-     
      TRISB10_bit = 1;                                                           //Configura el pin B10 como entrada *
      TRISB11_bit = 1;                                                           //Configura el pin B11 como entrada *
      TRISB13_bit = 1;                                                           //Configura el pin B13 como entrada *
-     TRISB14_bit = 1;
-     TRISB15_bit = 1;                                                           //Configura el pin B15 como entrada *
-
      INTCON2.GIE = 1;                                                           //Habilita las interrupciones globales *
      
-    //Configuracion del puerto UART1
+     //Configuracion del puerto UART1
      RPINR18bits.U1RXR = 0x22;                                                  //Configura el pin RB2/RPI34 como Rx1
      RPOR0bits.RP35R = 0x01;                                                    //Configura el Tx1 en el pin RB3/RP35
-     UART1_Init(9600);                                                        //Inicializa el UART1 con una velocidad de 115200 baudios
+     UART1_Init(9600);                                                          //Inicializa el UART1 con una velocidad de 9600 baudios
      U1RXIE_bit = 0;                                                            //Desabilita la interrupcion por UART1 RX
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U1STAbits.URXISEL = 0x00;
-/*
+
      //Configuracion del puerto UART2
      RPINR19bits.U2RXR = 0x2F;                                                  //Configura el pin RB15/RPI47 como Rx2
      RPOR1bits.RP36R = 0x03;                                                    //Configura el Tx2 en el pin RB4/RP36
@@ -188,21 +175,13 @@ void ConfiguracionPrincipal(){
      U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC7bits.U2RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U2STAbits.URXISEL = 0x00;
-*/
+
      //Configuracion del puerto SPI1 en modo Esclavo
      SPI1STAT.SPIEN = 1;                                                        //Habilita el SPI1 *
      SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
      SPI1IE_bit = 1;                                                            //Habilita la interrupcion por SPI1  *
      SPI1IF_bit = 0;                                                            //Limpia la bandera de interrupcion por SPI *
      IPC2bits.SPI1IP = 0x03;                                                    //Prioridad de la interrupcion SPI1
-     
-     //Configuracion del puerto SPI2 en modo Master
-     RPINR22bits.SDI2R = 0x21;                                                  //Configura el pin RB1/RPI33 como SDI2 *
-     RPOR2bits.RP38R = 0x08;                                                    //Configura el SDO2 en el pin RB6/RP38 *
-     RPOR1bits.RP37R = 0x09;                                                    //Configura el SCK2 en el pin RB5/RP37 *
-     SPI2STAT.SPIEN = 1;                                                        //Habilita el SPI2 *
-     SPI2_Init();                                                               //Inicializa el modulo SPI2
-     CS_DS3234 = 1;                                                             //Pone en alto el CS del RTC
 
      //Configuracion de la interrupcion externa INT1
      RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
@@ -218,12 +197,6 @@ void ConfiguracionPrincipal(){
 //*****************************************************************************************************************************************
 //Funcion para realizar la interrupcion en la RPi
  void InterrupcionP1(unsigned short operacion){
-     //Si se ejecuta una operacion de tiempo, habilita la interrupcion INT1 para incrementar la hora del sistema con cada pulso PPS
-     if (operacion==0xB2){
-        if (INT1IE_bit==0){
-           INT1IE_bit = 1;
-        }
-     }
      banOperacion = 0;                                                          //Encera la bandera para permitir una nueva peticion de operacion
      tipoOperacion = operacion;                                                 //Carga en la variable el tipo de operacion requerido
      //Genera el pulso P1 para producir la interrupcion externa en la RPi
@@ -282,8 +255,11 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //************************************************************************************************************************************
      //Rutina para enviar la peticion de operacion a la RPi  (C:0xA0   F:0xF0)
      if ((banOperacion==0)&&(buffer==0xA0)) {
+        SPI1BUF = tipoOperacion;
         banOperacion = 1;                                                       //Activa la bandera para enviar el tipo de operacion requerido a la RPi
-        SPI1BUF = tipoOperacion;                                                //Carga en el buffer el tipo de operacion requerido
+     }
+     if ((banOperacion==1)&&(buffer!=0xA0)&&(buffer!=0xF0)){
+        SPI1BUF = tipoOperacion;                                                //Envia a la RPi el tipo de operacion requerido
      }
      if ((banOperacion==1)&&(buffer==0xF0)){
         banOperacion = 0;                                                       //Limpia la bandera
@@ -292,13 +268,11 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //************************************************************************************************************************************
      
      //************************************************************************************************************************************
-     //Rutinas de control del acelerometro:
-     
      //Rutina de lectura de los datos del acelerometro (C:0xA3   F:0xF3):
      if ((banLec==1)&&(buffer==0xA3)){                                          //Verifica si la bandera de inicio de trama esta activa
         banLec = 2;                                                             //Activa la bandera de lectura
         i = 0;
-        SPI1BUF = tramaCompleta[i];                                             //**Duda
+        SPI1BUF = tramaCompleta[i];
      }
      if ((banLec==2)&&(buffer!=0xF3)){
         SPI1BUF = tramaCompleta[i];
@@ -311,8 +285,6 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //************************************************************************************************************************************
 
      //************************************************************************************************************************************
-     //Rutinas de manejo de tiempo:
-     
      //Rutina para obtener la hora de la RPi (C:0xA4   F:0xF4):
      if ((banSetReloj==0)&&(buffer==0xA4)){
          banEsc = 1;
@@ -325,10 +297,9 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      if ((banEsc==1)&&(buffer==0xF4)){
         horaSistema = RecuperarHoraRPI(tiempoRPI);                              //Recupera la hora de la RPi
         fechaSistema = RecuperarFechaRPI(tiempoRPI);                            //Recupera la fecha de la RPi
-        //**Esta fallando de nuevo el chip DS3234
-        //DS3234_setDate(horaSistema, fechaSistema);                              //Configura la hora en el RTC
-        //horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
-        //fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
+        DS3234_setDate(horaSistema, fechaSistema);                              //Configura la hora en el RTC
+        horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
+        fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
         banEsc = 0;
         banSetReloj = 1;
@@ -350,10 +321,9 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         SPI1BUF = 0xFF;
      }
 
-     //Rutina para obtener la hora del GPS(C:0xA6   F:0xF6):
      if ((banSetReloj==0)&&(buffer==0xA6)){
         //ConfigurarGPS(confGPS[0],confGPS[1]);                                   //Configura el GPS (Configurar,NMA)
-        GPS_init(1,1);
+        GPS_init(0,1);
         banTIGPS = 0;                                                           //Limpia la bandera de inicio de trama  del GPS
         banTCGPS = 0;                                                           //Limpia la bandera de trama completa
         i_gps = 0;                                                              //Limpia el subindice de la trama GPS
@@ -375,35 +345,6 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      }
      //************************************************************************************************************************************
      
-     //************************************************************************************************************************************
-     //Rutinas de testeo:
-     
-     //Rutina para testeo de la comunicacion RS485 (C:0xA8   F:0xF8):
-     if ((banCheck==0)&&(buffer==0xA8)){
-        InterrupcionP1(0xB3);                                                   //Envia una solicitud de prueba
-        banCheck = 1;
-        //**Aqui debo incluir la rutina de peticion de la trama de prueba al nodo por medio de RS485
-        for (x=0;x<10;x++){
-            tramaPrueba[x] = x;
-        }
-     }
-     
-     //Rutina para enviar la trama de prueba (C:0xA9   F:0xF9):
-     if ((banCheck==1)&&(buffer==0xA9)){
-        j = 0;
-        SPI1BUF = tramaPrueba[j];
-        j++;
-     }
-     if ((banCheck==1)&&(buffer!=0xA9)&&(buffer!=0xF9)){
-        SPI1BUF = tramaPrueba[j];
-        j++;
-     }
-     if ((banCheck==1)&&(buffer==0xF9)){
-        banCheck = 0;
-     }
-     
-     //************************************************************************************************************************************
-     
 }
 //*****************************************************************************************************************************************
 
@@ -413,7 +354,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
      
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
      
-     TEST = ~TEST;
+     //TEST = ~TEST;
      horaSistema++;                                                             //Incrementa el reloj del sistema
 
      if (horaSistema==86400){                                                   //(24*3600)+(0*60)+(0) = 86400
@@ -444,8 +385,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            horaSistema = RecuperarHoraRTC();                                    //Recupera la hora del RTC
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
-           //fuenteReloj = 0;
-           fuenteReloj = 2;                                                     //Se queda aqui
+           fuenteReloj = 0;
            banSetReloj = 1;                                                     //Activa la bandera para hacer uso de la hora GPS
            InterrupcionP1(0xB2);                                                //Envia la hora local a la RPi
            U1RXIE_bit = 0;
@@ -490,24 +430,22 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            fechaSistema = RecuperarFechaGPS(datosGPS);                          //Recupera la fecha del GPS
            DS3234_setDate(horaSistema, fechaSistema);                           //Configura la hora en el RTC con la hora recuperada de la RPi
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del gps
-           fuenteReloj = 1;                                                     //Indica que se obtuvo la hora del GPS
+           fuenteReloj = 1;
         } else {
            //Recupera la hora del RTC:
            horaSistema = RecuperarHoraRTC();                                    //Recupera la hora del RTC
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
-           fuenteReloj = 0;                                                     //Indica que se obtuvo la hora del RTC
+           fuenteReloj = 0;
         }
 
-        banSetReloj = 1;                                                        //Activa la bandera para hacer uso de la hora
+        banSetReloj = 1;                                                        //Activa la bandera para hacer uso de la hora GPS
         InterrupcionP1(0xB2);                                                   //Envia la hora local a la RPi
         U1RXIE_bit = 0;
      }
 
 }
 //*****************************************************************************************************************************************
-
-/*
 
 //*****************************************************************************************************************************************
 //Interrupcion UART2
@@ -567,5 +505,3 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-*/
