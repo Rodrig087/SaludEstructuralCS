@@ -25,8 +25,19 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 //Variables y constantes para la peticion y respuesta de datos
 sbit RP1 at LATA4_bit;                                                          //Definicion del pin P1
 sbit RP1_Direction at TRISA4_bit;
-sbit TEST at LATA1_bit;                                                        //Definicion del pin Test
-sbit TEST_Direction at TRISA1_bit;
+sbit MSRS485 at LATB11_bit;                                                     //Definicion del pin MS RS485
+sbit MSRS485_Direction at TRISB11_bit;
+//Pines de interrupcion para manejar los nodos:
+sbit INT_SINC at LATA1_bit;                                                     //Comparte con el pin TEST
+sbit INT_SINC_Direction at TRISA1_bit;
+sbit INT_SINC1 at LATA0_bit;
+sbit INT_SINC1_Direction at TRISA0_bit;
+sbit INT_SINC2 at LATA3_bit;
+sbit INT_SINC2_Direction at TRISA3_bit;
+sbit INT_SINC3 at LATB10_bit;
+sbit INT_SINC3_Direction at TRISB10_bit;
+sbit INT_SINC4 at LATB12_bit;
+sbit INT_SINC4_Direction at TRISB12_bit;
 
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
@@ -127,8 +138,14 @@ void main() {
      byteGPS = 0;
 
      RP1 = 0;
-     TEST = 1;
+     INT_SINC = 1;                                                              //Enciende el pin TEST
+     INT_SINC1 = 0;                                                             //Inicializa los pines de sincronizacion en 0
+     INT_SINC2 = 0;
+     INT_SINC3 = 0;
+     INT_SINC4 = 0;
 
+     MSRS485 = 0;                                                               //Establece el Max485 en modo de lectura;
+     
      SPI1BUF = 0x00;
 
      while(1){
@@ -156,21 +173,23 @@ void ConfiguracionPrincipal(){
      ANSELA = 0;                                                                //Configura PORTA como digital     *
      ANSELB = 0;                                                                //Configura PORTB como digital     *
      
-     TRISA1_bit = 0;                                                            //Configura el pin A2 como salida  *
-     TRISA2_bit = 0;                                                            //Configura el pin A2 como salida  *
-     TRISA3_bit = 0;                                                            //Configura el pin A3 como salida  *
-     TRISA4_bit = 0;                                                            //Configura el pin A4 como salida  *
-     TRISB4_bit = 0;                                                            //Configura el pin B4 como salida  *
-     TRISB12_bit = 0;                                                           //Configura el pin B12 como salida *
+     TRISA0_bit = 0;
+     TRISA1_bit = 0;
+     TRISA2_bit = 0;
+     TRISA3_bit = 0;
+     TRISA4_bit = 0;
+     TRISB4_bit = 0;
+     TRISB10_bit = 0;
+     TRISB11_bit = 0;
+     TRISB12_bit = 0;
      
      TRISB10_bit = 1;                                                           //Configura el pin B10 como entrada *
-     TRISB11_bit = 1;                                                           //Configura el pin B11 como entrada *
      TRISB13_bit = 1;                                                           //Configura el pin B13 como entrada *
      TRISB14_bit = 1;
-     TRISB15_bit = 1;                                                           //Configura el pin B15 como entrada *
+     //TRISB15_bit = 1;                                                           //Configura el pin B15 como entrada *
 
      INTCON2.GIE = 1;                                                           //Habilita las interrupciones globales *
-     
+     /*
     //Configuracion del puerto UART1
      RPINR18bits.U1RXR = 0x22;                                                  //Configura el pin RB2/RPI34 como Rx1
      RPOR0bits.RP35R = 0x01;                                                    //Configura el Tx1 en el pin RB3/RP35
@@ -179,16 +198,16 @@ void ConfiguracionPrincipal(){
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U1STAbits.URXISEL = 0x00;
-/*
+     */
      //Configuracion del puerto UART2
      RPINR19bits.U2RXR = 0x2F;                                                  //Configura el pin RB15/RPI47 como Rx2
      RPOR1bits.RP36R = 0x03;                                                    //Configura el Tx2 en el pin RB4/RP36
      UART2_Init_Advanced(2000000, 2, 1, 1);                                     //Inicializa el UART2 con una velocidad de 2Mbps
-     U2RXIE_bit = 0;                                                            //Desabilita la interrupcion por UART2 RX
+     U2RXIE_bit = 1;                                                            //Desabilita la interrupcion por UART2 RX
      U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC7bits.U2RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U2STAbits.URXISEL = 0x00;
-*/
+
      //Configuracion del puerto SPI1 en modo Esclavo
      SPI1STAT.SPIEN = 1;                                                        //Habilita el SPI1 *
      SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
@@ -206,7 +225,7 @@ void ConfiguracionPrincipal(){
 
      //Configuracion de la interrupcion externa INT1
      RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
-     INT1IE_bit = 0;                                                            //Habilita la interrupcion externa INT1
+     INT1IE_bit = 0;                                                            //Desabilita la interrupcion externa INT1
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
      IPC5bits.INT1IP = 0x01;                                                    //Prioridad en la interrupocion externa 1
 
@@ -231,40 +250,6 @@ void ConfiguracionPrincipal(){
      Delay_us(20);
      RP1 = 0;
 }
-//*****************************************************************************************************************************************
-
-//*****************************************************************************************************************************************
-//Funcion para enviar una trama de n datos a travez del UART
-void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload){
-     
-     unsigned int iDatos;
-     
-     if (puertoUART == 1){
-        UART1_Write(0x3A);                                                      //Envia la cabecera de la trama
-        UART1_Write(direccion);                                                 //Envia la direccion del destinatario
-        UART1_Write(numDatos);                                                  //Envia el numero de datos
-        UART1_Write(funcion);                                                   //Envia el codigo de la funcion
-        for (iDatos=0;iDatos<numDatos;iDatos++){                                //Envia la carga util de datos
-            UART1_Write(payload[iDatos]);
-        }
-        UART1_Write(0x0D);                                                      //Envia el primer delimitador de final de la trama
-        UART1_Write(0x0A);                                                      //Envia el segundo delimitador de final de la trama
-     }
-     
-     if (puertoUART == 2){
-        UART2_Write(0x3A);                                                      //Envia la cabecera de la trama
-        UART2_Write(direccion);                                                 //Envia la direccion del destinatario
-        UART2_Write(numDatos);                                                  //Envia el numero de datos
-        UART2_Write(funcion);                                                   //Envia el codigo de la funcion
-        for (iDatos=0;iDatos<numDatos;iDatos++){                                //Envia la carga util de datos
-            UART2_Write(payload[iDatos]);
-        }
-        UART2_Write(0x0D);                                                      //Envia el primer delimitador de final de la trama
-        UART2_Write(0x0A);                                                      //Envia el segundo delimitador de final de la trama
-     }
-
-}
-
 //*****************************************************************************************************************************************
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -380,12 +365,12 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      
      //Rutina para testeo de la comunicacion RS485 (C:0xA8   F:0xF8):
      if ((banCheck==0)&&(buffer==0xA8)){
-        InterrupcionP1(0xB3);                                                   //Envia una solicitud de prueba
+        //InterrupcionP1(0xB3);                                                   //Envia una solicitud de prueba
         banCheck = 1;
         //**Aqui debo incluir la rutina de peticion de la trama de prueba al nodo por medio de RS485
-        for (x=0;x<10;x++){
+        /*for (x=0;x<10;x++){
             tramaPrueba[x] = x;
-        }
+        }*/
      }
      
      //Rutina para enviar la trama de prueba (C:0xA9   F:0xF9):
@@ -400,6 +385,10 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      }
      if ((banCheck==1)&&(buffer==0xF9)){
         banCheck = 0;
+        //limpia la trama de prueba
+        /*for (x=0;x<10;x++){
+            tramaPrueba[x] = 0;
+        }*/
      }
      
      //************************************************************************************************************************************
@@ -412,16 +401,22 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
 void int_1() org IVT_ADDR_INT1INTERRUPT {
      
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
+     //U2RXIE_bit = 1;                                                            //Activa interrupcion U2
      
-     TEST = ~TEST;
      horaSistema++;                                                             //Incrementa el reloj del sistema
+     //INT_SINC = ~INT_SINC;                                                      //TEST
+     
+     //Genera el pulso de interrupcion en el nodo:
+     INT_SINC4 = 1;
+     Delay_us(20);
+     INT_SINC4 = 0;
 
      if (horaSistema==86400){                                                   //(24*3600)+(0*60)+(0) = 86400
         horaSistema = 0;                                                        //Reinicia el reloj al llegar a las 24:00:00 horas
      }
-     
      if (banInicio==1){
         //Muestrear();
+        //Aqui se generan los pulsos para iniciar el muestreo en los nodos
      }
      
 }
@@ -507,8 +502,6 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 }
 //*****************************************************************************************************************************************
 
-/*
-
 //*****************************************************************************************************************************************
 //Interrupcion UART2
 void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
@@ -517,6 +510,8 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
      byteUART2 = U2RXREG;                                                       //Lee el byte de la trama enviada por el GPS
      U2STA.OERR = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
+     //OERR_bit = 0;
+     //INT_SINC = ~INT_SINC;                                                  //TEST
 
      //Recupera el pyload de la trama UART:                                     //Aqui deberia entrar despues de recuperar la cabecera de trama
      if (banUTI==2){
@@ -550,15 +545,11 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      if (banUTC==1){
      
          //PRUEBA//
-         TEST = ~TEST;                                                          //Indica si se completo la trama
-         for (x=0;x<6;x++) {
-             tiempo[x] = tramaPyloadUART[x];                                    //LLeno la trama tiempo con el payload de la trama recuperada
+         INT_SINC = ~INT_SINC;                                                  //TEST
+         for (x=0;x<10;x++) {
+             tramaPrueba[x] = tramaPyloadUART[x];                               //LLeno la trama de prueba con el payload de la trama recuperada
          }
-         banSetReloj=1;                                                         //Activa la bandera para enviar la hora a la RPI por SPI
-         //Genera el pulso P1 para producir la interrupcion externa en la RPi:
-         RP1 = 1;
-         Delay_us(20);
-         RP1 = 0;
+         InterrupcionP1(0xB3);                                                  //Envia una solicitud de prueba
          //FIN PRUEBA//
          
          banUTC = 0;
@@ -568,4 +559,3 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-*/

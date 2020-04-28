@@ -24,10 +24,8 @@ Count=0
 Count=0
 ActiveImageIndex=-1
 [OPENED_FILES]
-Count=3
+Count=1
 File0=NodoAcelerometro.c
-File1=ADXL355_SPI.c
-File2=TIEMPO_GPS.c
 [EEPROM]
 Count=0
 [ACTIVE_COMMENTS_FILES]
@@ -35,24 +33,28 @@ Count=0
 [OTHER_FILES]
 Count=0
 [SEARCH_PATH]
-Count=3
+Count=4
 Path0=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for dsPIC\defs\
 Path1=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for dsPIC\uses\
-Path2=C:\Users\Ivan\Desktop\Milton Muñoz\Proyectos\Git\SaludEstructuralCS\Firmware\NodoAcelerometro\
+Path2=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\NodoAcelerometro\
+Path3=C:\Users\Ivan\Desktop\Milton Muñoz\Proyectos\Git\SaludEstructuralCS\Firmware\NodoAcelerometro\
 [HEADER_PATH]
-Count=1
+Count=2
 Path0=C:\Users\Ivan\Desktop\Milton Muñoz\Proyectos\Git\SaludEstructuralCS\Firmware\NodoAcelerometro\
+Path1=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Librerias firmware\
 [HEADERS]
 Count=0
 [PLDS]
 Count=0
 [Useses]
-Count=5
+Count=7
 File0=C_Math
 File1=C_Stdlib
 File2=C_Type
 File3=SPI
 File4=UART
+File5=Conversions
+File6=C_String
 [EXPANDED NODES]
 Node1=Sources
 Count=1

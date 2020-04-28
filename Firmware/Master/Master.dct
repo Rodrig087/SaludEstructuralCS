@@ -3637,7 +3637,6 @@ enfltb_oc1con1_bit
 enfltb_oc2con1_bit
 enfltb_oc3con1_bit
 enfltb_oc4con1_bit
-enviartramauart
 evpol
 evpol
 evpol
@@ -5056,6 +5055,16 @@ indxhld_8_bit
 indxhld_9
 indxhld_9_bit
 int_1
+int_sinc
+int_sinc_direction
+int_sinc1
+int_sinc1_direction
+int_sinc2
+int_sinc2_direction
+int_sinc3
+int_sinc3_direction
+int_sinc4
+int_sinc4_direction
 int0ep
 int0ep
 int0ep_bit
@@ -6079,6 +6088,8 @@ mode16
 mode16_bit
 mode16_spi1con1_bit
 mode16_spi2con1_bit
+msrs485
+msrs485_direction
 msten
 msten
 msten
@@ -11120,8 +11131,6 @@ tcs_t2con_bit
 tcs_t3con_bit
 tcs_t4con_bit
 tcs_t5con_bit
-test
-test_direction
 tgate
 tgate
 tgate
@@ -12043,6 +12052,7 @@ uldiv
 unused
 unused
 urx_1
+urx_2
 urxda
 urxda
 urxda

@@ -1,6 +1,6 @@
-#line 1 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
-#line 1 "c:/users/ivan/desktop/milton muñoz/proyectos/git/saludestructuralcs/firmware/nodoacelerometro/adxl355_spi.c"
-#line 96 "c:/users/ivan/desktop/milton muñoz/proyectos/git/saludestructuralcs/firmware/nodoacelerometro/adxl355_spi.c"
+#line 1 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
+#line 96 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
 sbit CS_ADXL355 at LATA3_bit;
 unsigned short axisAddresses[] = { 0x08 ,  0x09 ,  0x0A ,  0x0B ,  0x0C ,  0x0D ,  0x0E ,  0x0F ,  0x10 };
 
@@ -93,119 +93,153 @@ unsigned int ADXL355_read_FIFO(unsigned char *vectorFIFO){
  Delay_us(5);
  return;
 }
-#line 1 "c:/users/ivan/desktop/milton muñoz/proyectos/git/saludestructuralcs/firmware/nodoacelerometro/tiempo_gps.c"
+#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/tiempo_rtc.c"
+#line 37 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/tiempo_rtc.c"
+sbit CS_DS3234 at LATA2_bit;
 
 
 
 
-void ConfigurarGPS(){
- UART1_Write_Text("$PMTK605*31\r\n");
- UART1_Write_Text("$PMTK220,1000*1F\r\n");
- UART1_Write_Text("$PMTK251,115200*1F\r\n");
- Delay_ms(1000);
- UART1_Init(115200);
- UART1_Write_Text("$PMTK313,1*2E\r\n");
- UART1_Write_Text("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n");
- UART1_Write_Text("$PMTK319,1*24\r\n");
- UART1_Write_Text("$PMTK413*34\r\n");
- UART1_Write_Text("$PMTK513,1*28\r\n");
- Delay_ms(1000);
-}
+void DS3234_init();
+void DS3234_write_byte(unsigned char address, unsigned char value);
+void DS3234_read_byte(unsigned char address, unsigned char value);
+void DS3234_setDate(unsigned long longHora, unsigned long longFecha);
+unsigned long RecuperarFechaRTC();
+unsigned long RecuperarHoraRTC();
 
 
 
 
-unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS){
 
- unsigned long tramaFecha[4];
- unsigned long fechaGPS;
- char datoStringF[3];
- char *ptrDatoStringF = &datoStringF;
- datoStringF[2] = '\0';
- tramaFecha[3] = '\0';
+void DS3234_init(){
 
-
- datoStringF[0] = tramaDatosGPS[6];
- datoStringF[1] = tramaDatosGPS[7];
- tramaFecha[0] = atoi(ptrDatoStringF);
-
-
- datoStringF[0] = tramaDatosGPS[8];
- datoStringF[1] = tramaDatosGPS[9];
- tramaFecha[1] = atoi(ptrDatoStringF);
-
-
- datoStringF[0] = tramaDatosGPS[10];
- datoStringF[1] = tramaDatosGPS[11];
- tramaFecha[2] = atoi(ptrDatoStringF);
-
- fechaGPS = (tramaFecha[0]*10000)+(tramaFecha[1]*100)+(tramaFecha[2]);
-
- return fechaGPS;
+ SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
+ DS3234_write_byte( 0x8E ,0x20);
+ DS3234_write_byte( 0x8F ,0x08);
+ SPI2_Init();
 
 }
 
 
+void DS3234_write_byte(unsigned char address, unsigned char value){
 
-
-unsigned long RecuperarHoraGPS(unsigned char *tramaDatosGPS){
-
- unsigned long tramaTiempo[4];
- unsigned long horaGPS;
- char datoString[3];
- char *ptrDatoString = &datoString;
- datoString[2] = '\0';
- tramaTiempo[3] = '\0';
-
-
- datoString[0] = tramaDatosGPS[0];
- datoString[1] = tramaDatosGPS[1];
- tramaTiempo[0] = atoi(ptrDatoString);
-
-
- datoString[0] = tramaDatosGPS[2];
- datoString[1] = tramaDatosGPS[3];
- tramaTiempo[1] = atoi(ptrDatoString);
-
-
- datoString[0] = tramaDatosGPS[4];
- datoString[1] = tramaDatosGPS[5];
- tramaTiempo[2] = atoi(ptrDatoString);
-
- horaGPS = (tramaTiempo[0]*3600)+(tramaTiempo[1]*60)+(tramaTiempo[2]);
- return horaGPS;
+ CS_DS3234 = 0;
+ SPI2_Write(address);
+ SPI2_Write(value);
+ CS_DS3234 = 1;
 
 }
 
 
+unsigned char DS3234_read_byte(unsigned char address){
 
-
-unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi){
-
- unsigned long fechaRPi;
-
- fechaRPi = ((long)tramaTiempoRpi[0]*10000)+((long)tramaTiempoRpi[1]*100)+((long)tramaTiempoRpi[2]);
-
-
- return fechaRPi;
+ unsigned char value = 0x00;
+ CS_DS3234 = 0;
+ SPI2_Write(address);
+ value = SPI2_Read(0);
+ CS_DS3234 = 1;
+ return value;
 
 }
 
 
+void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
 
+ unsigned short valueSet;
+ unsigned short hora;
+ unsigned short minuto;
+ unsigned short segundo;
+ unsigned short dia;
+ unsigned short mes;
+ unsigned short anio;
 
-unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi){
+ SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 
- unsigned long horaRPi;
+ hora = (short)(longHora / 3600);
+ minuto = (short)((longHora%3600) / 60);
+ segundo = (short)((longHora%3600) % 60);
 
- horaRPi = ((long)tramaTiempoRpi[3]*3600)+((long)tramaTiempoRpi[4]*60)+((long)tramaTiempoRpi[5]);
+ dia = (short)(longFecha / 10000);
+ mes = (short)((longFecha%10000) / 100);
+ anio = (short)((longFecha%10000) % 100);
 
+ segundo = Dec2Bcd(segundo);
+ minuto = Dec2Bcd(minuto);
+ hora = Dec2Bcd(hora);
+ dia = Dec2Bcd(dia);
+ mes = Dec2Bcd(mes);
+ anio = Dec2Bcd(anio);
 
- return horaRPi;
+ DS3234_write_byte( 0x80 , segundo);
+ DS3234_write_byte( 0x81 , minuto);
+ DS3234_write_byte( 0x82 , hora);
+ DS3234_write_byte( 0x84 , dia);
+ DS3234_write_byte( 0x85 , mes);
+ DS3234_write_byte( 0x86 , anio);
+
+ SPI2_Init();
+
+ return;
 
 }
 
 
+unsigned long RecuperarHoraRTC(){
+
+ unsigned short valueRead;
+ unsigned long hora;
+ unsigned long minuto;
+ unsigned long segundo;
+ unsigned long horaRTC;
+
+ SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
+
+ valueRead = DS3234_read_byte( 0x00 );
+ valueRead = Bcd2Dec(valueRead);
+ segundo = (long)valueRead;
+ valueRead = DS3234_read_byte( 0x01 );
+ valueRead = Bcd2Dec(valueRead);
+ minuto = (long)valueRead;
+ valueRead = 0x1F & DS3234_read_byte( 0x02 );
+ valueRead = Bcd2Dec(valueRead);
+ hora = (long)valueRead;
+
+ horaRTC = (hora*3600)+(minuto*60)+(segundo);
+
+ SPI2_Init();
+
+ return horaRTC;
+
+}
+
+
+unsigned long RecuperarFechaRTC(){
+
+ unsigned short valueRead;
+ unsigned long dia;
+ unsigned long mes;
+ unsigned long anio;
+ unsigned long fechaRTC;
+
+ SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
+
+ valueRead = DS3234_read_byte( 0x04 );
+ valueRead = Bcd2Dec(valueRead);
+ dia = (long)valueRead;
+ valueRead = 0x1F & DS3234_read_byte( 0x05 );
+ valueRead = Bcd2Dec(valueRead);
+ mes = (long)valueRead;
+ valueRead = DS3234_read_byte( 0x06 );
+ valueRead = Bcd2Dec(valueRead);
+ anio = (long)valueRead;
+
+ fechaRTC = (dia*10000)+(mes*100)+(anio);
+
+ SPI2_Init();
+
+ return fechaRTC;
+
+}
 
 
 void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema){
@@ -232,15 +266,56 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
  tramaTiempoSistema[4] = minuto;
  tramaTiempoSistema[5] = segundo;
 
+}
+#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/rs485.c"
+
+sbit MSRS485 at LATB12_bit;
+sbit MSRS485_Direction at TRISB12_bit;
+
+
+
+void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload){
+
+ unsigned int iDatos;
+
+ if (puertoUART == 1){
+ MSRS485 = 1;
+ UART1_Write(0x3A);
+ UART1_Write(direccion);
+ UART1_Write(numDatos);
+ UART1_Write(funcion);
+ for (iDatos=0;iDatos<numDatos;iDatos++){
+ UART1_Write(payload[iDatos]);
+ }
+ UART1_Write(0x0D);
+ UART1_Write(0x0A);
+ while(UART1_Tx_Idle()==0);
+ MSRS485 = 0;
+ }
+
+ if (puertoUART == 2){
+ MSRS485 = 1;
+ UART2_Write(0x3A);
+ UART2_Write(direccion);
+ UART2_Write(numDatos);
+ UART2_Write(funcion);
+ for (iDatos=0;iDatos<numDatos;iDatos++){
+ UART2_Write(payload[iDatos]);
+ }
+ UART2_Write(0x0D);
+ UART2_Write(0x0A);
+ while(UART1_Tx_Idle()==0);
+ MSRS485 = 0;
+ }
 
 }
-#line 18 "C:/Users/Ivan/Desktop/Milton Muñoz/Proyectos/Git/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
-sbit RP1 at LATA4_bit;
-sbit RP1_Direction at TRISA4_bit;
-sbit RP2 at LATB4_bit;
-sbit RP2_Direction at TRISB4_bit;
-sbit TEST at LATB12_bit;
-sbit TEST_Direction at TRISB12_bit;
+#line 19 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+sbit TEST at LATA2_bit;
+sbit TEST_Direction at TRISA2_bit;
+sbit CsADXL at LATA3_bit;
+sbit CsADXL_Direction at TRISA3_bit;
+sbit CsSD at LATB0_bit;
+sbit CsSD_Direction at TRISB0_bit;
 
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
@@ -252,6 +327,7 @@ unsigned char tramaCompleta[2506];
 unsigned char tramaSalida[2506];
 unsigned short numFIFO, numSetsFIFO;
 unsigned short contTimer1;
+unsigned char tramaPrueba[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 unsigned int i, x, y, i_gps, j;
 unsigned short buffer;
@@ -281,14 +357,6 @@ unsigned int numDatosPyload;
 
 void ConfiguracionPrincipal();
 void Muestrear();
-void ConfigurarGPS();
-unsigned long RecuperarHoraGPS(unsigned char *tramaDatosGPS);
-unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS);
-unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi);
-unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi);
-void AjustarTiempoSistema(unsigned long hGPS, unsigned long fGPS, unsigned char *tramaTiempoSistema);
-void InterrupcionP2();
-EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload);
 
 
 
@@ -297,7 +365,6 @@ EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned sh
 void main() {
 
  ConfiguracionPrincipal();
-
 
  tasaMuestreo = 1;
  ADXL355_init(tasaMuestreo);
@@ -337,8 +404,7 @@ void main() {
 
  byteUART = 0;
 
- RP1 = 0;
- RP2 = 0;
+ MSRS485 = 0;
  TEST = 1;
 
  SPI1BUF = 0x00;
@@ -348,7 +414,6 @@ void main() {
  }
 
 }
-
 
 
 
@@ -367,13 +432,15 @@ void ConfiguracionPrincipal(){
 
  ANSELA = 0;
  ANSELB = 0;
+
+ TRISA2_bit = 0;
  TRISA3_bit = 0;
- TRISA4_bit = 0;
- TRISB4_bit = 0;
+ TRISB0_bit = 0;
  TRISB12_bit = 0;
- TRISB10_bit = 1;
- TRISB11_bit = 1;
- TRISB13_bit = 1;
+
+ TRISA4_bit = 1;
+ TRISB14_bit = 1;
+
  INTCON2.GIE = 1;
 
 
@@ -397,7 +464,7 @@ void ConfiguracionPrincipal(){
 
 
  RPINR0 = 0x2E00;
- INT1IE_bit = 0;
+ INT1IE_bit = 1;
  INT1IF_bit = 0;
  IPC5bits.INT1IP = 0x01;
 
@@ -462,49 +529,11 @@ void Muestrear(){
 
  banLec = 1;
 
- RP1 = 1;
- Delay_us(20);
- RP1 = 0;
-
  }
 
  contCiclos++;
 
 }
-
-
-
-
-void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload){
-
- unsigned int iDatos;
-
- if (puertoUART == 1){
- UART1_Write(0x3A);
- UART1_Write(direccion);
- UART1_Write(numDatos);
- UART1_Write(funcion);
- for (iDatos=0;iDatos<numDatos;iDatos++){
- UART1_Write(payload[iDatos]);
- }
- UART1_Write(0x0D);
- UART1_Write(0x0A);
- }
-
- if (puertoUART == 2){
- UART2_Write(0x3A);
- UART2_Write(direccion);
- UART2_Write(numDatos);
- UART2_Write(funcion);
- for (iDatos=0;iDatos<numDatos;iDatos++){
- UART2_Write(payload[iDatos]);
- }
- UART2_Write(0x0D);
- UART2_Write(0x0A);
- }
-
-}
-
 
 
 
@@ -517,8 +546,10 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  INT1IF_bit = 0;
 
-
+ TEST = ~TEST;
  horaSistema++;
+
+ EnviarTramaRS485(1, 1, 10, 2, tramaPrueba);
 
  if (horaSistema==86400){
  horaSistema = 0;
@@ -613,7 +644,6 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  if (banUTC==1){
 
 
- TEST = ~TEST;
  for (x=0;x<6;x++) {
  tiempo[x] = tramaPyloadUART[x];
  if (tiempo[x]<59){
@@ -621,7 +651,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  }
  banSetReloj=1;
- EnviarTramaUART(1, 255, 6, 2, tiempo);
+
 
 
  banUTC = 0;

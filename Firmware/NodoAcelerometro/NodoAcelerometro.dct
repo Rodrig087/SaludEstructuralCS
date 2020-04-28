@@ -1307,6 +1307,8 @@ bantfgps
 bantigps
 banutc
 banuti
+bcd2dec
+bcd2dec16
 bch
 bch
 bch
@@ -1490,6 +1492,8 @@ bwm0
 bwm1
 bwm2
 bwm3
+bytetohex
+bytetostr
 byteuart
 byteuart1
 c
@@ -2334,7 +2338,6 @@ con_cm2con_bit
 con_cm3con_bit
 con_cm4con_bit
 configuracionprincipal
-configurargps
 contciclos
 contfifo
 contmuestras
@@ -2569,6 +2572,9 @@ cref_cm2con_bit
 cref_cm3con_bit
 cref_cm4con_bit
 cs_adxl355
+cs_ds3234
+csadxl
+csadxl_direction
 cscna
 cscna
 cscna_bit
@@ -2638,6 +2644,8 @@ css8_bit
 css9
 css9
 css9_bit
+cssd
+cssd_direction
 ctmucon1
 ctmucon1bits
 ctmucon2
@@ -2751,6 +2759,8 @@ dcount_8
 dcount_8_bit
 dcount_9
 dcount_9_bit
+dec2bcd
+dec2bcd16
 delay_100ms
 delay_10ms
 delay_10us
@@ -3251,6 +3261,10 @@ dpcu_6
 dpcu_6_bit
 dpcu_7
 dpcu_7_bit
+ds3234_init
+ds3234_read_byte
+ds3234_setdate
+ds3234_write_byte
 dsadr
 dsadr_0
 dsadr_0_bit
@@ -3631,7 +3645,7 @@ enfltb_oc1con1_bit
 enfltb_oc2con1_bit
 enfltb_oc3con1_bit
 enfltb_oc4con1_bit
-enviartramauart
+enviartramars485
 evpol
 evpol
 evpol
@@ -3725,6 +3739,7 @@ fexu_6_bit
 fexu_7
 fexu_7_bit
 float_fpack
+floattostr
 floor
 flt1r
 flt1r_0
@@ -5305,6 +5320,9 @@ inttmrl_8
 inttmrl_8_bit
 inttmrl_9
 inttmrl_9_bit
+inttohex
+inttostr
+inttostrwithzeros
 inttreg
 inttregbits
 iocon1
@@ -5931,6 +5949,12 @@ lock_
 lock_bit
 log
 log10
+longinttohex
+longinttostrwithzeros
+longtostr
+longwordtohex
+longwordtostr
+longwordtostrwithzeros
 lpback
 lpback
 lpback
@@ -5950,6 +5974,7 @@ lstch0
 lstch1
 lstch2
 lstch3
+ltrim
 main
 matherr
 matherr
@@ -5996,6 +6021,11 @@ mdcs_bit
 mdcs_pwmcon1_bit
 mdcs_pwmcon2_bit
 mdcs_pwmcon3_bit
+memchr
+memcmp
+memcpy
+memmove
+memset
 mi2c1ie
 mi2c1ie
 mi2c1ie_bit
@@ -6062,6 +6092,8 @@ mode16_bit
 mode16_spi1con1_bit
 mode16_spi2con1_bit
 modf
+msrs485
+msrs485_direction
 msten
 msten
 msten
@@ -9037,10 +9069,8 @@ rcount_8
 rcount_8_bit
 rcount_9
 rcount_9_bit
-recuperarfechagps
-recuperarfecharpi
-recuperarhoragps
-recuperarhorarpi
+recuperarfechartc
+recuperarhorartc
 refocon
 refoconbits
 refomd
@@ -9080,10 +9110,6 @@ rosel_bit
 rosslp
 rosslp
 rosslp_bit
-rp1
-rp1_direction
-rp2
-rp2_direction
 rp20r
 rp20r_0
 rp20r_0_bit
@@ -9336,6 +9362,7 @@ rsen
 rsen_bit
 rsen_i2c1con_bit
 rsen_i2c2con_bit
+rtrim
 rtsmd
 rtsmd
 rtsmd
@@ -9632,6 +9659,8 @@ sftacerr_bit
 sght
 sght
 sght_bit
+shorttohex
+shorttostr
 si2c1ie
 si2c1ie
 si2c1ie_bit
@@ -10614,6 +10643,11 @@ step9_7_bit
 stkerr
 stkerr
 stkerr_bit
+strcat
+strchr
+strcmp
+strcpy
+strcspn
 stren
 stren
 stren
@@ -10623,6 +10657,10 @@ stren_i2c2con_bit
 strful
 strful
 strful_bit
+strlen
+strncat
+strncmp
+strncpy
 strouth
 strouth_0
 strouth_0_bit
@@ -10722,6 +10760,11 @@ strovcnt_8
 strovcnt_8_bit
 strovcnt_9
 strovcnt_9_bit
+strpbrk
+strrchr
+strspn
+strstr
+strtok
 stsel
 stsel
 stsel
@@ -11360,6 +11403,7 @@ toupper
 tramacabecerauart
 tramacompleta
 tramagps
+tramaprueba
 tramapyloaduart
 tramasalida
 trapr
@@ -12261,6 +12305,9 @@ wake_u2mode_bit
 wdto
 wdto
 wdto_bit
+wordtohex
+wordtostr
+wordtostrwithzeros
 wr
 wr
 wr_bit
