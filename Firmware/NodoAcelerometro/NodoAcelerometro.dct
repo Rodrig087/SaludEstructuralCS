@@ -1296,10 +1296,9 @@ b9
 banciclo
 banconf
 banesc
-baninicio
+baniniciomuestreo
 banlec
 banleer
-banmuestrear
 bansetgps
 bansetreloj
 bantcgps
@@ -2644,8 +2643,6 @@ css8_bit
 css9
 css9
 css9_bit
-cssd
-cssd_direction
 ctmucon1
 ctmucon1bits
 ctmucon2

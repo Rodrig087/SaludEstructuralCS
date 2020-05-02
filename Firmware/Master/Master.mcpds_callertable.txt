@@ -1,5 +1,12 @@
 main
 	ConfiguracionPrincipal
+		UART1_Init
+			Get_Fosc_kHz
+			Get_Fosc_Per_Cyc
+			Delay_100ms
+			_Multiply_32x32
+			_Modulus_32x32
+			_Divide_32x32
 		UART2_Init_Advanced
 			Get_Fosc_kHz
 			Get_Fosc_Per_Cyc
@@ -16,9 +23,21 @@ main
 				SPI2_Read
 		SPI2_Init
 urx_2
-	InterrupcionP1
 int_1
 urx_1
+spi_1
+	RecuperarHoraRPI
+		_Multiply_32x32
+	RecuperarFechaRPI
+		_Multiply_32x32
+	AjustarTiempoSistema
+		_Divide_32x32
+		_Modulus_32x32
+	InterrupcionP1
+	GPS_init
+		UART1_Write_Text
+			UART1_Write
+		UART1_Init
 	RecuperarHoraRTC
 		SPI2_Init_Advanced
 		DS3234_read_byte
@@ -33,40 +52,3 @@ urx_1
 		Bcd2Dec
 		SPI2_Init
 		_Multiply_32x32
-	AjustarTiempoSistema
-		_Divide_32x32
-		_Modulus_32x32
-	InterrupcionP1
-	RecuperarHoraGPS
-		atoi
-			isdigit
-		_Multiply_32x32
-	RecuperarFechaGPS
-		atoi
-		_Multiply_32x32
-	DS3234_setDate
-		SPI2_Init_Advanced
-		Dec2Bcd
-		DS3234_write_byte
-		SPI2_Init
-		_Divide_32x32
-		_Modulus_32x32
-spi_1
-	RecuperarHoraRPI
-		_Multiply_32x32
-	RecuperarFechaRPI
-		_Multiply_32x32
-	AjustarTiempoSistema
-	InterrupcionP1
-	GPS_init
-		UART1_Write_Text
-			UART1_Write
-		UART1_Init
-			Get_Fosc_kHz
-			Get_Fosc_Per_Cyc
-			Delay_100ms
-			_Multiply_32x32
-			_Modulus_32x32
-			_Divide_32x32
-	RecuperarHoraRTC
-	RecuperarFechaRTC

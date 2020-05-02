@@ -309,14 +309,12 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
 
 }
-#line 19 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 24 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
 sbit TEST at LATA2_bit;
 sbit TEST_Direction at TRISA2_bit;
 sbit CsADXL at LATA3_bit;
 sbit CsADXL_Direction at TRISA3_bit;
-sbit CsSD at LATB0_bit;
-sbit CsSD_Direction at TRISB0_bit;
-
+#line 33 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
 unsigned short tiempo[6];
@@ -338,8 +336,8 @@ short tasaMuestreo;
 short numTMR1;
 
 unsigned short banUTI, banUTC;
-unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
-unsigned short banMuestrear, banLeer, banConf;
+unsigned short banLec, banEsc, banCiclo, banInicioMuestreo, banSetReloj, banSetGPS;
+unsigned short banLeer, banConf;
 
 unsigned char byteUART, banTIGPS, banTFGPS, banTCGPS;
 unsigned long horaSistema, fechaSistema;
@@ -349,14 +347,10 @@ unsigned char tramaCabeceraUART[4];
 unsigned char tramaPyloadUART[2506];
 unsigned int i_uart;
 unsigned int numDatosPyload;
-
-
-
-
-
-
+#line 81 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
 void ConfiguracionPrincipal();
 void Muestrear();
+
 
 
 
@@ -382,8 +376,7 @@ void main() {
  banTFGPS = 0;
  banTCGPS = 0;
 
- banMuestrear = 0;
- banInicio = 0;
+ banInicioMuestreo = 0;
  banLeer = 0;
  banConf = 0;
 
@@ -405,12 +398,16 @@ void main() {
  byteUART = 0;
 
  MSRS485 = 0;
+
  TEST = 1;
 
+
+
+ banInicioMuestreo = 1;
+
  SPI1BUF = 0x00;
-
+#line 170 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  while(1){
-
  }
 
 }
@@ -432,25 +429,29 @@ void ConfiguracionPrincipal(){
 
  ANSELA = 0;
  ANSELB = 0;
-
  TRISA2_bit = 0;
  TRISA3_bit = 0;
- TRISB0_bit = 0;
  TRISB12_bit = 0;
 
- TRISA4_bit = 1;
  TRISB14_bit = 1;
 
+
+
+ ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
+#line 210 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  INTCON2.GIE = 1;
 
 
  RPINR18bits.U1RXR = 0x2F;
  RPOR1bits.RP36R = 0x01;
- UART1_Init_Advanced(2000000, 2, 1, 1);
- U1RXIE_bit = 1;
+ UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
  U1RXIF_bit = 0;
  IPC2bits.U1RXIP = 0x04;
  U1STAbits.URXISEL = 0x00;
+
+
+ SPI1STAT.SPIEN = 1;
+ SPI1_Init();
 
 
  RPINR22bits.SDI2R = 0x21;
@@ -460,21 +461,22 @@ void ConfiguracionPrincipal(){
  SPI2_Init();
 
 
- ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
-
-
  RPINR0 = 0x2E00;
- INT1IE_bit = 1;
  INT1IF_bit = 0;
  IPC5bits.INT1IP = 0x01;
 
 
  T1CON = 0x0020;
  T1CON.TON = 0;
- T1IE_bit = 1;
  T1IF_bit = 0;
  PR1 = 62500;
  IPC0bits.T1IP = 0x02;
+
+
+ U1RXIE_bit = 1;
+ INT1IE_bit = 0;
+ T1IE_bit = 1;
+
 
  Delay_ms(200);
 
@@ -529,19 +531,16 @@ void Muestrear(){
 
  banLec = 1;
 
+ TEST = 0;
+
+
+
  }
 
  contCiclos++;
 
 }
-
-
-
-
-
-
-
-
+#line 355 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
 void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  INT1IF_bit = 0;
@@ -549,15 +548,15 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  TEST = ~TEST;
  horaSistema++;
 
- EnviarTramaRS485(1, 1, 10, 2, tramaPrueba);
-
  if (horaSistema==86400){
  horaSistema = 0;
  }
 
- if (banInicio==1){
+ if (banInicioMuestreo==1){
  Muestrear();
  }
+
+
 
 }
 

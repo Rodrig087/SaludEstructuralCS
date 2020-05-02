@@ -43,7 +43,8 @@ Count=2
 Path0=C:\Users\Ivan\Desktop\Milton Muñoz\Proyectos\Git\SaludEstructuralCS\Firmware\NodoAcelerometro\
 Path1=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Librerias firmware\
 [HEADERS]
-Count=0
+Count=1
+File0=..\Librerias firmware\sdcard.h
 [PLDS]
 Count=0
 [Useses]
@@ -57,4 +58,5 @@ File5=Conversions
 File6=C_String
 [EXPANDED NODES]
 Node1=Sources
-Count=1
+Node2=Header Files
+Count=2

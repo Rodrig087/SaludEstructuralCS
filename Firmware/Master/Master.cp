@@ -543,22 +543,30 @@ void ConfiguracionPrincipal(){
  TRISA2_bit = 0;
  TRISA3_bit = 0;
  TRISA4_bit = 0;
- TRISB4_bit = 0;
  TRISB10_bit = 0;
  TRISB11_bit = 0;
  TRISB12_bit = 0;
 
- TRISB10_bit = 1;
  TRISB13_bit = 1;
  TRISB14_bit = 1;
 
-
  INTCON2.GIE = 1;
-#line 203 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+
+
+ RPINR18bits.U1RXR = 0x22;
+ RPOR0bits.RP35R = 0x01;
+ UART1_Init(9600);
+
+ U1RXIF_bit = 0;
+ IPC2bits.U1RXIP = 0x04;
+ U1STAbits.URXISEL = 0x00;
+
+
  RPINR19bits.U2RXR = 0x2F;
  RPOR1bits.RP36R = 0x03;
- UART2_Init_Advanced(2000000, 2, 1, 1);
- U2RXIE_bit = 1;
+ UART2_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+
+ U2STAbits.URXISEL = 0;
  U2RXIF_bit = 0;
  IPC7bits.U2RXIP = 0x04;
  U2STAbits.URXISEL = 0x00;
@@ -566,7 +574,6 @@ void ConfiguracionPrincipal(){
 
  SPI1STAT.SPIEN = 1;
  SPI1_Init_Advanced(_SPI_SLAVE, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_1, _SPI_SS_ENABLE, _SPI_DATA_SAMPLE_END, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
- SPI1IE_bit = 1;
  SPI1IF_bit = 0;
  IPC2bits.SPI1IP = 0x03;
 
@@ -579,10 +586,16 @@ void ConfiguracionPrincipal(){
  CS_DS3234 = 1;
 
 
- RPINR0 = 0x2E00;
- INT1IE_bit = 0;
+ RPINR0 = 0x2D00;
+
  INT1IF_bit = 0;
  IPC5bits.INT1IP = 0x01;
+
+
+ U1RXIE_bit = 0;
+ U2RXIE_bit = 1;
+ SPI1IE_bit = 0;
+ INT1IE_bit = 1;
 
  Delay_ms(200);
 
@@ -722,7 +735,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banCheck==0)&&(buffer==0xA8)){
 
  banCheck = 1;
-#line 374 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 377 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -737,7 +750,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
  if ((banCheck==1)&&(buffer==0xF9)){
  banCheck = 0;
-#line 392 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 395 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -769,139 +782,22 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  }
 
 }
-
-
-
-
+#line 570 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
 void urx_1() org IVT_ADDR_U1RXINTERRUPT {
-
  U1RXIF_bit = 0;
-
  byteGPS = U1RXREG;
- OERR_bit = 0;
-
- if (banTIGPS==0){
- if ((byteGPS==0x24)&&(i_gps==0)){
- banTIGPS = 1;
- } else {
-
- horaSistema = RecuperarHoraRTC();
- fechaSistema = RecuperarFechaRTC();
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
-
- fuenteReloj = 2;
- banSetReloj = 1;
- InterrupcionP1(0xB2);
- U1RXIE_bit = 0;
- }
- }
-
- if (banTIGPS==1){
- if (byteGPS!=0x2A){
- tramaGPS[i_gps] = byteGPS;
- banTFGPS = 0;
- if (i_gps<70){
- i_gps++;
- }
- if ((i_gps>1)&&(tramaGPS[1]!=0x47)){
- i_gps = 0;
- banTIGPS = 0;
- banTCGPS = 0;
- }
- } else {
- tramaGPS[i_gps] = byteGPS;
- banTIGPS = 2;
- banTCGPS = 1;
- }
- }
-
-
- if (banTCGPS==1){
- if (tramaGPS[18]==0x41) {
- for (x=0;x<6;x++){
- datosGPS[x] = tramaGPS[7+x];
- }
-
- for (x=50;x<60;x++){
- if (tramaGPS[x]==0x2C){
- for (y=0;y<6;y++){
- datosGPS[6+y] = tramaGPS[x+y+1];
- }
- }
- }
-
- horaSistema = RecuperarHoraGPS(datosGPS);
- fechaSistema = RecuperarFechaGPS(datosGPS);
- DS3234_setDate(horaSistema, fechaSistema);
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- fuenteReloj = 1;
- } else {
-
- horaSistema = RecuperarHoraRTC();
- fechaSistema = RecuperarFechaRTC();
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- fuenteReloj = 0;
- }
-
- banSetReloj = 1;
- InterrupcionP1(0xB2);
- U1RXIE_bit = 0;
- }
+ U1STAbits.OERR = 0;
 
 }
 
 
-
-
 void urx_2() org IVT_ADDR_U2RXINTERRUPT {
-
-
- U2RXIF_bit = 0;
+ if(U2STAbits.OERR == 1){
+ U2STAbits.OERR = 0;
+ }
+ if(U2STAbits.URXDA == 1){
  byteUART2 = U2RXREG;
- U2STA.OERR = 0;
-
-
-
-
- if (banUTI==2){
- if (i_uart<numDatosPyload){
- tramaPyloadUART[i_uart] = byteUART2;
- i_uart++;
- } else {
- banUTI = 0;
- banUTC = 1;
  }
- }
-
-
- if ((banUTI==0)&&(banUTC==0)){
- if (byteUART2==0x3A){
- banUTI = 1;
- i_uart = 0;
- }
- }
- if ((banUTI==1)&&(i_uart<4)){
- tramaCabeceraUART[i_uart] = byteUART2;
- i_uart++;
- }
- if ((banUTI==1)&&(i_uart==4)){
- numDatosPyload = tramaCabeceraUART[2];
- banUTI = 2;
- i_uart = 0;
- }
-
-
- if (banUTC==1){
-
-
  INT_SINC = ~INT_SINC;
- for (x=0;x<10;x++) {
- tramaPrueba[x] = tramaPyloadUART[x];
- }
- InterrupcionP1(0xB3);
-
-
- banUTC = 0;
- }
-
+ U2RXIF_bit = 0;
 }
