@@ -309,12 +309,52 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
 
 }
-#line 24 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/spisd.h"
+#line 13 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/spisd.h"
+void SPISD_Init(unsigned char speed);
+unsigned char SPISD_Write(unsigned char datos);
+#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/sdcard.h"
+#line 1 "c:/users/public/documents/mikroelektronika/mikroc pro for dspic/include/stdbool.h"
+
+
+
+ typedef char _Bool;
+#line 13 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/sdcard.h"
+struct sdflags {
+ unsigned char init_ok:1;
+ unsigned char detected:1;
+ unsigned char saving:1;
+};
+#line 93 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/sdcard.h"
+unsigned char SD_Init(void);
+unsigned char SD_Init_Try(unsigned char);
+unsigned char SD_Write_Block(unsigned char*,unsigned long);
+unsigned char SD_Read_Block(unsigned char*,unsigned long);
+unsigned char SD_Read(unsigned char*,unsigned int);
+void SD_Send_Command(unsigned char, unsigned long, unsigned char);
+unsigned char R1_Response(void);
+unsigned int R2_Response(void);
+unsigned long Response_32b(void);
+unsigned char SD_Ready(void);
+void Select_SD(void);
+void Release_SD(void);
+ _Bool  Detect_SD (void);
+unsigned char SD_Detect(void);
+void SD_Check(void);
+#line 1 "c:/users/public/documents/mikroelektronika/mikroc pro for dspic/include/stdbool.h"
+#line 23 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+struct sdflags sdflags;
+
 sbit TEST at LATA2_bit;
 sbit TEST_Direction at TRISA2_bit;
 sbit CsADXL at LATA3_bit;
 sbit CsADXL_Direction at TRISA3_bit;
-#line 33 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+
+sbit sd_CS_lat at LATB0_bit;
+sbit sd_CS_tris at TRISB0_bit;
+sbit sd_detect_port at LATA4_bit;
+sbit sd_detect_tris at TRISA4_bit;
+
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
 unsigned short tiempo[6];
@@ -336,8 +376,8 @@ short tasaMuestreo;
 short numTMR1;
 
 unsigned short banUTI, banUTC;
-unsigned short banLec, banEsc, banCiclo, banInicioMuestreo, banSetReloj, banSetGPS;
-unsigned short banLeer, banConf;
+unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
+unsigned short banMuestrear, banLeer, banConf;
 
 unsigned char byteUART, banTIGPS, banTFGPS, banTCGPS;
 unsigned long horaSistema, fechaSistema;
@@ -347,10 +387,25 @@ unsigned char tramaCabeceraUART[4];
 unsigned char tramaPyloadUART[2506];
 unsigned int i_uart;
 unsigned int numDatosPyload;
-#line 81 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+
+const unsigned int clusterSizeSD = 512;
+unsigned long sectorSD = 100;
+unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
+unsigned char bufferSD [clusterSizeSD];
+unsigned char contadorEjemploSD = 0;
+unsigned char resultSD;
+unsigned char temp;
+unsigned char tramaCompletaEjemplo[2500];
+
+
+
+
+
+
+
 void ConfiguracionPrincipal();
 void Muestrear();
-
+void GuardarTramaSD();
 
 
 
@@ -376,7 +431,8 @@ void main() {
  banTFGPS = 0;
  banTCGPS = 0;
 
- banInicioMuestreo = 0;
+ banMuestrear = 0;
+ banInicio = 0;
  banLeer = 0;
  banConf = 0;
 
@@ -399,14 +455,41 @@ void main() {
 
  MSRS485 = 0;
 
- TEST = 1;
-
-
-
- banInicioMuestreo = 1;
+ TEST = 0;
 
  SPI1BUF = 0x00;
-#line 170 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+
+
+ while (1) {
+ if (SD_Detect() ==  0xDE ) {
+
+ sdflags.detected =  1 ;
+
+ break;
+ } else {
+
+ sdflags.detected =  0 ;
+ sdflags.init_ok =  0 ;
+
+ }
+ Delay_ms(100);
+ }
+
+
+ if (sdflags.detected && !sdflags.init_ok) {
+ if (SD_Init_Try(10) ==  0xAA ) {
+ sdflags.init_ok =  1 ;
+ TEST = 1;
+ INT1IE_bit = 1;
+
+ } else {
+ sdflags.init_ok =  0 ;
+
+ }
+ }
+ Delay_ms(2000);
+
+
  while(1){
  }
 
@@ -429,29 +512,23 @@ void ConfiguracionPrincipal(){
 
  ANSELA = 0;
  ANSELB = 0;
- TRISA2_bit = 0;
- TRISA3_bit = 0;
+ TEST_Direction = 0;
+ CsADXL_Direction = 0;
+ sd_CS_tris = 0;
  TRISB12_bit = 0;
-
+ sd_detect_tris = 1;
  TRISB14_bit = 1;
 
 
-
- ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
-#line 210 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  INTCON2.GIE = 1;
 
 
  RPINR18bits.U1RXR = 0x2F;
  RPOR1bits.RP36R = 0x01;
- UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+ UART1_Init_Advanced(2000000, 2, 1, 1);
  U1RXIF_bit = 0;
  IPC2bits.U1RXIP = 0x04;
  U1STAbits.URXISEL = 0x00;
-
-
- SPI1STAT.SPIEN = 1;
- SPI1_Init();
 
 
  RPINR22bits.SDI2R = 0x21;
@@ -473,10 +550,17 @@ void ConfiguracionPrincipal(){
  IPC0bits.T1IP = 0x02;
 
 
- U1RXIE_bit = 1;
+ U1RXIE_bit = 0;
  INT1IE_bit = 0;
  T1IE_bit = 1;
 
+
+ ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
+
+
+ sdflags.detected =  0 ;
+ sdflags.init_ok =  0 ;
+ sdflags.saving =  0 ;
 
  Delay_ms(200);
 
@@ -531,8 +615,6 @@ void Muestrear(){
 
  banLec = 1;
 
- TEST = 0;
-
 
 
  }
@@ -540,7 +622,49 @@ void Muestrear(){
  contCiclos++;
 
 }
-#line 355 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+
+
+
+
+void GuardarTramaSD(){
+
+ for (x=0;x<6;x++){
+ bufferSD[x] = cabeceraSD[x];
+ }
+
+
+ contadorEjemploSD = 0;
+ for (x=6;x<clusterSizeSD;x++) {
+ bufferSD[x] = contadorEjemploSD;
+
+ contadorEjemploSD ++;
+ if (contadorEjemploSD >= 255){
+ contadorEjemploSD = 0;
+ }
+ }
+
+
+ for (x=0;x<5;x++){
+ resultSD = SD_Write_Block(bufferSD,sectorSD);
+ if (resultSD ==  22 ){
+ TEST = ~TEST;
+ break;
+ }
+ Delay_us(10);
+ }
+
+
+ sectorSD++;
+}
+
+
+
+
+
+
+
+
+
 void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  INT1IF_bit = 0;
@@ -548,16 +672,14 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  TEST = ~TEST;
  horaSistema++;
 
+ EnviarTramaRS485(1, 1, 10, 2, tramaPrueba);
+
  if (horaSistema==86400){
  horaSistema = 0;
  }
 
- if (banInicioMuestreo==1){
- Muestrear();
- }
-
-
-
+ GuardarTramaSD();
+#line 364 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
 }
 
 

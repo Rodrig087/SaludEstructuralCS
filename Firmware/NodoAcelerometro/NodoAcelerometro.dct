@@ -1296,9 +1296,10 @@ b9
 banciclo
 banconf
 banesc
-baniniciomuestreo
+baninicio
 banlec
 banleer
+banmuestrear
 bansetgps
 bansetreloj
 bantcgps
@@ -1472,6 +1473,7 @@ brgh_bit
 brgh_u1mode_bit
 brgh_u2mode_bit
 buffer
+buffersd
 bufm
 bufm
 bufm_bit
@@ -1544,6 +1546,7 @@ c4evt_bit
 c4out
 c4out
 c4out_bit
+cabecerasd
 cam
 cam
 cam
@@ -1581,6 +1584,7 @@ ccm_0
 ccm_0_bit
 ccm_1
 ccm_1_bit
+ccs
 ceil
 cen
 cen
@@ -1952,6 +1956,7 @@ clstat_bit
 clstat_pwmcon1_bit
 clstat_pwmcon2_bit
 clstat_pwmcon3_bit
+clustersizesd
 cm
 cm
 cm_bit
@@ -2337,6 +2342,7 @@ con_cm2con_bit
 con_cm3con_bit
 con_cm4con_bit
 configuracionprincipal
+contadorejemplosd
 contciclos
 contfifo
 contmuestras
@@ -2774,6 +2780,7 @@ delay_8ms
 delay_cyc
 delay_cyc_long
 delay_w0
+detected
 dftadd
 dftadd_0
 dftadd_0_bit
@@ -3998,6 +4005,7 @@ get_fosc_per_cyc
 gie
 gie
 gie_bit
+guardartramasd
 half
 half
 half
@@ -5062,6 +5070,7 @@ indxhld_8
 indxhld_8_bit
 indxhld_9
 indxhld_9_bit
+init_ok
 int_1
 int0ep
 int0ep
@@ -8952,6 +8961,8 @@ r_w
 r_w_bit
 r_w_i2c1stat_bit
 r_w_i2c2stat_bit
+r1_response
+r2_response
 ra
 ra
 ra_bit
@@ -9073,6 +9084,9 @@ refoconbits
 refomd
 refomd
 refomd_bit
+release_sd
+response_32b
+resultsd
 ridle
 ridle
 ridle
@@ -9408,6 +9422,7 @@ satb_bit
 satdw
 satdw
 satdw_bit
+saving
 sb
 sb
 sb_bit
@@ -9439,6 +9454,19 @@ sclrel
 sclrel_bit
 sclrel_i2c1con_bit
 sclrel_i2c2con_bit
+sd_cs_lat
+sd_cs_tris
+sd_detect
+sd_detect_port
+sd_detect_tris
+sd_init
+sd_init_try
+sd_read
+sd_read_block
+sd_ready
+sd_send_command
+sd_write_block
+sdflags
 sdi2r
 sdi2r_0
 sdi2r_0_bit
@@ -9461,9 +9489,11 @@ sdi2r3
 sdi2r4
 sdi2r5
 sdi2r6
+sectorsd
 seien
 seien
 seien_bit
+select_sd
 selsrca
 selsrca
 selsrca
@@ -9971,6 +10001,8 @@ spirov
 spirov_bit
 spirov_spi1stat_bit
 spirov_spi2stat_bit
+spisd_init
+spisd_write
 spisidl
 spisidl
 spisidl
@@ -11132,6 +11164,7 @@ tcs_t2con_bit
 tcs_t3con_bit
 tcs_t4con_bit
 tcs_t5con_bit
+temp
 test
 test_direction
 tgate
@@ -11399,6 +11432,7 @@ ton_t5con_bit
 toupper
 tramacabecerauart
 tramacompleta
+tramacompletaejemplo
 tramagps
 tramaprueba
 tramapyloaduart

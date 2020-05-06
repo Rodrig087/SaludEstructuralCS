@@ -9,9 +9,10 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 #include <ADXL355_SPI.c>
 #include <TIEMPO_RTC.c>
 #include <RS485.c>
-/*#include <sdcard.c>
+
+#include <spiSD.h>
 #include <sdcard.h>
-#include <stdbool.h>*/
+#include <stdbool.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -19,16 +20,17 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 //////////////////////////////////////////////////// Declaracion de variables //////////////////////////////////////////////////////////////
 
 //Variables y contantes para la peticion y respuesta de datos
-//struct sdflags sdflags;                                                         //Variable y estructura que se utiliza en el archivo sdcard.c
+struct sdflags sdflags;                                                         //Variable y estructura que se utiliza en el archivo sdcard.c
 
 sbit TEST at LATA2_bit;                                                         //Definicion del pin TEST
 sbit TEST_Direction at TRISA2_bit;
 sbit CsADXL at LATA3_bit;                                                       //Definicion del pin CS del Acelerometro
 sbit CsADXL_Direction at TRISA3_bit;
-/*sbit sd_CS_lat at LATB0_bit;                                                    //ChipSelect SD
+
+sbit sd_CS_lat at LATB0_bit;                                                    //ChipSelect SD
 sbit sd_CS_tris at TRISB0_bit;
 sbit sd_detect_port at LATA4_bit;                                               //PinDetection SD
-sbit sd_detect_tris at TRISA4_bit;*/
+sbit sd_detect_tris at TRISA4_bit;
 
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
@@ -51,8 +53,8 @@ short tasaMuestreo;
 short numTMR1;
 
 unsigned short banUTI, banUTC;                                                  //Banderas de control de trama inicio y completa
-unsigned short banLec, banEsc, banCiclo, banInicioMuestreo, banSetReloj, banSetGPS;
-unsigned short banLeer, banConf;
+unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
+unsigned short banMuestrear, banLeer, banConf;
 
 unsigned char byteUART, banTIGPS, banTFGPS, banTCGPS;
 unsigned long horaSistema, fechaSistema;
@@ -63,16 +65,16 @@ unsigned char tramaPyloadUART[2506];
 unsigned int i_uart;
 unsigned int numDatosPyload;
 
-/*
-const unsigned int clusterSizeSD = 512;                                                //Tamaño del cluster de la SD de 512 bytes
-unsigned long sectorSD = 100;                                                        //Comienza en el sector 100, para escribir en la SD
-unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                        //Cabecera del bufferSD: {cte1, cte2, cte3, #Bytes/Muestra, MSB_fSample, LSB_fSample}
-unsigned char bufferSD [clusterSizeSD];                                                //Buffer del tamaño del cluster, siempre se guarda este numero de datos en la SD
-unsigned char contadorEjemploSD = 0;                                                //Este es un contador para el ejemplo
-unsigned char resultSD;                                                                //Esta variable indica si la escritura en la SD se completo correctamente
-unsigned char temp;                                                                //**Cambiar el nombre. Es una variable temporal. Temp=0, significa que la lectura fue exitosa
+const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
+unsigned long sectorSD = 100;                                                   //Comienza en el sector 100, para escribir en la SD
+unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      //Cabecera del bufferSD: {cte1, cte2, cte3, #Bytes/Muestra, MSB_fSample, LSB_fSample}
+unsigned char bufferSD [clusterSizeSD];                                         //Buffer del tamaño del cluster, siempre se guarda este numero de datos en la SD
+unsigned char contadorEjemploSD = 0;                                            //Este es un contador para el ejemplo
+unsigned char resultSD;                                                         //Esta variable indica si la escritura en la SD se completo correctamente
+unsigned char temp;                                                             //**Cambiar el nombre. Es una variable temporal. Temp=0, significa que la lectura fue exitosa
 unsigned char tramaCompletaEjemplo[2500];
-*/
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -80,7 +82,7 @@ unsigned char tramaCompletaEjemplo[2500];
 /////////////////////////////////////////////////////////  Declaracion de funciones  /////////////////////////////////////////////////////////
 void ConfiguracionPrincipal();
 void Muestrear();
-//void GuardarTramaSD();
+void GuardarTramaSD();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -89,14 +91,14 @@ void Muestrear();
 void main() {
 
      ConfiguracionPrincipal();
-     
+
      tasaMuestreo = 1;                                                          //1=250Hz, 2=125Hz, 4=62.5Hz, 8=31.25Hz
      ADXL355_init(tasaMuestreo);                                                //Inicializa el modulo ADXL con la tasa de muestreo requerida:
      numTMR1 = (tasaMuestreo*10)-1;                                             //Calcula el numero de veces que tienen que desbordarse el TMR1 para cada tasa de muestreo
-     
+
      banUTI = 0;
      banUTC = 0;
-     
+
      banLec = 0;
      banEsc = 0;
      banCiclo = 0;
@@ -106,7 +108,8 @@ void main() {
      banTFGPS = 0;
      banTCGPS = 0;
 
-     banInicioMuestreo = 0;                                                     //Bandera de inicio de muestreo
+     banMuestrear = 0;                                                          //Inicia el programa con esta bandera en bajo para permitir que la RPi envie la peticion de inicio de muestreo
+     banInicio = 0;                                                             //Bandera de inicio de muestreo
      banLeer = 0;
      banConf = 0;
 
@@ -129,42 +132,39 @@ void main() {
 
      MSRS485 = 0;                                                               //Estabkece el Max485 en modo lectura
      
-     TEST = 1;
-     //Delay_ms(500);
-     //TEST = 0;
-
-     banInicioMuestreo = 1;                                                     //Se fija en 1 para iniciar el muestreo (Despues se debe cambiar )
-
+     TEST = 0;
+     
      SPI1BUF = 0x00;
 
-     /*
      //Comprueba si esta conectada la SD:
      while (1) {
            if (SD_Detect() == DETECTED) {
               //En el caso de que este conectada activa la bandera
               sdflags.detected = true;
+              //TEST = 1;
               break;
            } else {
               // Caso contrario si no esta conectada la SD, coloca las banderas en false
               sdflags.detected = false;
               sdflags.init_ok = false;
+              //TEST = 0;
            }
-           TEST = ~TEST;
-           Delay_ms(500);
+           Delay_ms(100);
      }
-     TEST = 0;
 
      //Inicializa la SD:
      if (sdflags.detected && !sdflags.init_ok) {
-           if (SD_Init_Try(10) == SUCCESSFUL_INIT) {
+          if (SD_Init_Try(10) == SUCCESSFUL_INIT) {
               sdflags.init_ok = true;
               TEST = 1;
+              INT1IE_bit = 1;                                                   //Habilita la interrupcion externa INT1
+              //banInicio = 1;                                                    //Activa la bandera para permitir el muestreo
            } else {
               sdflags.init_ok = false;
+              //TEST = 0;
            }
      }
      Delay_ms(2000);
-     */
 
      //Entra al bucle princial del programa:
      while(1){
@@ -179,48 +179,34 @@ void main() {
 //*****************************************************************************************************************************************
 // Funcion para realizar la configuracion principal
 void ConfiguracionPrincipal(){
-     
+
      //configuracion del oscilador:                                             //FPLLO = FIN*(M/(N1+N2)) = 80.017MHz
      CLKDIVbits.FRCDIV = 0;                                                     //FIN=FRC/1
      CLKDIVbits.PLLPOST = 0;                                                    //N2=2
      CLKDIVbits.PLLPRE = 5;                                                     //N1=7
      PLLFBDbits.PLLDIV = 150;                                                   //M=152
-     
+
      //Configuracion de puertos:
-     ANSELA = 0;                                                                //Configura PORTA como digital
-     ANSELB = 0;                                                                //Configura PORTB como digital
-     TRISA2_bit = 0;
-     TRISA3_bit = 0;
-     TRISB12_bit = 0;
-     //sd_CS_tris = 0;                                                            //ChipSelect SD como salida
+     ANSELA = 0;                                                                //Configura PORTA como digital     *
+     ANSELB = 0;                                                                //Configura PORTB como digital     *
+     TEST_Direction = 0;                                                        //TEST
+     CsADXL_Direction = 0;                                                      //CS ADXL
+     sd_CS_tris = 0;                                                            //CS SD
+     TRISB12_bit = 0;                                                           //MAX485 MS
+     sd_detect_tris = 1;                                                        //Pin detection SD
      TRISB14_bit = 1;                                                           //Pin de interrupcion
-     //sd_detect_tris = 1;                                                        //PinDetection SD como entrada
-     
-     //Configuracion del acelerometro:
-     ADXL355_write_byte(POWER_CTL, DRDY_OFF|STANDBY);                           //Coloco el ADXL en modo STANDBY para pausar las conversiones y limpiar el FIFO
-     
-     /*
-     //Limpia las banderas de la SD:
-     sdflags.detected = false;
-     sdflags.init_ok = false;
-     sdflags.saving = false;
-     */
-     
+
      //Habilita las interrupciones globales:
-     INTCON2.GIE = 1;
-     
+     INTCON2.GIE = 1;                                                           //Habilita las interrupciones globales
+
      //Configuracion del puerto UART1:
      RPINR18bits.U1RXR = 0x2F;                                                  //Configura el pin RB15/RPI47 como Rx1
      RPOR1bits.RP36R = 0x01;                                                    //Configura el Tx1 en el pin RB4/RP36
-     UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+     UART1_Init_Advanced(2000000, 2, 1, 1);                                     //Inicializa el UART1 con una velocidad de 2Mbps
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U1STAbits.URXISEL = 0x00;
 
-     //Configuracion del puerto SPI1 en modo Master:
-     SPI1STAT.SPIEN = 1;                                                        //Habilita el SPI1
-     SPI1_Init();                                                               //Inicializa el modulo SPI1
-     
      //Configuracion del puerto SPI2 en modo Master:
      RPINR22bits.SDI2R = 0x21;                                                  //Configura el pin RB1/RPI33 como SDI2 *
      RPOR2bits.RP38R = 0x08;                                                    //Configura el SDO2 en el pin RB6/RP38 *
@@ -228,12 +214,12 @@ void ConfiguracionPrincipal(){
      SPI2STAT.SPIEN = 1;                                                        //Habilita el SPI2 *
      SPI2_Init();                                                               //Inicializa el modulo SPI2
 
-     //Configuracion de la interrupcion externa INT1:
+     //Configuracion de la interrupcion externa INT1
      RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
      IPC5bits.INT1IP = 0x01;                                                    //Prioridad en la interrupocion externa 1
 
-     //Configuracion del TMR1 con un tiempo de 100ms:
+     //Configuracion del TMR1 con un tiempo de 100ms
      T1CON = 0x0020;
      T1CON.TON = 0;                                                             //Apaga el Timer1
      T1IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR1
@@ -241,15 +227,22 @@ void ConfiguracionPrincipal(){
      IPC0bits.T1IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR1
      
      //Habilitacion de interrupciones:
-     U1RXIE_bit = 1;                                                            //Habilita la interrupcion por UART1 RX
-     INT1IE_bit = 0;                                                            //Habilita la interrupcion externa INT1
-     T1IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR1
-     
+     U1RXIE_bit = 0;                                                            //Interrupcion por UART1 RX
+     INT1IE_bit = 0;                                                            //Interrupcion externa INT1
+     T1IE_bit = 1;                                                              //Interrupción de desbordamiento TMR1
+
+     //Configuracion del acelerometro:
+     ADXL355_write_byte(POWER_CTL, DRDY_OFF|STANDBY);                           //Coloco el ADXL en modo STANDBY para pausar las conversiones y limpiar el FIFO
+
+     //Limpia las banderas de la SD:
+     sdflags.detected = false;
+     sdflags.init_ok = false;
+     sdflags.saving = false;
 
      Delay_ms(200);                                                             //Espera hasta que se estabilicen los cambios
 
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
 //Funcion para relizar el muesteo
@@ -296,55 +289,52 @@ void Muestrear(){
          contMuestras = 0;                                                      //Limpia el contador de muestras
          contFIFO = 0;                                                          //Limpia el contador de FIFOs
          T1CON.TON = 1;                                                         //Enciende el Timer1
-         
+
          banLec = 1;                                                            //Activa la bandera de lectura para enviar la trama
          
-         TEST = 0;
-         //Aqui guardo la trama
-         //Aqui envio la trama?
-         
+         //GuardarTramaSD();                                                      //Prueba
+
      }
 
      contCiclos++;                                                              //Incrementa el contador de ciclos
 
 }
 //*****************************************************************************************************************************************
-/*
+
 //*****************************************************************************************************************************************
 //Funcion para guardar los datos de la trama de aceleracion en la SD
 void GuardarTramaSD(){
-     //Rellena los primeros 6 bytes del bufferSD con los datos de la cabecera:
-     for (x=0;x<6;x++){
-        bufferSD[x] = cabeceraSD[x];
-     }
+	//Rellena los primeros 6 bytes del bufferSD con los datos de la cabecera:
+	for (x=0;x<6;x++){
+	    bufferSD[x] = cabeceraSD[x];
+	}
 
-     //Termina de llenar el cluster con datos de ejemplo:
-     contadorEjemploSD = 0;
-    for (x=6;x<clusterSizeSD;x++) {
-        bufferSD[x] = contadorEjemploSD;
-        bufferSD[x] = 0;
-        contadorEjemploSD ++;
-        if (contadorEjemploSD >= 255){
-            contadorEjemploSD = 0;
+	//Termina de llenar el cluster con datos de ejemplo:
+	contadorEjemploSD = 0;
+        for (x=6;x<clusterSizeSD;x++) {
+            bufferSD[x] = contadorEjemploSD;
+            //bufferSD[x] = 0;
+            contadorEjemploSD ++;
+            if (contadorEjemploSD >= 255){
+                contadorEjemploSD = 0;
+            }
         }
-    }
 
-    // Intenta escribir los datos en la SD como maximo 5 veces:
-    for (x=0;x<5;x++){
-        resultSD = SD_Write_Block(bufferSD,sectorSD);
-        if (resultSD == DATA_ACCEPTED){
-            TEST = ~TEST;
-            break;
+	// Intenta escribir los datos en la SD como maximo 5 veces:
+        for (x=0;x<5;x++){
+	    resultSD = SD_Write_Block(bufferSD,sectorSD);
+            if (resultSD == DATA_ACCEPTED){
+                TEST = ~TEST;
+                break;
+            }
+            Delay_us(10);
         }
-        Delay_us(10);
-    }
 
-    //Aumenta el subindice del sector:
-    sectorSD++;
-
+	//Aumenta el indice del sector:
+	sectorSD++;
 }
 //*****************************************************************************************************************************************
-*/
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -353,31 +343,33 @@ void GuardarTramaSD(){
 //*****************************************************************************************************************************************
 //Interrupcion INT1
 void int_1() org IVT_ADDR_INT1INTERRUPT {
-     
+
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
-     
+
      TEST = ~TEST;
      horaSistema++;                                                             //Incrementa el reloj del sistema
-     
+
+     EnviarTramaRS485(1, 1, 10, 2, tramaPrueba);                                //Envia la trama de prueba por RS485
+
      if (horaSistema==86400){                                                   //(24*3600)+(0*60)+(0) = 86400
         horaSistema = 0;                                                        //Reinicia el reloj al llegar a las 24:00:00 horas
      }
      
-     if (banInicioMuestreo==1){
+     GuardarTramaSD();                                                          //Prueba
+
+     /*if (banInicio==1){
         Muestrear();
-     }
-     
-     //Prueba de RS485
-     //EnviarTramaRS485(1, 1, 10, 2, tramaPrueba);                                //Envia la trama de prueba por RS485
+     }*/
+
 }
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
 //Interrupcion por desbordamiento del Timer1
 void Timer1Int() org IVT_ADDR_T1INTERRUPT{
-     
+
      T1IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer1
-     
+
      numFIFO = ADXL355_read_byte(FIFO_ENTRIES); //75                            //Lee el numero de muestras disponibles en el FIFO
      numSetsFIFO = (numFIFO)/3;                 //25                            //Lee el numero de sets disponibles en el FIFO
 
@@ -388,7 +380,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
              datosFIFO[y+(x*9)] = datosLeidos[y];                               //LLena la trama datosFIFO
          }
      }
-     
+
      //Este bucle rellena la trama completa intercalando el numero de muestra correspondientes
      for (x=0;x<(numSetsFIFO*9);x++){      //0-224
          if ((x==0)||(x%9==0)){
@@ -403,7 +395,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
      contFIFO = (contMuestras*9);                                               //Incrementa el contador de FIFOs
 
      contTimer1++;                                                              //Incrementa una unidad cada vez que entra a la interrupcion por Timer1
-     
+
      if (contTimer1==numTMR1){                                                  //Verifica si se cumplio el numero de interrupciones por TMR1 para la tasa de muestreo seleccionada
         T1CON.TON = 0;                                                          //Apaga el Timer1
         banCiclo = 1;                                                           //Activa la bandera que indica que se completo un ciclo de medicion
@@ -432,7 +424,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            banUTC = 1;                                                          //Activa la bandera de trama completa
         }
      }
-     
+
      //Recupera la cabecera de la trama UART:                                   //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banUTI==0)&&(banUTC==0)){
         if (byteUART==0x3A){                                                    //Verifica si el primer byte recibido sea la cabecera de trama
@@ -449,7 +441,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
         banUTI = 2;
         i_uart = 0;
      }
-     
+
      //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
      if (banUTC==1){
 

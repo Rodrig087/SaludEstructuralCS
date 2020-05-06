@@ -54,6 +54,7 @@
 // *****************************************************************************
 
 // Incluye la libreria del SPI, las definiciones del archivo sdcard.h
+#include "spiSD.h"
 #include "sdcard.h"
 // Y la libreria para utilizar variables tipo bool, true and false
 #include <stdbool.h>
@@ -90,15 +91,15 @@ unsigned char SD_Read(unsigned char *Buffer, unsigned int nbytes){
     unsigned int i;
     unsigned char temp;
     for(i = 0; i < SD_TIME_OUT; i++){
-        temp = SPI1_Read(0xFF);
+        temp = SPISD_Write(0xFF);
         if(temp == 0xFE) break;
         if(i == SD_TIME_OUT-1) return TOKEN_NOT_RECEIVED;
     }
     for(i = 0; i < nbytes; i++){
-        Buffer[i] = SPI1_Read(0xFF);
+        Buffer[i] = SPISD_Write(0xFF);
     }
-    temp = SPI1_Read(0xFF);     // Read 16bits of CRC
-    temp = SPI1_Read(0xFF);     //
+    temp = SPISD_Write(0xFF);     // Read 16bits of CRC
+    temp = SPISD_Write(0xFF);     //
     return 0x00;                // Successful read                
 }
 // *****************************************************************************
@@ -147,13 +148,13 @@ unsigned char SD_Write_Block(unsigned char *Buffer, unsigned long Address){
     SD_Send_Command(WRITE_BLOCK,Address,0xFF);
     temp = R1_Response();
     if(temp != 0x00) return temp;
-    temp = SPI1_Read(0xFE);    // Send Start Block Token;
+    temp = SPISD_Write(0xFE);    // Send Start Block Token;
     for(i = 0; i < 512; i++){
-        temp = SPI1_Read(Buffer[i]);
+        temp = SPISD_Write(Buffer[i]);
     }
-    temp = SPI1_Read(0xFF);        // Send dummy 16bits CRC
-    temp = SPI1_Read(0xFF);
-    temp = SPI1_Read(0xFF); // Read Response token (xxx0:status(3b):1)
+    temp = SPISD_Write(0xFF);        // Send dummy 16bits CRC
+    temp = SPISD_Write(0xFF);
+    temp = SPISD_Write(0xFF); // Read Response token (xxx0:status(3b):1)
     temp = (temp&0x0E)>>1;
     if(SD_Ready() == 0) return SD_NOT_READY;
     
@@ -209,10 +210,10 @@ unsigned char SD_Init(void){
     Release_SD();
   
     // Initialize SPI interface at slow speed
-    //SPI_Init(SLOW);
+    SPISD_Init(SLOW);
     
     // Toggle CLK for 80 cycles with SDO high
-    for(i = 0; i < 80; i++) SPI1_Read(0xFF);
+    for(i = 0; i < 80; i++) SPISD_Write(0xFF);
     
     // Llama al metodo para colocar en 0 el CS
     Select_SD();
@@ -295,7 +296,7 @@ unsigned char SD_Init(void){
     // Llama al metodo para colocar en 1 el CS
     Release_SD();
     // Configure SPI to maximum speed
-    //SPI_Init(FAST);
+    SPISD_Init(FAST);
     
     return SUCCESSFUL_INIT;
 }
@@ -310,8 +311,8 @@ unsigned char SD_Init(void){
 // *****************************************************************************
 unsigned char R1_Response(void){
     unsigned char temp;
-    temp = SPI1_Read(0xFF);
-    temp = SPI1_Read(0xFF);
+    temp = SPISD_Write(0xFF);
+    temp = SPISD_Write(0xFF);
     return temp;
 }
 // *****************************************************************************
@@ -326,9 +327,9 @@ unsigned char R1_Response(void){
 unsigned int R2_Response(void){
     unsigned char temp;
     unsigned int response;
-    temp = SPI1_Read(0xFF);
-    response = SPI1_Read(0xFF);
-    temp = SPI1_Read(0xFF);
+    temp = SPISD_Write(0xFF);
+    response = SPISD_Write(0xFF);
+    temp = SPISD_Write(0xFF);
     response = (response<<8)|temp;
     return response;
 }
@@ -344,12 +345,12 @@ unsigned int R2_Response(void){
 unsigned long Response_32b(void){
     unsigned char temp;
     unsigned long response;
-    response = SPI1_Read(0xFF);
-    temp = SPI1_Read(0xFF);
+    response = SPISD_Write(0xFF);
+    temp = SPISD_Write(0xFF);
     response = (response<<8)|temp;
-    temp = SPI1_Read(0xFF);
+    temp = SPISD_Write(0xFF);
     response = (response<<8)|temp;
-    temp = SPI1_Read(0xFF);
+    temp = SPISD_Write(0xFF);
     response = (response<<8)|temp;
     return response;
 }
@@ -363,12 +364,12 @@ unsigned long Response_32b(void){
 // ****************** Metodo para enviar un comando a la SD ********************
 // *****************************************************************************
 void SD_Send_Command(unsigned char command,unsigned long argument, unsigned char crc){
-    SPI1_Read(command |= 0x40);
-    SPI1_Read((unsigned char)(argument>>24));
-    SPI1_Read((unsigned char)(argument>>16));
-    SPI1_Read((unsigned char)(argument>>8));
-    SPI1_Read((unsigned char)(argument));
-    SPI1_Read((crc<<1)|0x01);
+    SPISD_Write(command |= 0x40);
+    SPISD_Write((unsigned char)(argument>>24));
+    SPISD_Write((unsigned char)(argument>>16));
+    SPISD_Write((unsigned char)(argument>>8));
+    SPISD_Write((unsigned char)(argument));
+    SPISD_Write((crc<<1)|0x01);
 }
 // *****************************************************************************
 // ************************** Fin SD_Send_Command ******************************
@@ -384,7 +385,7 @@ unsigned char SD_Ready(void){
     unsigned int i;
     unsigned char temp;
     for(i = 0; i < SD_TIME_OUT; i++){
-        temp = SPI1_Read(0xFF);
+        temp = SPISD_Write(0xFF);
         if(temp == 0xFF) break;
         if(i == (SD_TIME_OUT-1)) return 0x00;
     }

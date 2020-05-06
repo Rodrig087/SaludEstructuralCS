@@ -6,7 +6,7 @@ Value=0
 [BUILD_TYPE]
 Value=0
 [ACTIVE_TAB]
-Value=NodoAcelerometro.c
+Value=..\Librerias firmware\sdcard.h
 [USE_EEPROM]
 Value=0
 [USE_HEAP]
@@ -16,16 +16,22 @@ Value=2000
 [EEPROM_DEFINITION]
 Value=
 [FILES]
-Count=1
+Count=3
 File0=NodoAcelerometro.c
+File1=..\Librerias firmware\spiSD.c
+File2=..\Librerias firmware\sdcard.c
 [BINARIES]
 Count=0
 [IMAGES]
 Count=0
 ActiveImageIndex=-1
 [OPENED_FILES]
-Count=1
+Count=5
 File0=NodoAcelerometro.c
+File1=..\Librerias firmware\spiSD.c
+File2=..\Librerias firmware\spiSD.h
+File3=..\Librerias firmware\sdcard.c
+File4=..\Librerias firmware\sdcard.h
 [EEPROM]
 Count=0
 [ACTIVE_COMMENTS_FILES]
@@ -37,14 +43,14 @@ Count=4
 Path0=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for dsPIC\defs\
 Path1=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for dsPIC\uses\
 Path2=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\NodoAcelerometro\
-Path3=C:\Users\Ivan\Desktop\Milton Muñoz\Proyectos\Git\SaludEstructuralCS\Firmware\NodoAcelerometro\
+Path3=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Librerias firmware\
 [HEADER_PATH]
-Count=2
-Path0=C:\Users\Ivan\Desktop\Milton Muñoz\Proyectos\Git\SaludEstructuralCS\Firmware\NodoAcelerometro\
-Path1=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Librerias firmware\
-[HEADERS]
 Count=1
+Path0=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Librerias firmware\
+[HEADERS]
+Count=2
 File0=..\Librerias firmware\sdcard.h
+File1=..\Librerias firmware\spiSD.h
 [PLDS]
 Count=0
 [Useses]

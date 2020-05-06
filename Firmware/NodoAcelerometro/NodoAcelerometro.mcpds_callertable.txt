@@ -1,8 +1,5 @@
 main
 	ConfiguracionPrincipal
-		ADXL355_write_byte
-			SPI2_Write
-				SPI2_Read
 		UART1_Init_Advanced
 			Get_Fosc_kHz
 			Get_Fosc_Per_Cyc
@@ -10,23 +7,47 @@ main
 			_Multiply_32x32
 			_Modulus_32x32
 			_Divide_32x32
-		SPI1_Init
 		SPI2_Init
+		ADXL355_write_byte
+			SPI2_Write
+				SPI2_Read
 	ADXL355_init
 		ADXL355_write_byte
+	SD_Detect
+	SD_Init_Try
+		SD_Init
+			Release_SD
+			SPISD_Init
+				SPI1_Init_Advanced
+			SPISD_Write
+			Select_SD
+			SD_Send_Command
+				SPISD_Write
+			R1_Response
+				SPISD_Write
+			SD_Ready
+				SPISD_Write
+			Response_32b
+				SPISD_Write
+		Release_SD
 int_1
-	Muestrear
-		ADXL355_write_byte
-		ADXL355_read_byte
-			SPI2_Write
-			SPI2_Read
-		ADXL355_read_FIFO
-			SPI2_Write
-			SPI2_Read
-		AjustarTiempoSistema
-			_Divide_32x32
-			_Modulus_32x32
+	EnviarTramaRS485
+		UART1_Write
+		UART1_Tx_Idle
+		UART2_Write
+	GuardarTramaSD
+		SD_Write_Block
+			Select_SD
+			SD_Ready
+			SD_Send_Command
+			R1_Response
+			SPISD_Write
+			Release_SD
 urx_1
 Timer1Int
 	ADXL355_read_byte
+		SPI2_Write
+		SPI2_Read
 	ADXL355_read_FIFO
+		SPI2_Write
+		SPI2_Read
