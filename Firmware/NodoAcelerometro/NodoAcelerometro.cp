@@ -365,7 +365,7 @@ unsigned char tramaCompleta[2506];
 unsigned char tramaSalida[2506];
 unsigned short numFIFO, numSetsFIFO;
 unsigned short contTimer1;
-unsigned char tramaPrueba[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 unsigned int i, x, y, i_gps, j;
 unsigned short buffer;
@@ -389,12 +389,13 @@ unsigned int i_uart;
 unsigned int numDatosPyload;
 
 const unsigned int clusterSizeSD = 512;
+unsigned int sectorSave = 99;
 unsigned long sectorSD = 100;
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
 unsigned char contadorEjemploSD = 0;
 unsigned char resultSD;
-unsigned char temp;
+
 unsigned char tramaCompletaEjemplo[2500];
 
 
@@ -405,7 +406,10 @@ unsigned char tramaCompletaEjemplo[2500];
 
 void ConfiguracionPrincipal();
 void Muestrear();
+void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD();
+void GuardarSectorSD(unsigned long sector);
+void LeerSectorSD();
 
 
 
@@ -458,6 +462,10 @@ void main() {
  TEST = 0;
 
  SPI1BUF = 0x00;
+
+
+ horaSistema = 62700;
+ fechaSistema = 60520;
 
 
  while (1) {
@@ -626,26 +634,115 @@ void Muestrear(){
 
 
 
-void GuardarTramaSD(){
+void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
 
- for (x=0;x<6;x++){
- bufferSD[x] = cabeceraSD[x];
+ for (x=0;x<5;x++){
+ resultSD = SD_Write_Block(bufferLleno,sector);
+ if (resultSD ==  22 ){
+ TEST = ~TEST;
+ break;
  }
+ Delay_us(10);
+ }
+}
+
+
+
+
+void GuardarTramaSD(){
 
 
  contadorEjemploSD = 0;
- for (x=6;x<clusterSizeSD;x++) {
- bufferSD[x] = contadorEjemploSD;
-
+ for (x=0;x<2500;x++){
+ tramaSalida[x] = contadorEjemploSD;
  contadorEjemploSD ++;
  if (contadorEjemploSD >= 255){
  contadorEjemploSD = 0;
  }
  }
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ for (x=0;x<6;x++){
+ tramaSalida[2500+x] = tiempo[x];
+ }
+
+
+
+
+
+ for (x=0;x<6;x++){
+ bufferSD[x] = cabeceraSD[x];
+ }
+
+ for (x=0;x<6;x++){
+ bufferSD[6+x] = tiempo[x];
+ }
+
+ for (x=0;x<500;x++){
+ bufferSD[12+x] = tramaSalida[x];
+ }
+
+ GuardarBufferSD(bufferSD, sectorSD);
+
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ bufferSD[x] = tramaSalida[x+500];
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ bufferSD[x] = tramaSalida[x+1012];
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ bufferSD[x] = tramaSalida[x+1524];
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ if (x<464){
+ bufferSD[x] = tramaSalida[x+2036];
+ } else {
+ bufferSD[x] = 0;
+ }
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ GuardarSectorSD(sectorSD);
+
+
+
+}
+
+
+
+
+void GuardarSectorSD(unsigned long sector){
+
+
+
+ unsigned char bufferSectores[512];
+ bufferSectores[0] = (sector>>24)&0xFF;
+ bufferSectores[1] = (sector>>16)&0xFF;
+ bufferSectores[2] = (sector>>8)&0xFF;
+ bufferSectores[3] = (sector)&0xFF;
+ for (x=4;x<512;x++){
+ bufferSectores[x] = 0;
+ }
 
 
  for (x=0;x<5;x++){
- resultSD = SD_Write_Block(bufferSD,sectorSD);
+ resultSD = SD_Write_Block(bufferSectores,sectorSave);
  if (resultSD ==  22 ){
  TEST = ~TEST;
  break;
@@ -653,8 +750,6 @@ void GuardarTramaSD(){
  Delay_us(10);
  }
 
-
- sectorSD++;
 }
 
 
@@ -672,14 +767,14 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  TEST = ~TEST;
  horaSistema++;
 
- EnviarTramaRS485(1, 1, 10, 2, tramaPrueba);
+ EnviarTramaRS485(1, 1, 10, 2, tramaPruebaRS485);
 
  if (horaSistema==86400){
  horaSistema = 0;
  }
 
  GuardarTramaSD();
-#line 364 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 459 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
 }
 
 

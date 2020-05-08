@@ -36,13 +36,19 @@ int_1
 		UART1_Tx_Idle
 		UART2_Write
 	GuardarTramaSD
-		SD_Write_Block
-			Select_SD
-			SD_Ready
-			SD_Send_Command
-			R1_Response
-			SPISD_Write
-			Release_SD
+		AjustarTiempoSistema
+			_Divide_32x32
+			_Modulus_32x32
+		GuardarBufferSD
+			SD_Write_Block
+				Select_SD
+				SD_Ready
+				SD_Send_Command
+				R1_Response
+				SPISD_Write
+				Release_SD
+		GuardarSectorSD
+			SD_Write_Block
 urx_1
 Timer1Int
 	ADXL355_read_byte

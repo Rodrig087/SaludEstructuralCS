@@ -4005,6 +4005,8 @@ get_fosc_per_cyc
 gie
 gie
 gie_bit
+guardarbuffersd
+guardarsectorsd
 guardartramasd
 half
 half
@@ -9489,6 +9491,7 @@ sdi2r3
 sdi2r4
 sdi2r5
 sdi2r6
+sectorsave
 sectorsd
 seien
 seien
@@ -11164,7 +11167,6 @@ tcs_t2con_bit
 tcs_t3con_bit
 tcs_t4con_bit
 tcs_t5con_bit
-temp
 test
 test_direction
 tgate
@@ -11434,7 +11436,7 @@ tramacabecerauart
 tramacompleta
 tramacompletaejemplo
 tramagps
-tramaprueba
+tramapruebars485
 tramapyloaduart
 tramasalida
 trapr

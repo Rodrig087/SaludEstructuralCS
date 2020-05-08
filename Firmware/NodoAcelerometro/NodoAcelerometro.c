@@ -42,7 +42,7 @@ unsigned char tramaCompleta[2506];                                              
 unsigned char tramaSalida[2506];
 unsigned short numFIFO, numSetsFIFO;                                            //Variablea para almacenar el numero de muestras y sets recuperados del buffer FIFO
 unsigned short contTimer1;                                                      //Variable para contar el numero de veces que entra a la interrupcion por Timer 1
-unsigned char tramaPrueba[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};        //Trama de 10 elementos para probar la comunicacion RS485
+unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
 
 unsigned int i, x, y, i_gps, j;
 unsigned short buffer;
@@ -66,12 +66,13 @@ unsigned int i_uart;
 unsigned int numDatosPyload;
 
 const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
+unsigned int sectorSave = 99;                                                   //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
 unsigned long sectorSD = 100;                                                   //Comienza en el sector 100, para escribir en la SD
-unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      //Cabecera del bufferSD: {cte1, cte2, cte3, #Bytes/Muestra, MSB_fSample, LSB_fSample}
+unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      //Cabecera del bufferSD: | Cte1 | Cte2 | Ct3 | #Bytes/Muestra | MSB_fSample | LSB_fSample |
 unsigned char bufferSD [clusterSizeSD];                                         //Buffer del tamaño del cluster, siempre se guarda este numero de datos en la SD
 unsigned char contadorEjemploSD = 0;                                            //Este es un contador para el ejemplo
 unsigned char resultSD;                                                         //Esta variable indica si la escritura en la SD se completo correctamente
-unsigned char temp;                                                             //**Cambiar el nombre. Es una variable temporal. Temp=0, significa que la lectura fue exitosa
+//unsigned char temp;                                                             //**Cambiar el nombre. Es una variable temporal. Temp=0, significa que la lectura fue exitosa
 unsigned char tramaCompletaEjemplo[2500];
 
 
@@ -82,7 +83,10 @@ unsigned char tramaCompletaEjemplo[2500];
 /////////////////////////////////////////////////////////  Declaracion de funciones  /////////////////////////////////////////////////////////
 void ConfiguracionPrincipal();
 void Muestrear();
+void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD();
+void GuardarSectorSD(unsigned long sector);
+void LeerSectorSD();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -135,6 +139,10 @@ void main() {
      TEST = 0;
      
      SPI1BUF = 0x00;
+     
+     //datos de tiempo de prueba
+     horaSistema = 62700;       //17:25:00
+     fechaSistema = 60520;      //20/12/16
 
      //Comprueba si esta conectada la SD:
      while (1) {
@@ -302,36 +310,123 @@ void Muestrear(){
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
+//Funcion para guardar el buffer de 512 datos en la SD
+void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
+     // Intenta escribir los datos en la SD como maximo 5 veces:
+     for (x=0;x<5;x++){
+         resultSD = SD_Write_Block(bufferLleno,sector);
+         if (resultSD == DATA_ACCEPTED){
+             TEST = ~TEST;
+             break;
+         }
+         Delay_us(10);
+     }
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
 //Funcion para guardar los datos de la trama de aceleracion en la SD
 void GuardarTramaSD(){
-	//Rellena los primeros 6 bytes del bufferSD con los datos de la cabecera:
-	for (x=0;x<6;x++){
-	    bufferSD[x] = cabeceraSD[x];
-	}
 
-	//Termina de llenar el cluster con datos de ejemplo:
-	contadorEjemploSD = 0;
-        for (x=6;x<clusterSizeSD;x++) {
-            bufferSD[x] = contadorEjemploSD;
-            //bufferSD[x] = 0;
+        //DATOS DE PRUEBA:
+        contadorEjemploSD = 0;
+        for (x=0;x<2500;x++){
+            tramaSalida[x] = contadorEjemploSD;
             contadorEjemploSD ++;
             if (contadorEjemploSD >= 255){
                 contadorEjemploSD = 0;
             }
         }
-
-	// Intenta escribir los datos en la SD como maximo 5 veces:
-        for (x=0;x<5;x++){
-	    resultSD = SD_Write_Block(bufferSD,sectorSD);
-            if (resultSD == DATA_ACCEPTED){
-                TEST = ~TEST;
-                break;
-            }
-            Delay_us(10);
+        AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+        for (x=0;x<6;x++){
+            tramaSalida[2500+x] = tiempo[x];
         }
 
-	//Aumenta el indice del sector:
-	sectorSD++;
+        //**Informacion: [Cabecera + tiempo + datos aceleracion] = 2512 bytes = 5 sectores
+        //Por lo tanto se graban 4 buffers completos y 1 un buffer con 464 bytes de aceleracion y 48 ceros
+        
+        //Agrega los datos de cabecera al buffer:
+        for (x=0;x<6;x++){
+            bufferSD[x] = cabeceraSD[x];
+        }
+        //Agrega los datos de tiempo al buffer:
+        for (x=0;x<6;x++){
+            bufferSD[6+x] = tiempo[x];
+        }
+        //Agrega los primeros 500 bytes de la trama de datos al buffer:
+        for (x=0;x<500;x++){
+            bufferSD[12+x] = tramaSalida[x];
+        }
+        //Guarda el buffer en la SD:
+        GuardarBufferSD(bufferSD, sectorSD);
+        //Aumenta el indice del sector:
+        sectorSD++;
+
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 500 - 1011:
+        for (x=0;x<512;x++){
+            bufferSD[x] = tramaSalida[x+500];
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+        
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 1012 - 1523:
+        for (x=0;x<512;x++){
+            bufferSD[x] = tramaSalida[x+1012];
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+        
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 1524 - 2035:
+        for (x=0;x<512;x++){
+            bufferSD[x] = tramaSalida[x+1524];
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+        
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 2036 - 2499:
+        for (x=0;x<512;x++){
+            if (x<464){
+               bufferSD[x] = tramaSalida[x+2036];
+            } else {
+               bufferSD[x] = 0;
+            }
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+
+        //Guarda en la SD el ultimo sector donde se guardo la trama:
+        GuardarSectorSD(sectorSD);
+        
+        //TEST = 0;                                                               //Apaga el TEST cuando termina de gurdar la trama
+        
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
+//Funcion para guardar el ultimo sector que se escribio
+void GuardarSectorSD(unsigned long sector){
+
+     //Crea un buffer para pasarle a la funcion que graba la informacion en la SD por sectores
+     //Es muy ineficiente pero no quiero manipular la libreria
+     unsigned char bufferSectores[512];
+     bufferSectores[0] = (sector>>24)&0xFF;                                     //MSB variable sector
+     bufferSectores[1] = (sector>>16)&0xFF;
+     bufferSectores[2] = (sector>>8)&0xFF;
+     bufferSectores[3] = (sector)&0xFF;                                         //LSD variable sector
+     for (x=4;x<512;x++){
+         bufferSectores[x] = 0;                                                 //Rellena de ceros el resto del buffer
+     }
+
+     // Intenta escribir los datos en la SD como maximo 5 veces:
+     for (x=0;x<5;x++){
+         resultSD = SD_Write_Block(bufferSectores,sectorSave);
+         if (resultSD == DATA_ACCEPTED){
+             TEST = ~TEST;
+             break;
+         }
+         Delay_us(10);
+     }
+     
 }
 //*****************************************************************************************************************************************
 
@@ -349,7 +444,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
      TEST = ~TEST;
      horaSistema++;                                                             //Incrementa el reloj del sistema
 
-     EnviarTramaRS485(1, 1, 10, 2, tramaPrueba);                                //Envia la trama de prueba por RS485
+     EnviarTramaRS485(1, 1, 10, 2, tramaPruebaRS485);                                //Envia la trama de prueba por RS485
 
      if (horaSistema==86400){                                                   //(24*3600)+(0*60)+(0) = 86400
         horaSistema = 0;                                                        //Reinicia el reloj al llegar a las 24:00:00 horas
