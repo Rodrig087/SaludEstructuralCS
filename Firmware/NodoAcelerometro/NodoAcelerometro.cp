@@ -106,6 +106,8 @@ void DS3234_read_byte(unsigned char address, unsigned char value);
 void DS3234_setDate(unsigned long longHora, unsigned long longFecha);
 unsigned long RecuperarFechaRTC();
 unsigned long RecuperarHoraRTC();
+unsigned long IncrementarFecha(unsigned long longFecha);
+void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema);
 
 
 
@@ -233,11 +235,78 @@ unsigned long RecuperarFechaRTC(){
  valueRead = Bcd2Dec(valueRead);
  anio = (long)valueRead;
 
- fechaRTC = (dia*10000)+(mes*100)+(anio);
+ fechaRTC = (anio*10000)+(mes*100)+(dia);
 
  SPI2_Init();
 
  return fechaRTC;
+
+}
+
+
+unsigned long IncrementarFecha(unsigned long longFecha){
+
+ unsigned long dia;
+ unsigned long mes;
+ unsigned long anio;
+ unsigned long fechaInc;
+
+ anio = longFecha / 10000;
+ mes = (longFecha%10000) / 100;
+ dia = (longFecha%10000) % 100;
+
+ if (dia<28){
+ dia++;
+ } else {
+ if (mes==2){
+
+ if (((anio-16)%4)==0){
+ if (dia==29){
+ dia = 1;
+ mes++;
+ } else {
+ dia++;
+ }
+ } else {
+ dia = 1;
+ mes++;
+ }
+ } else {
+ if (dia<30){
+ dia++;
+ } else {
+ if (mes==4||mes==6||mes==9||mes==11){
+ if (dia==30){
+ dia = 1;
+ mes++;
+ } else {
+ dia++;
+ }
+ }
+ if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
+ if (dia==31){
+ dia = 1;
+ mes++;
+ } else {
+ dia++;
+ }
+ }
+ if ((dia!=1)&&(mes==12)){
+ if (dia==31){
+ dia = 1;
+ mes = 1;
+ anio++;
+ } else {
+ dia++;
+ }
+ }
+ }
+ }
+
+ }
+
+ fechaInc = (anio*10000)+(mes*100)+(dia);
+ return fechaInc;
 
 }
 
@@ -255,13 +324,13 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
  minuto = (longHora%3600) / 60;
  segundo = (longHora%3600) % 60;
 
- dia = longFecha / 10000;
+ anio = longFecha / 10000;
  mes = (longFecha%10000) / 100;
- anio = (longFecha%10000) % 100;
+ dia = (longFecha%10000) % 100;
 
- tramaTiempoSistema[0] = dia;
+ tramaTiempoSistema[0] = anio;
  tramaTiempoSistema[1] = mes;
- tramaTiempoSistema[2] = anio;
+ tramaTiempoSistema[2] = dia;
  tramaTiempoSistema[3] = hora;
  tramaTiempoSistema[4] = minuto;
  tramaTiempoSistema[5] = segundo;
@@ -269,12 +338,22 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
 }
 #line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/rs485.c"
 
-sbit MSRS485 at LATB12_bit;
-sbit MSRS485_Direction at TRISB12_bit;
 
 
 
-void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload){
+
+
+
+
+
+
+extern sfr sbit MSRS485;
+extern sfr sbit MSRS485_Direction;
+
+
+
+
+void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char *payload){
 
  unsigned int iDatos;
 
@@ -282,8 +361,8 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  MSRS485 = 1;
  UART1_Write(0x3A);
  UART1_Write(direccion);
- UART1_Write(numDatos);
  UART1_Write(funcion);
+ UART1_Write(numDatos);
  for (iDatos=0;iDatos<numDatos;iDatos++){
  UART1_Write(payload[iDatos]);
  }
@@ -297,14 +376,14 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  MSRS485 = 1;
  UART2_Write(0x3A);
  UART2_Write(direccion);
- UART2_Write(numDatos);
  UART2_Write(funcion);
+ UART2_Write(numDatos);
  for (iDatos=0;iDatos<numDatos;iDatos++){
  UART2_Write(payload[iDatos]);
  }
  UART2_Write(0x0D);
  UART2_Write(0x0A);
- while(UART1_Tx_Idle()==0);
+ while(UART2_Tx_Idle()==0);
  MSRS485 = 0;
  }
 
@@ -342,61 +421,62 @@ void Release_SD(void);
 unsigned char SD_Detect(void);
 void SD_Check(void);
 #line 1 "c:/users/public/documents/mikroelektronika/mikroc pro for dspic/include/stdbool.h"
-#line 23 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
-struct sdflags sdflags;
+#line 22 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+unsigned short const IDNODO = 5;
 
+
+unsigned int i, j, x, y;
+
+
+struct sdflags sdflags;
 sbit TEST at LATA2_bit;
 sbit TEST_Direction at TRISA2_bit;
 sbit CsADXL at LATA3_bit;
 sbit CsADXL_Direction at TRISA3_bit;
-
 sbit sd_CS_lat at LATB0_bit;
 sbit sd_CS_tris at TRISB0_bit;
 sbit sd_detect_port at LATA4_bit;
 sbit sd_detect_tris at TRISA4_bit;
+sbit MSRS485 at LATB12_bit;
+sbit MSRS485_Direction at TRISB12_bit;
 
-unsigned char tramaGPS[70];
-unsigned char datosGPS[13];
+
 unsigned short tiempo[6];
-unsigned short tiempoRPI[6];
+unsigned short banSetReloj;
+unsigned long horaSistema, fechaSistema;
+
+
+unsigned short banCiclo, banInicioMuestreo;
 unsigned char datosLeidos[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned char datosFIFO[243];
-unsigned char tramaCompleta[2506];
-unsigned char tramaSalida[2506];
+unsigned char tramaAceleracion[2500];
 unsigned short numFIFO, numSetsFIFO;
 unsigned short contTimer1;
-unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
-unsigned int i, x, y, i_gps, j;
-unsigned short buffer;
 unsigned short contMuestras;
 unsigned short contCiclos;
 unsigned int contFIFO;
 short tasaMuestreo;
 short numTMR1;
 
-unsigned short banUTI, banUTC;
-unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
-unsigned short banMuestrear, banLeer, banConf;
 
-unsigned char byteUART, banTIGPS, banTFGPS, banTCGPS;
-unsigned long horaSistema, fechaSistema;
+unsigned short banRSI, banRSC;
+unsigned char byteRS485;
+unsigned int i_rs485;
+unsigned char tramaCabeceraRS485[4];
+unsigned char tramaPyloadRS485[512];
+unsigned int numDatosRS485;
+unsigned short funcionRS485;
+unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
-unsigned char byteUART1;
-unsigned char tramaCabeceraUART[4];
-unsigned char tramaPyloadUART[2506];
-unsigned int i_uart;
-unsigned int numDatosPyload;
 
 const unsigned int clusterSizeSD = 512;
 unsigned int sectorSave = 99;
-unsigned long sectorSD = 100;
+unsigned long sectorSD;
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
-unsigned char contadorEjemploSD = 0;
-unsigned char resultSD;
-
-unsigned char tramaCompletaEjemplo[2500];
+unsigned char checkEscSD;
+unsigned char checkLecSD;
 
 
 
@@ -407,9 +487,9 @@ unsigned char tramaCompletaEjemplo[2500];
 void ConfiguracionPrincipal();
 void Muestrear();
 void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
-void GuardarTramaSD();
+void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
-void LeerSectorSD();
+unsigned long LeerSectorSD( _Bool  sobrescribirSD);
 
 
 
@@ -418,78 +498,64 @@ void LeerSectorSD();
 void main() {
 
  ConfiguracionPrincipal();
+ TEST = 0;
 
  tasaMuestreo = 1;
  ADXL355_init(tasaMuestreo);
  numTMR1 = (tasaMuestreo*10)-1;
 
- banUTI = 0;
- banUTC = 0;
 
- banLec = 0;
- banEsc = 0;
- banCiclo = 0;
- banSetReloj = 0;
- banSetGPS = 0;
- banTIGPS = 0;
- banTFGPS = 0;
- banTCGPS = 0;
 
- banMuestrear = 0;
- banInicio = 0;
- banLeer = 0;
- banConf = 0;
 
  i = 0;
+ j = 0;
  x = 0;
  y = 0;
- i_gps = 0;
- i_uart = 0;
- horaSistema = 0;
- numDatosPyload = 0;
 
- contMuestras = 0;
- contCiclos = 0;
- contFIFO = 0;
+
+ banSetReloj = 0;
+ horaSistema = 0;
+ fechaSistema = 0;
+
+
+ banCiclo = 0;
+ banInicioMuestreo = 0;
  numFIFO = 0;
  numSetsFIFO = 0;
  contTimer1 = 0;
+ contMuestras = 0;
+ contCiclos = 0;
+ contFIFO = 0;
 
- byteUART = 0;
 
+ banRSI = 0;
+ banRSC = 0;
+ byteRS485 = 0;
+ i_rs485 = 0;
+ numDatosRS485 = 0;
+ funcionRS485 = 0;
+
+
+ sectorSD = 0;
+ checkEscSD = 0;
+ checkLecSD = 0;
  MSRS485 = 0;
 
- TEST = 0;
-
- SPI1BUF = 0x00;
 
 
- horaSistema = 62700;
- fechaSistema = 60520;
-
-
- while (1) {
- if (SD_Detect() ==  0xDE ) {
-
+ horaSistema = 86100;
+ fechaSistema = 200228;
+#line 163 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  sdflags.detected =  1 ;
-
- break;
- } else {
-
- sdflags.detected =  0 ;
- sdflags.init_ok =  0 ;
-
- }
- Delay_ms(100);
- }
 
 
  if (sdflags.detected && !sdflags.init_ok) {
  if (SD_Init_Try(10) ==  0xAA ) {
  sdflags.init_ok =  1 ;
  TEST = 1;
+ sectorSD = LeerSectorSD( 1 );
  INT1IE_bit = 1;
-
+ banInicioMuestreo = 1;
  } else {
  sdflags.init_ok =  0 ;
 
@@ -523,7 +589,7 @@ void ConfiguracionPrincipal(){
  TEST_Direction = 0;
  CsADXL_Direction = 0;
  sd_CS_tris = 0;
- TRISB12_bit = 0;
+ MSRS485_Direction = 0;
  sd_detect_tris = 1;
  TRISB14_bit = 1;
 
@@ -533,10 +599,12 @@ void ConfiguracionPrincipal(){
 
  RPINR18bits.U1RXR = 0x2F;
  RPOR1bits.RP36R = 0x01;
- UART1_Init_Advanced(2000000, 2, 1, 1);
+ U1RXIE_bit = 1;
+ U1STAbits.URXISEL = 0x00;
  U1RXIF_bit = 0;
  IPC2bits.U1RXIP = 0x04;
- U1STAbits.URXISEL = 0x00;
+ UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+
 
 
  RPINR22bits.SDI2R = 0x21;
@@ -558,9 +626,9 @@ void ConfiguracionPrincipal(){
  IPC0bits.T1IP = 0x02;
 
 
- U1RXIE_bit = 0;
+
  INT1IE_bit = 0;
- T1IE_bit = 1;
+ T1IE_bit = 0;
 
 
  ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
@@ -588,7 +656,7 @@ void Muestrear(){
 
  banCiclo = 2;
 
- tramaCompleta[0] = contCiclos;
+ tramaAceleracion[0] = contCiclos;
  numFIFO = ADXL355_read_byte( 0x05 );
  numSetsFIFO = (numFIFO)/3;
 
@@ -603,27 +671,21 @@ void Muestrear(){
 
  for (x=0;x<(numSetsFIFO*9);x++){
  if ((x==0)||(x%9==0)){
- tramaCompleta[contFIFO+contMuestras+x] = contMuestras;
- tramaCompleta[contFIFO+contMuestras+x+1] = datosFIFO[x];
+ tramaAceleracion[contFIFO+contMuestras+x] = contMuestras;
+ tramaAceleracion[contFIFO+contMuestras+x+1] = datosFIFO[x];
  contMuestras++;
  } else {
- tramaCompleta[contFIFO+contMuestras+x] = datosFIFO[x];
+ tramaAceleracion[contFIFO+contMuestras+x] = datosFIFO[x];
  }
  }
-
 
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- for (x=0;x<6;x++){
- tramaCompleta[2500+x] = tiempo[x];
- }
 
  contMuestras = 0;
  contFIFO = 0;
  T1CON.TON = 1;
 
- banLec = 1;
-
-
+ GuardarTramaSD(tiempo, tramaAceleracion);
 
  }
 
@@ -637,8 +699,8 @@ void Muestrear(){
 void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
 
  for (x=0;x<5;x++){
- resultSD = SD_Write_Block(bufferLleno,sector);
- if (resultSD ==  22 ){
+ checkEscSD = SD_Write_Block(bufferLleno,sector);
+ if (checkEscSD ==  22 ){
  TEST = ~TEST;
  break;
  }
@@ -649,21 +711,8 @@ void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
 
 
 
-void GuardarTramaSD(){
+void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
 
-
- contadorEjemploSD = 0;
- for (x=0;x<2500;x++){
- tramaSalida[x] = contadorEjemploSD;
- contadorEjemploSD ++;
- if (contadorEjemploSD >= 255){
- contadorEjemploSD = 0;
- }
- }
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- for (x=0;x<6;x++){
- tramaSalida[2500+x] = tiempo[x];
- }
 
 
 
@@ -674,11 +723,11 @@ void GuardarTramaSD(){
  }
 
  for (x=0;x<6;x++){
- bufferSD[6+x] = tiempo[x];
+ bufferSD[6+x] = tiempoSD[x];
  }
 
  for (x=0;x<500;x++){
- bufferSD[12+x] = tramaSalida[x];
+ bufferSD[12+x] = aceleracionSD[x];
  }
 
  GuardarBufferSD(bufferSD, sectorSD);
@@ -687,21 +736,21 @@ void GuardarTramaSD(){
 
 
  for (x=0;x<512;x++){
- bufferSD[x] = tramaSalida[x+500];
+ bufferSD[x] = aceleracionSD[x+500];
  }
  GuardarBufferSD(bufferSD, sectorSD);
  sectorSD++;
 
 
  for (x=0;x<512;x++){
- bufferSD[x] = tramaSalida[x+1012];
+ bufferSD[x] = aceleracionSD[x+1012];
  }
  GuardarBufferSD(bufferSD, sectorSD);
  sectorSD++;
 
 
  for (x=0;x<512;x++){
- bufferSD[x] = tramaSalida[x+1524];
+ bufferSD[x] = aceleracionSD[x+1524];
  }
  GuardarBufferSD(bufferSD, sectorSD);
  sectorSD++;
@@ -709,7 +758,7 @@ void GuardarTramaSD(){
 
  for (x=0;x<512;x++){
  if (x<464){
- bufferSD[x] = tramaSalida[x+2036];
+ bufferSD[x] = aceleracionSD[x+2036];
  } else {
  bufferSD[x] = 0;
  }
@@ -742,13 +791,52 @@ void GuardarSectorSD(unsigned long sector){
 
 
  for (x=0;x<5;x++){
- resultSD = SD_Write_Block(bufferSectores,sectorSave);
- if (resultSD ==  22 ){
+ checkEscSD = SD_Write_Block(bufferSectores,sectorSave);
+ if (checkEscSD ==  22 ){
  TEST = ~TEST;
  break;
  }
  Delay_us(10);
  }
+ TEST = 0;
+}
+
+
+
+
+unsigned long LeerSectorSD( _Bool  sobrescribirSD){
+
+ unsigned char bufferSectorFinal[512];
+ unsigned long sectorInicioSD;
+ unsigned char *ptrSectorInicioSD;
+
+ ptrSectorInicioSD = (unsigned char *) & sectorInicioSD;
+
+
+ if (sobrescribirSD== 1 ){
+ sectorInicioSD = 100;
+ } else {
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+
+ checkLecSD = SD_Read_Block(bufferSectorFinal, sectorSave);
+
+ if (checkLecSD==0) {
+
+ *ptrSectorInicioSD = bufferSectorFinal[3];
+ *(ptrSectorInicioSD+1) = bufferSectorFinal[2];
+ *(ptrSectorInicioSD+2) = bufferSectorFinal[1];
+ *(ptrSectorInicioSD+3) = bufferSectorFinal[0];
+ break;
+ Delay_ms(5);
+ } else {
+ sectorInicioSD = 200;
+ }
+ }
+ }
+
+ return sectorInicioSD;
 
 }
 
@@ -764,17 +852,23 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  INT1IF_bit = 0;
 
- TEST = ~TEST;
+ if (banSetReloj==1){
  horaSistema++;
-
- EnviarTramaRS485(1, 1, 10, 2, tramaPruebaRS485);
+ TEST = ~TEST;
+ } else {
+ EnviarTramaRS485(1, IDNODO, 0xF2, 6, tiempo);
+ }
 
  if (horaSistema==86400){
  horaSistema = 0;
+ fechaSistema = IncrementarFecha(fechaSistema);
  }
 
- GuardarTramaSD();
-#line 459 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+ if (banInicioMuestreo==1){
+ TEST = 1;
+ Muestrear();
+ }
+
 }
 
 
@@ -798,11 +892,11 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 
  for (x=0;x<(numSetsFIFO*9);x++){
  if ((x==0)||(x%9==0)){
- tramaCompleta[contFIFO+contMuestras+x] = contMuestras;
- tramaCompleta[contFIFO+contMuestras+x+1] = datosFIFO[x];
+ tramaAceleracion[contFIFO+contMuestras+x] = contMuestras;
+ tramaAceleracion[contFIFO+contMuestras+x+1] = datosFIFO[x];
  contMuestras++;
  } else {
- tramaCompleta[contFIFO+contMuestras+x] = datosFIFO[x];
+ tramaAceleracion[contFIFO+contMuestras+x] = datosFIFO[x];
  }
  }
 
@@ -825,52 +919,78 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
  U1RXIF_bit = 0;
- byteUART = U1RXREG;
+ byteRS485 = U1RXREG;
  OERR_bit = 0;
 
 
- if (banUTI==2){
- if (i_uart<numDatosPyload){
- tramaPyloadUART[i_uart] = byteUART;
- i_uart++;
+ if (banRSI==2){
+ if (i_rs485<numDatosRS485){
+ tramaPyloadRS485[i_rs485] = byteRS485;
+ i_rs485++;
  } else {
- banUTI = 0;
- banUTC = 1;
+
+ banRSI = 0;
+ banRSC = 1;
  }
  }
 
 
- if ((banUTI==0)&&(banUTC==0)){
- if (byteUART==0x3A){
- banUTI = 1;
- i_uart = 0;
+ if ((banRSI==0)&&(banRSC==0)){
+ if (byteRS485==0x3A){
+
+ banRSI = 1;
+ i_rs485 = 0;
  }
  }
- if ((banUTI==1)&&(i_uart<4)){
- tramaCabeceraUART[i_uart] = byteUART;
- i_uart++;
+ if ((banRSI==1)&&(i_rs485<4)){
+ tramaCabeceraRS485[i_rs485] = byteRS485;
+ i_rs485++;
  }
- if ((banUTI==1)&&(i_uart==4)){
- numDatosPyload = tramaCabeceraUART[2];
- banUTI = 2;
- i_uart = 0;
+ if ((banRSI==1)&&(i_rs485==4)){
+
+ if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
+
+ funcionRS485 = tramaCabeceraRS485[2];
+ numDatosRS485 = tramaCabeceraRS485[3];
+ banRSI = 2;
+ i_rs485 = 0;
+ } else {
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
  }
 
 
- if (banUTC==1){
 
+ }
+
+
+ if (banRSC==1){
+
+ switch (funcionRS485){
+ case 0xF1:
+
+ banInicioMuestreo = 1;
+ break;
+ case 0xF2:
 
  for (x=0;x<6;x++) {
- tiempo[x] = tramaPyloadUART[x];
- if (tiempo[x]<59){
- tiempo[x] = tiempo[x]+1;
+ tiempo[x] = tramaPyloadRS485[x];
  }
+ banSetReloj = 1;
+ break;
+ case 0xF3:
+
+
+ if (tramaPyloadRS485[8]==18){
+ TEST = ~TEST;
  }
- banSetReloj=1;
+ break;
+ }
 
+ banRSC = 0;
+ banRSI = 0;
 
-
- banUTC = 0;
  }
 
 }

@@ -1294,19 +1294,10 @@ b7
 b8
 b9
 banciclo
-banconf
-banesc
-baninicio
-banlec
-banleer
-banmuestrear
-bansetgps
+baniniciomuestreo
+banrsc
+banrsi
 bansetreloj
-bantcgps
-bantfgps
-bantigps
-banutc
-banuti
 bcd2dec
 bcd2dec16
 bch
@@ -1472,7 +1463,6 @@ brgh
 brgh_bit
 brgh_u1mode_bit
 brgh_u2mode_bit
-buffer
 buffersd
 bufm
 bufm
@@ -1493,10 +1483,9 @@ bwm0
 bwm1
 bwm2
 bwm3
+byters485
 bytetohex
 bytetostr
-byteuart
-byteuart1
 c
 c
 c_bit
@@ -1739,6 +1728,8 @@ ch123sa_bit
 ch123sb
 ch123sb
 ch123sb_bit
+checkescsd
+checklecsd
 chen
 chen
 chen
@@ -2342,7 +2333,6 @@ con_cm2con_bit
 con_cm3con_bit
 con_cm4con_bit
 configuracionprincipal
-contadorejemplosd
 contciclos
 contfifo
 contmuestras
@@ -2724,7 +2714,6 @@ dae
 dae
 dae_bit
 datosfifo
-datosgps
 datosleidos
 dc
 dc
@@ -3985,6 +3974,7 @@ frmpol
 frmpol_bit
 frmpol_spi1con2_bit
 frmpol_spi2con2_bit
+funcionrs485
 gaten
 gaten
 gaten_bit
@@ -4064,8 +4054,7 @@ hompol
 hompol_bit
 horasistema
 i
-i_gps
-i_uart
+i_rs485
 i2c1add
 i2c1brg
 i2c1con
@@ -4874,6 +4863,7 @@ idissen_bit
 idle
 idle
 idle_bit
+idnodo
 idxien
 idxien
 idxien_bit
@@ -4948,6 +4938,7 @@ imv_0
 imv_0_bit
 imv_1
 imv_1_bit
+incrementarfecha
 index
 index_
 index_bit
@@ -5949,6 +5940,7 @@ lebdly2
 lebdly2bits
 lebdly3
 lebdly3bits
+leersectorsd
 lendian
 lendian
 lendian_bit
@@ -6186,7 +6178,7 @@ nullw_dma0con_bit
 nullw_dma1con_bit
 nullw_dma2con_bit
 nullw_dma3con_bit
-numdatospyload
+numdatosrs485
 numfifo
 numsetsfifo
 numtmr1
@@ -9088,7 +9080,6 @@ refomd
 refomd_bit
 release_sd
 response_32b
-resultsd
 ridle
 ridle
 ridle
@@ -11185,7 +11176,6 @@ tgen
 tgen
 tgen_bit
 tiempo
-tiemporpi
 timer1int
 tmr1
 tmr1_0
@@ -11432,13 +11422,10 @@ ton_t3con_bit
 ton_t4con_bit
 ton_t5con_bit
 toupper
-tramacabecerauart
-tramacompleta
-tramacompletaejemplo
-tramagps
+tramaaceleracion
+tramacabecerars485
 tramapruebars485
-tramapyloaduart
-tramasalida
+tramapyloadrs485
 trapr
 trapr
 trapr_bit

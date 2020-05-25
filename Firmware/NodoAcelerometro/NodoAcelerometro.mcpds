@@ -26,12 +26,8 @@ Count=0
 Count=0
 ActiveImageIndex=-1
 [OPENED_FILES]
-Count=5
+Count=1
 File0=NodoAcelerometro.c
-File1=..\Librerias firmware\spiSD.c
-File2=..\Librerias firmware\spiSD.h
-File3=..\Librerias firmware\sdcard.c
-File4=..\Librerias firmware\sdcard.h
 [EEPROM]
 Count=0
 [ACTIVE_COMMENTS_FILES]

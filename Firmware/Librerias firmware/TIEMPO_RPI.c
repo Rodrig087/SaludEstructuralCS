@@ -11,7 +11,7 @@ unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi){
 
      unsigned long fechaRPi;
 
-     fechaRPi = ((long)tramaTiempoRpi[0]*10000)+((long)tramaTiempoRpi[1]*100)+((long)tramaTiempoRpi[2]);      //10000*dd + 100*mm + aa
+     fechaRPi = ((long)tramaTiempoRpi[0]*10000)+((long)tramaTiempoRpi[1]*100)+((long)tramaTiempoRpi[2]);      //10000*aa + 100*mm + dd
 
      return fechaRPi;
 

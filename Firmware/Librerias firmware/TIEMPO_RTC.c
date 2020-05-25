@@ -45,6 +45,8 @@ void DS3234_read_byte(unsigned char address, unsigned char value);
 void DS3234_setDate(unsigned long longHora, unsigned long longFecha);
 unsigned long RecuperarFechaRTC();
 unsigned long RecuperarHoraRTC();
+unsigned long IncrementarFecha(unsigned long longFecha);
+void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema);
 
 
 ///////////////////////////////////////////        Funciones        ///////////////////////////////////////////
@@ -172,12 +174,79 @@ unsigned long RecuperarFechaRTC(){
      valueRead = Bcd2Dec(valueRead);
      anio = (long)valueRead;
 
-     fechaRTC = (dia*10000)+(mes*100)+(anio);                                   //10000*dd + 100*mm + aa
+     fechaRTC = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
           
      SPI2_Init();
      
      return fechaRTC;
          
+}
+
+//Funcion para incrementar la fecha
+unsigned long IncrementarFecha(unsigned long longFecha){
+	 
+	 unsigned long dia;
+     unsigned long mes;
+     unsigned long anio; 
+	 unsigned long fechaInc;
+	 
+	 anio = longFecha / 10000;
+     mes = (longFecha%10000) / 100;
+     dia = (longFecha%10000) % 100;
+	 
+	 if (dia<28){
+		dia++;		 
+	 } else {
+		if (mes==2){
+			//Comprueba si es año biciesto:
+			if (((anio-16)%4)==0){
+				if (dia==29){
+					dia = 1;
+					mes++;	
+				} else {
+					dia++;
+				}
+			} else {
+				dia = 1;
+				mes++;
+			}
+		} else {
+			if (dia<30){
+				dia++;
+			} else {
+				if (mes==4||mes==6||mes==9||mes==11){
+					if (dia==30){
+						dia = 1;
+						mes++;
+					} else {
+						dia++;
+					}
+				}
+				if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
+					if (dia==31){
+						dia = 1;
+						mes++;
+					} else {
+						dia++;
+					}
+				}
+				if ((dia!=1)&&(mes==12)){
+					if (dia==31){
+						dia = 1;
+						mes = 1;
+						anio++;
+					} else {
+						dia++;
+					}
+				}
+			}
+        }
+		
+	 }
+	 
+	 fechaInc = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
+	 return fechaInc;	 
+	
 }
 
 //Funcion para ajustar la hora y la fecha del sistema
@@ -194,13 +263,13 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
      minuto = (longHora%3600) / 60;
      segundo = (longHora%3600) % 60;
 
-     dia = longFecha / 10000;
+     anio = longFecha / 10000;
      mes = (longFecha%10000) / 100;
-     anio = (longFecha%10000) % 100;
+     dia = (longFecha%10000) % 100;
      
-     tramaTiempoSistema[0] = dia;
+     tramaTiempoSistema[0] = anio;
      tramaTiempoSistema[1] = mes;
-     tramaTiempoSistema[2] = anio;
+     tramaTiempoSistema[2] = dia;
      tramaTiempoSistema[3] = hora;
      tramaTiempoSistema[4] = minuto;
      tramaTiempoSistema[5] = segundo;

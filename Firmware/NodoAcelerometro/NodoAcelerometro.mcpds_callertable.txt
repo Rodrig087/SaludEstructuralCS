@@ -13,7 +13,6 @@ main
 				SPI2_Read
 	ADXL355_init
 		ADXL355_write_byte
-	SD_Detect
 	SD_Init_Try
 		SD_Init
 			Release_SD
@@ -30,30 +29,48 @@ main
 			Response_32b
 				SPISD_Write
 		Release_SD
+	LeerSectorSD
+		SD_Read_Block
+			Select_SD
+			SD_Ready
+			SD_Send_Command
+			R1_Response
+			SD_Read
+				SPISD_Write
+			Release_SD
 int_1
 	EnviarTramaRS485
 		UART1_Write
 		UART1_Tx_Idle
 		UART2_Write
-	GuardarTramaSD
+		UART2_Tx_Idle
+	IncrementarFecha
+		_Divide_32x32
+		_Modulus_32x32
+		_Multiply_32x32
+	Muestrear
+		ADXL355_write_byte
+		ADXL355_read_byte
+			SPI2_Write
+			SPI2_Read
+		ADXL355_read_FIFO
+			SPI2_Write
+			SPI2_Read
 		AjustarTiempoSistema
 			_Divide_32x32
 			_Modulus_32x32
-		GuardarBufferSD
-			SD_Write_Block
-				Select_SD
-				SD_Ready
-				SD_Send_Command
-				R1_Response
-				SPISD_Write
-				Release_SD
-		GuardarSectorSD
-			SD_Write_Block
+		GuardarTramaSD
+			GuardarBufferSD
+				SD_Write_Block
+					Select_SD
+					SD_Ready
+					SD_Send_Command
+					R1_Response
+					SPISD_Write
+					Release_SD
+			GuardarSectorSD
+				SD_Write_Block
 urx_1
 Timer1Int
 	ADXL355_read_byte
-		SPI2_Write
-		SPI2_Read
 	ADXL355_read_FIFO
-		SPI2_Write
-		SPI2_Read

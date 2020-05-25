@@ -4,25 +4,23 @@ Fecha de creacion: 16/01/2020
 Configuracion: dsPIC33EP256MC202, XT=80MHz
 ---------------------------------------------------------------------------------------------------------------------------*/
 
-/////////////////////// /// Formato de la trama de datos //////////////////////////
-//|  Cabecera  |                        PDU                        |      Fin     |
-//|   1 byte   |   1 byte  |  1 byte  |  1 byte  |     n bytes     |    2 bytes   |
-//|    0x3A    | Dirección |  #Datos  | Función  |      DataN      |  0Dh  |  0Ah |
-
 
 ////////////////////////////////////////////////////         Librerias         /////////////////////////////////////////////////////////////
 
 #include <TIEMPO_RTC.c>
 #include <TIEMPO_GPS.c>
 #include <TIEMPO_RPI.c>
-#include <ADXL355_SPI.c>
+#include <RS485.c>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-//////////////////////////////////////////////////// Declaracion de variables //////////////////////////////////////////////////////////////
+////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 
-//Variables y constantes para la peticion y respuesta de datos
+//Subindices:
+unsigned int i, j, x, y;
+
+//Definicion de pines:
 sbit RP1 at LATA4_bit;                                                          //Definicion del pin P1
 sbit RP1_Direction at TRISA4_bit;
 sbit MSRS485 at LATB11_bit;                                                     //Definicion del pin MS RS485
@@ -39,41 +37,45 @@ sbit INT_SINC3_Direction at TRISB10_bit;
 sbit INT_SINC4 at LATB12_bit;
 sbit INT_SINC4_Direction at TRISB12_bit;
 
+//Constantes para el UART:
+#define FP 80000000
+#define BAUDRATE 115200
+#define BRGVAL ((FP/BAUDRATE)/16)-1
+
+//Variables para manejo del GPS:
+unsigned int i_gps;
+unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
+unsigned short banSetGPS;
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
+
+//Variables para manejo del tiempo:
 unsigned short tiempo[6];                                                       //Vector de datos de tiempo del sistema
 unsigned short tiempoRPI[6];                                                    //Vector para recuperar el tiempo enviado desde la RPi
-unsigned char datosLeidos[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-unsigned char datosFIFO[243];                                                   //Vector para almacenar 27 muestras de 3 ejes del vector FIFO
-unsigned short numFIFO, numSetsFIFO;                                            //Variablea para almacenar el numero de muestras y sets recuperados del buffer FIFO
-unsigned short contTimer1;
-unsigned char tramaCompleta[2506];                                              //Vector para almacenar 10 vectores datosFIFO, 250 cabeceras de muestras y el vector tiempo
-unsigned char tramaSalida[2506];                                                //Variable para contar el numero de veces que entra a la interrupcion por Timer 1
-unsigned char tramaPrueba[10];                                                  //Trama de 10 elementos para probar la comunicacion RS485
-
-unsigned int i, x, y, i_gps, j;
-unsigned short buffer;
-unsigned short contMuestras;
-unsigned short contCiclos;
-unsigned int contFIFO;
-short tasaMuestreo;
-short numTMR1;
-
-unsigned short banUTI, banUTF, banUTC;                                                  //Banderas de control de la trama UART
-unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
-unsigned short banMuestrear, banLeer, banConf;
-unsigned short banOperacion, tipoOperacion;
-unsigned short banCheck;
-
-unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
-unsigned short fuenteReloj;
+unsigned short banSetReloj;
+unsigned short fuenteReloj;                                                     //Indica la fuente de reloj: 1 = GPS, 2 = RTC, 3 = RPi
 unsigned long horaSistema, fechaSistema;
 
-unsigned char byteUART2;
-unsigned char tramaCabeceraUART[4];
-unsigned char tramaPyloadUART[2506];
-unsigned int i_uart;
-unsigned int numDatosPyload;
+//Variables para la comunicacion SPI:
+unsigned short bufferSPI;
+unsigned short banLec, banEsc;
+unsigned char tramaCompleta[2506];                                              //Vector para almacenar 10 vectores datosFIFO, 250 cabeceras de muestras y el vector tiempo
+unsigned char tramaPrueba[10];                                                  //Trama de 10 elementos para probar la comunicacion RS485
+unsigned short banInicio;
+unsigned short banOperacion, tipoOperacion;
+unsigned short banCheckRS485;
+
+//Variables para manejo del RS485:
+unsigned short banRSI, banRSC;                                                  //Banderas de control de inicio de trama y trama completa
+unsigned char byteRS485;
+unsigned int i_rs485;                                                           //Indice
+unsigned char tramaCabeceraRS485[4];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
+unsigned char tramaPyloadRS485[512];                                            //Vector para almacenar el pyload de la trama RS485
+unsigned short direccionRS485;                                                  //Varaible para la direccion del nodo. Broadcast = 255
+unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
+unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
+unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -83,7 +85,6 @@ unsigned int numDatosPyload;
 void ConfiguracionPrincipal();
 void Muestrear();
 void InterrupcionP1();
-void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -92,51 +93,39 @@ void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsign
 void main() {
 
      ConfiguracionPrincipal();
-     DS3234_init();
+     //DS3234_init();
      //GPS_init(1,1);
 
-     //Banderas de control de la trama UART:
-     banOperacion = 0;
-     tipoOperacion = 0;
+     //Inicializacion de variables:
+         
+     //Subindices:
+     i = 0;
+     j = 0;
+     x = 0;
+     y = 0;
      
-     banUTI = 0;
-     banUTF = 0;
-     banUTC = 0;
-
-     banLec = 0;
-     banEsc = 0;
-     banCiclo = 0;
-     banSetReloj = 0;
-     banSetGPS = 0;
+     //GPS:
+     i_gps = 0;
+     byteGPS = 0;
      banTIGPS = 0;
      banTFGPS = 0;
      banTCGPS = 0;
-     fuenteReloj = 0;
-
-     banMuestrear = 0;                                                          //Inicia el programa con esta bandera en bajo para permitir que la RPi envie la peticion de inicio de muestreo
-     banInicio = 0;                                                             //Bandera de inicio de muestreo
-     banLeer = 0;
-     banConf = 0;
-
-     banCheck = 0;
-
-     i = 0;
-     x = 0;
-     y = 0;
-     i_gps = 0;
+     banSetGPS = 0;
+         
+     //Tiempo:
+     banSetReloj = 0;
      horaSistema = 0;
-     i_uart = 0;
-     numDatosPyload = 0;
-
-     contMuestras = 0;
-     contCiclos = 0;
-     contFIFO = 0;
-     numFIFO = 0;
-     numSetsFIFO = 0;
-     contTimer1 = 0;
-
-     byteGPS = 0;
-
+     fechaSistema = 0;
+         
+     //RS485:
+     banRSI = 0;
+     banRSC = 0;
+     byteRS485 = 0;
+     i_rs485 = 0;
+     numDatosRS485 = 0;
+     funcionRS485 = 0;
+        
+     //Puertos:
      RP1 = 0;
      INT_SINC = 1;                                                              //Enciende el pin TEST
      INT_SINC1 = 0;                                                             //Inicializa los pines de sincronizacion en 0
@@ -149,7 +138,8 @@ void main() {
      SPI1BUF = 0x00;
 
      while(1){
-
+              EnviarTramaRS485(2, 255, 0xF3, 10, tramaPruebaRS485);
+              Delay_ms(100);
      }
 
 }
@@ -173,14 +163,14 @@ void ConfiguracionPrincipal(){
      ANSELA = 0;                                                                //Configura PORTA como digital     *
      ANSELB = 0;                                                                //Configura PORTB como digital     *
      
-     TRISA0_bit = 0;                                                            //INT_SINC1
-     TRISA1_bit = 0;                                                            //INT_SINC
      TRISA2_bit = 0;                                                            //RTC_CS
-     TRISA3_bit = 0;                                                            //INT_SINC2
-     TRISA4_bit = 0;                                                            //RP1
-     TRISB10_bit = 0;                                                           //INT_SINC3
-     TRISB11_bit = 0;                                                           //MSRS485
-     TRISB12_bit = 0;                                                           //INT_SINC4
+     INT_SINC_Direction = 0;                                                    //INT_SINC
+     INT_SINC1_Direction = 0;                                                   //INT_SINC1
+     INT_SINC2_Direction = 0;                                                   //INT_SINC2
+     INT_SINC3_Direction = 0;                                                   //INT_SINC3
+     INT_SINC4_Direction = 0;                                                   //INT_SINC4
+     RP1_Direction = 0;                                                         //RP1
+     MSRS485_Direction = 0;                                                     //MSRS485
      
      TRISB13_bit = 1;                                                           //SQW
      TRISB14_bit = 1;                                                           //PPS
@@ -191,7 +181,6 @@ void ConfiguracionPrincipal(){
      RPINR18bits.U1RXR = 0x22;                                                  //Configura el pin RB2/RPI34 como Rx1
      RPOR0bits.RP35R = 0x01;                                                    //Configura el Tx1 en el pin RB3/RP35
      UART1_Init(9600);                                                          //Inicializa el UART1 con una velocidad de 9600 baudios
-
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U1STAbits.URXISEL = 0x00;
@@ -199,9 +188,14 @@ void ConfiguracionPrincipal(){
      //Configuracion del puerto UART2
      RPINR19bits.U2RXR = 0x2F;                                                  //Configura el pin RB15/RPI47 como Rx2
      RPOR1bits.RP36R = 0x03;                                                    //Configura el Tx2 en el pin RB4/RP36
+     //UART2_Init(9600);
      UART2_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
-     //Prueba
-     U2STAbits.URXISEL = 0; // Interrupt after one RX character is received;
+     /*U2MODEbits.STSEL = 0;                                                      // 1-Stop bit
+     U2MODEbits.PDSEL = 0;                                                      // No Parity, 8-Data bits
+     U2MODEbits.ABAUD = 0;                                                      // Auto-Baud disabled
+     U2MODEbits.BRGH = 0;                                                       // Standard-Speed mode
+     U2BRG = BRGVAL;                                                            // Baud Rate setting for 9600
+     */
      U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC7bits.U2RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      U2STAbits.URXISEL = 0x00;
@@ -230,7 +224,7 @@ void ConfiguracionPrincipal(){
      U1RXIE_bit = 0;                                                            //UART1 RX
      U2RXIE_bit = 1;                                                            //UART2 RX
      SPI1IE_bit = 0;                                                            //SPI1
-     INT1IE_bit = 1;                                                            //INT1
+     INT1IE_bit = 0;                                                            //INT1
 
      Delay_ms(200);                                                             //Espera hasta que se estabilicen los cambios
 
@@ -240,18 +234,21 @@ void ConfiguracionPrincipal(){
 //*****************************************************************************************************************************************
 //Funcion para realizar la interrupcion en la RPi
  void InterrupcionP1(unsigned short operacion){
-     //Si se ejecuta una operacion de tiempo, habilita la interrupcion INT1 para incrementar la hora del sistema con cada pulso PPS
+     //Si se ejecuta una operacion de tiempo, habilita la interrupcion INT1 para incrementar la hora del sistema con cada pulso PPS y envia la hora local a los nodos:
      if (operacion==0xB2){
         if (INT1IE_bit==0){
            INT1IE_bit = 1;
         }
+        //Envia la hora local a los nodos:
+        EnviarTramaRS485(2, 255, 0xF2, 6, tiempo);
      }
      banOperacion = 0;                                                          //Encera la bandera para permitir una nueva peticion de operacion
      tipoOperacion = operacion;                                                 //Carga en la variable el tipo de operacion requerido
-     //Genera el pulso P1 para producir la interrupcion externa en la RPi
+     //Genera el pulso P1 para producir la interrupcion externa en la RPi:
      RP1 = 1;
      Delay_us(20);
      RP1 = 0;
+     
 }
 //*****************************************************************************************************************************************
 
@@ -265,15 +262,15 @@ void ConfiguracionPrincipal(){
 void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
 
      SPI1IF_bit = 0;                                                            //Limpia la bandera de interrupcion por SPI
-     buffer = SPI1BUF;                                                          //Guarda el contenido del bufeer (lectura)
+     bufferSPI = SPI1BUF;                                                       //Guarda el contenido del bufeer (lectura)
 
      //************************************************************************************************************************************
      //Rutina para enviar la peticion de operacion a la RPi  (C:0xA0   F:0xF0)
-     if ((banOperacion==0)&&(buffer==0xA0)) {
+     if ((banOperacion==0)&&(bufferSPI==0xA0)) {
         banOperacion = 1;                                                       //Activa la bandera para enviar el tipo de operacion requerido a la RPi
         SPI1BUF = tipoOperacion;                                                //Carga en el buffer el tipo de operacion requerido
      }
-     if ((banOperacion==1)&&(buffer==0xF0)){
+     if ((banOperacion==1)&&(bufferSPI==0xF0)){
         banOperacion = 0;                                                       //Limpia la bandera
         tipoOperacion = 0;                                                      //Limpia la variable de tipo de operacion
      }
@@ -283,16 +280,16 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //Rutinas de control del acelerometro:
      
      //Rutina de lectura de los datos del acelerometro (C:0xA3   F:0xF3):
-     if ((banLec==1)&&(buffer==0xA3)){                                          //Verifica si la bandera de inicio de trama esta activa
+     if ((banLec==1)&&(bufferSPI==0xA3)){                                       //Verifica si la bandera de inicio de trama esta activa
         banLec = 2;                                                             //Activa la bandera de lectura
         i = 0;
-        SPI1BUF = tramaCompleta[i];                                             //**Duda
+        SPI1BUF = tramaCompleta[i];                                             //**Aqui envio a la RPi la trama de aceleracion recuperada de los nodos
      }
-     if ((banLec==2)&&(buffer!=0xF3)){
+     if ((banLec==2)&&(bufferSPI!=0xF3)){
         SPI1BUF = tramaCompleta[i];
         i++;
      }
-     if ((banLec==2)&&(buffer==0xF3)){                                          //Si detecta el delimitador de final de trama:
+     if ((banLec==2)&&(bufferSPI==0xF3)){                                          //Si detecta el delimitador de final de trama:
         banLec = 0;                                                             //Limpia la bandera de lectura                        ****AQUI Me QUEDE
         SPI1BUF = 0xFF;
      }
@@ -302,15 +299,15 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //Rutinas de manejo de tiempo:
      
      //Rutina para obtener la hora de la RPi (C:0xA4   F:0xF4):
-     if ((banSetReloj==0)&&(buffer==0xA4)){
+     if ((banSetReloj==0)&&(bufferSPI==0xA4)){
          banEsc = 1;
          j = 0;
      }
-     if ((banEsc==1)&&(buffer!=0xA4)&&(buffer!=0xF4)){
-        tiempoRPI[j] = buffer;
+     if ((banEsc==1)&&(bufferSPI!=0xA4)&&(bufferSPI!=0xF4)){
+        tiempoRPI[j] = bufferSPI;
         j++;
      }
-     if ((banEsc==1)&&(buffer==0xF4)){
+     if ((banEsc==1)&&(bufferSPI==0xF4)){
         horaSistema = RecuperarHoraRPI(tiempoRPI);                              //Recupera la hora de la RPi
         fechaSistema = RecuperarFechaRPI(tiempoRPI);                            //Recupera la fecha de la RPi
         //**Esta fallando de nuevo el chip DS3234
@@ -323,23 +320,23 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         InterrupcionP1(0XB2);                                                   //Envia la hora local a la RPi
      }
 
-     //Rutina para enviar la hora local a la RPi (C:0xA5   F:0xF5):
-     if ((banSetReloj==1)&&(buffer==0xA5)){
+     //Rutina para enviar la hora local a la RPi y a los nodos(C:0xA5   F:0xF5):
+     if ((banSetReloj==1)&&(bufferSPI==0xA5)){
         banSetReloj = 2;
         j = 0;
         SPI1BUF = fuenteReloj;                                                  //Envia el indicador de fuente de reloj (0:RTC, 1:GPS)
      }
-     if ((banSetReloj==2)&&(buffer!=0xA5)&&(buffer!=0xF5)){
+     if ((banSetReloj==2)&&(bufferSPI!=0xA5)&&(bufferSPI!=0xF5)){
         SPI1BUF = tiempo[j];
         j++;
      }
-     if ((banSetReloj==2)&&(buffer==0xF5)){                                     //Si detecta el delimitador de final de trama:
+     if ((banSetReloj==2)&&(bufferSPI==0xF5)){                                     //Si detecta el delimitador de final de trama:
         banSetReloj = 0;                                                        //Limpia la bandera de lectura
         SPI1BUF = 0xFF;
      }
 
      //Rutina para obtener la hora del GPS(C:0xA6   F:0xF6):
-     if ((banSetReloj==0)&&(buffer==0xA6)){
+     if ((banSetReloj==0)&&(bufferSPI==0xA6)){
         //ConfigurarGPS(confGPS[0],confGPS[1]);                                   //Configura el GPS (Configurar,NMA)
         GPS_init(1,1);
         banTIGPS = 0;                                                           //Limpia la bandera de inicio de trama  del GPS
@@ -353,7 +350,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      }
 
      //Rutina para obtener la hora del RTC (C:0xA7   F:0xF7):
-     if ((banSetReloj==0)&&(buffer==0xA7)){
+     if ((banSetReloj==0)&&(bufferSPI==0xA7)){
         horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
         fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
@@ -364,12 +361,12 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //************************************************************************************************************************************
      
      //************************************************************************************************************************************
-     //Rutinas de testeo:
+     //Rutinas de prueba de la comunicacion RS485:
      
      //Rutina para testeo de la comunicacion RS485 (C:0xA8   F:0xF8):
-     if ((banCheck==0)&&(buffer==0xA8)){
+     if ((banCheckRS485==0)&&(bufferSPI==0xA8)){
         //InterrupcionP1(0xB3);                                                   //Envia una solicitud de prueba
-        banCheck = 1;
+        banCheckRS485 = 1;
         //**Aqui debo incluir la rutina de peticion de la trama de prueba al nodo por medio de RS485
         /*for (x=0;x<10;x++){
             tramaPrueba[x] = x;
@@ -377,17 +374,17 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      }
      
      //Rutina para enviar la trama de prueba (C:0xA9   F:0xF9):
-     if ((banCheck==1)&&(buffer==0xA9)){
+     if ((banCheckRS485==1)&&(bufferSPI==0xA9)){
         j = 0;
         SPI1BUF = tramaPrueba[j];
         j++;
      }
-     if ((banCheck==1)&&(buffer!=0xA9)&&(buffer!=0xF9)){
+     if ((banCheckRS485==1)&&(bufferSPI!=0xA9)&&(bufferSPI!=0xF9)){
         SPI1BUF = tramaPrueba[j];
         j++;
      }
-     if ((banCheck==1)&&(buffer==0xF9)){
-        banCheck = 0;
+     if ((banCheckRS485==1)&&(bufferSPI==0xF9)){
+        banCheckRS485 = 0;
         //limpia la trama de prueba
         /*for (x=0;x<10;x++){
             tramaPrueba[x] = 0;
@@ -407,11 +404,19 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
      //U2RXIE_bit = 1;                                                            //Activa interrupcion U2
      
      horaSistema++;                                                             //Incrementa el reloj del sistema
-     //INT_SINC = ~INT_SINC;                                                      //TEST
+     INT_SINC = ~INT_SINC;                                                      //TEST
      
-     //Genera el pulso de interrupcion en el nodo:
+     //Genera los pulsos de interrupcion en los nodos:
+     //INT_SINC = 1;
+     INT_SINC1 = 1;
+     INT_SINC2 = 1;
+     INT_SINC3 = 1;
      INT_SINC4 = 1;
      Delay_us(20);
+     //INT_SINC = 0;
+     INT_SINC1 = 0;
+     INT_SINC2 = 0;
+     INT_SINC3 = 0;
      INT_SINC4 = 0;
 
      if (horaSistema==86400){                                                   //(24*3600)+(0*60)+(0) = 86400
@@ -513,58 +518,71 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
 
      //Recupera el byte recibido en cada interrupcion:
      U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
-     byteUART2 = U2RXREG;                                                       //Lee el byte de la trama enviada por el GPS
+     byteRS485 = U2RXREG;                                                       //Lee el byte de la trama enviada por el GPS
      U2STA.OERR = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
-     //INT_SINC = ~INT_SINC;                                                    //TEST
-     //INT_SINC = 0;
-
-     //Recupera el pyload de la trama UART:                                     //Aqui deberia entrar despues de recuperar la cabecera de trama
-     if (banUTI==2){
-        if (i_uart<numDatosPyload){
-           tramaPyloadUART[i_uart] = byteUART2;
-           i_uart++;
+     
+     //Recupera el pyload de la trama RS485:                                    //Aqui deberia entrar despues de recuperar la cabecera de trama
+     if (banRSI==2){
+        if (i_rs485<numDatosRS485){
+           tramaPyloadRS485[i_rs485] = byteRS485;
+           i_rs485++;
         } else {
-           banUTI = 0;                                                          //Limpia la bandera de inicio de trama
-           banUTC = 1;                                                          //Activa la bandera de trama completa
+           banRSI = 0;                                                          //Limpia la bandera de inicio de trama
+           banRSC = 1;                                                          //Activa la bandera de trama completa
         }
      }
 
-     //Recupera la cabecera de la trama UART:                                   //Aqui deberia entrar primero cada vez que se recibe una trama nueva
-     if ((banUTI==0)&&(banUTC==0)){
-        if (byteUART2==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           banUTI = 1;
-           i_uart = 0;
+     //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
+     if ((banRSI==0)&&(banRSC==0)){
+        if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
+           banRSI = 1;
+           i_rs485 = 0;
         }
      }
-     if ((banUTI==1)&&(i_uart<4)){
-        tramaCabeceraUART[i_uart] = byteUART2;                                  //Recupera los datos de cabecera de la trama UART
-        i_uart++;
+     if ((banRSI==1)&&(i_rs485<3)){
+        tramaCabeceraRS485[i_rs485] = byteRS485;                                 //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
+        i_rs485++;
      }
-     if ((banUTI==1)&&(i_uart==4)){
-        numDatosPyload = tramaCabeceraUART[2];
-        banUTI = 2;
-        i_uart = 0;
+     if ((banRSI==1)&&(i_rs485==4)){
+        //Comprueba la direccion:
+        if ((tramaCabeceraRS485[1]==direccionRS485)||(tramaCabeceraRS485[1]==255)){
+           banRSI = 2;
+           i_rs485 = 0;
+        } else {
+           banRSI = 0;
+           banRSC = 0;
+        }
      }
-     
+
      //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
-     if (banUTC==1){
-     
-         //PRUEBA//
-         INT_SINC = ~INT_SINC;                                                  //TEST
-         for (x=0;x<10;x++) {
-             tramaPrueba[x] = tramaPyloadUART[x];                               //LLeno la trama de prueba con el payload de la trama recuperada
-         }
-         InterrupcionP1(0xB3);                                                  //Envia una solicitud de prueba
-         //FIN PRUEBA//
+     if (banRSC==1){
+
+        funcionRS485 = tramaCabeceraRS485[2];
+        numDatosRS485 = tramaCabeceraRS485[3];
+                
+        switch (funcionRS485){
+               case 0xF1:
+                    //Inicia el muestreo:
+                    
+                    break;
+               case 0xF2:
+                    //Recupera el tiempo de la trama RS485:
+                    
+                    break;
+               case 0xF3:
+                    //Envia una trama de prueba:
+                  
+                    break;
+                }
+                
+         banRSC = 0;
          
-         banUTC = 0;
      }
-
 }
-*/
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+*/
+/*
 ///////////////// PRUEBAS ////////////////////
 //Interrupcion UART1
 void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
@@ -573,15 +591,18 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
      U1STAbits.OERR = 0;                                                        //Limpia este bit para limpiar el FIFO UART
      //INT_SINC = ~INT_SINC;                                                      //TEST
 }
-
+*/
+/*
 //Interrupcion UART2
 void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
-     if(U2STAbits.OERR == 1){                                                   //Limpia este bit para limpiar el FIFO UART
-        U2STAbits.OERR = 0;
+     //Recupera el byte recibido en cada interrupcion:
+     U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
+     byteRS485 = U2RXREG;                                                       //Lee el byte de la trama enviada por el GPS
+     U2STA.OERR = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
+     
+     if (byteRS485==0x3A){
+        INT_SINC = ~INT_SINC;
      }
-     if(U2STAbits.URXDA == 1){
-        byteUART2  = U2RXREG;
-     }
-     INT_SINC = ~INT_SINC;                                                      //TEST
-     U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART
+     
 }
+*/

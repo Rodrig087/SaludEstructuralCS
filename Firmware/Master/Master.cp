@@ -12,6 +12,8 @@ void DS3234_read_byte(unsigned char address, unsigned char value);
 void DS3234_setDate(unsigned long longHora, unsigned long longFecha);
 unsigned long RecuperarFechaRTC();
 unsigned long RecuperarHoraRTC();
+unsigned long IncrementarFecha(unsigned long longFecha);
+void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema);
 
 
 
@@ -139,11 +141,78 @@ unsigned long RecuperarFechaRTC(){
  valueRead = Bcd2Dec(valueRead);
  anio = (long)valueRead;
 
- fechaRTC = (dia*10000)+(mes*100)+(anio);
+ fechaRTC = (anio*10000)+(mes*100)+(dia);
 
  SPI2_Init();
 
  return fechaRTC;
+
+}
+
+
+unsigned long IncrementarFecha(unsigned long longFecha){
+
+ unsigned long dia;
+ unsigned long mes;
+ unsigned long anio;
+ unsigned long fechaInc;
+
+ anio = longFecha / 10000;
+ mes = (longFecha%10000) / 100;
+ dia = (longFecha%10000) % 100;
+
+ if (dia<28){
+ dia++;
+ } else {
+ if (mes==2){
+
+ if (((anio-16)%4)==0){
+ if (dia==29){
+ dia = 1;
+ mes++;
+ } else {
+ dia++;
+ }
+ } else {
+ dia = 1;
+ mes++;
+ }
+ } else {
+ if (dia<30){
+ dia++;
+ } else {
+ if (mes==4||mes==6||mes==9||mes==11){
+ if (dia==30){
+ dia = 1;
+ mes++;
+ } else {
+ dia++;
+ }
+ }
+ if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
+ if (dia==31){
+ dia = 1;
+ mes++;
+ } else {
+ dia++;
+ }
+ }
+ if ((dia!=1)&&(mes==12)){
+ if (dia==31){
+ dia = 1;
+ mes = 1;
+ anio++;
+ } else {
+ dia++;
+ }
+ }
+ }
+ }
+
+ }
+
+ fechaInc = (anio*10000)+(mes*100)+(dia);
+ return fechaInc;
 
 }
 
@@ -161,13 +230,13 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
  minuto = (longHora%3600) / 60;
  segundo = (longHora%3600) % 60;
 
- dia = longFecha / 10000;
+ anio = longFecha / 10000;
  mes = (longFecha%10000) / 100;
- anio = (longFecha%10000) % 100;
+ dia = (longFecha%10000) % 100;
 
- tramaTiempoSistema[0] = dia;
+ tramaTiempoSistema[0] = anio;
  tramaTiempoSistema[1] = mes;
- tramaTiempoSistema[2] = anio;
+ tramaTiempoSistema[2] = dia;
  tramaTiempoSistema[3] = hora;
  tramaTiempoSistema[4] = minuto;
  tramaTiempoSistema[5] = segundo;
@@ -293,101 +362,62 @@ unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi){
  return horaRPi;
 
 }
-#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
-#line 96 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
-sbit CS_ADXL355 at LATA3_bit;
-unsigned short axisAddresses[] = { 0x08 ,  0x09 ,  0x0A ,  0x0B ,  0x0C ,  0x0D ,  0x0E ,  0x0F ,  0x10 };
-
-void ADXL355_init();
-void ADXL355_write_byte(unsigned char address, unsigned char value);
-unsigned char ADXL355_read_byte(unsigned char address);
-unsigned int ADXL355_read_data(unsigned char *vectorMuestra);
-unsigned int ADXL355_read_FIFO(unsigned char *vectorFIFO);
+#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/rs485.c"
 
 
-void ADXL355_init(short tMuestreo){
- ADXL355_write_byte( 0x2F ,0x52);
- Delay_ms(10);
- ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
- ADXL355_write_byte( 0x2C ,  0x01 );
- switch (tMuestreo){
- case 1:
- ADXL355_write_byte( 0x28 ,  0x00 | 0x04 );
- break;
- case 2:
- ADXL355_write_byte( 0x28 ,  0x00 | 0x05 );
- break;
- case 4:
- ADXL355_write_byte( 0x28 ,  0x00 | 0x06 );
- break;
- case 8:
- ADXL355_write_byte( 0x28 ,  0x00 | 0x07  );
- break;
+
+
+
+
+
+
+
+
+extern sfr sbit MSRS485;
+extern sfr sbit MSRS485_Direction;
+
+
+
+
+void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char *payload){
+
+ unsigned int iDatos;
+
+ if (puertoUART == 1){
+ MSRS485 = 1;
+ UART1_Write(0x3A);
+ UART1_Write(direccion);
+ UART1_Write(funcion);
+ UART1_Write(numDatos);
+ for (iDatos=0;iDatos<numDatos;iDatos++){
+ UART1_Write(payload[iDatos]);
  }
-}
-
-
-void ADXL355_write_byte(unsigned char address, unsigned char value){
- address = (address<<1)&0xFE;
- CS_ADXL355=0;
- SPI2_Write(address);
- SPI2_Write(value);
- CS_ADXL355=1;
-}
-
-
-unsigned char ADXL355_read_byte(unsigned char address){
- unsigned char value = 0x00;
- address=(address<<1)|0x01;
- CS_ADXL355=0;
- SPI2_Write(address);
- value=SPI2_Read(0);
- CS_ADXL355=1;
- return value;
-}
-
-
-unsigned int ADXL355_read_data(unsigned char *vectorMuestra){
- unsigned short j;
- unsigned short muestra;
- if((ADXL355_read_byte( 0x04 )&0x01)==1){
- CS_ADXL355=0;
- for (j=0;j<9;j++){
- muestra = ADXL355_read_byte(axisAddresses[j]);
- vectorMuestra[j] = muestra;
+ UART1_Write(0x0D);
+ UART1_Write(0x0A);
+ while(UART1_Tx_Idle()==0);
+ MSRS485 = 0;
  }
- CS_ADXL355=1;
- } else {
- for (j=0;j<9;j++){
- vectorMuestra[j] = 0;
+
+ if (puertoUART == 2){
+ MSRS485 = 1;
+ UART2_Write(0x3A);
+ UART2_Write(direccion);
+ UART2_Write(funcion);
+ UART2_Write(numDatos);
+ for (iDatos=0;iDatos<numDatos;iDatos++){
+ UART2_Write(payload[iDatos]);
  }
+ UART2_Write(0x0D);
+ UART2_Write(0x0A);
+ while(UART2_Tx_Idle()==0);
+ MSRS485 = 0;
  }
- return;
+
 }
+#line 21 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+unsigned int i, j, x, y;
 
 
-unsigned int ADXL355_read_FIFO(unsigned char *vectorFIFO){
- unsigned char add;
- add = ( 0x11 <<1)|0x01;
- CS_ADXL355 = 0;
- SPI2_Write(add);
-
- vectorFIFO[0] = SPI2_Read(0);
- vectorFIFO[1] = SPI2_Read(1);
- vectorFIFO[2] = SPI2_Read(2);
-
- vectorFIFO[3] = SPI2_Read(0);
- vectorFIFO[4] = SPI2_Read(1);
- vectorFIFO[5] = SPI2_Read(2);
-
- vectorFIFO[6] = SPI2_Read(0);
- vectorFIFO[7] = SPI2_Read(1);
- vectorFIFO[8] = SPI2_Read(2);
- CS_ADXL355 = 1;
- Delay_us(5);
- return;
-}
-#line 26 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
 sbit RP1 at LATA4_bit;
 sbit RP1_Direction at TRISA4_bit;
 sbit MSRS485 at LATB11_bit;
@@ -404,41 +434,45 @@ sbit INT_SINC3_Direction at TRISB10_bit;
 sbit INT_SINC4 at LATB12_bit;
 sbit INT_SINC4_Direction at TRISB12_bit;
 
+
+
+
+
+
+
+unsigned int i_gps;
+unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
+unsigned short banSetGPS;
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
+
+
 unsigned short tiempo[6];
 unsigned short tiempoRPI[6];
-unsigned char datosLeidos[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-unsigned char datosFIFO[243];
-unsigned short numFIFO, numSetsFIFO;
-unsigned short contTimer1;
-unsigned char tramaCompleta[2506];
-unsigned char tramaSalida[2506];
-unsigned char tramaPrueba[10];
-
-unsigned int i, x, y, i_gps, j;
-unsigned short buffer;
-unsigned short contMuestras;
-unsigned short contCiclos;
-unsigned int contFIFO;
-short tasaMuestreo;
-short numTMR1;
-
-unsigned short banUTI, banUTF, banUTC;
-unsigned short banLec, banEsc, banCiclo, banInicio, banSetReloj, banSetGPS;
-unsigned short banMuestrear, banLeer, banConf;
-unsigned short banOperacion, tipoOperacion;
-unsigned short banCheck;
-
-unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
+unsigned short banSetReloj;
 unsigned short fuenteReloj;
 unsigned long horaSistema, fechaSistema;
 
-unsigned char byteUART2;
-unsigned char tramaCabeceraUART[4];
-unsigned char tramaPyloadUART[2506];
-unsigned int i_uart;
-unsigned int numDatosPyload;
+
+unsigned short bufferSPI;
+unsigned short banLec, banEsc;
+unsigned char tramaCompleta[2506];
+unsigned char tramaPrueba[10];
+unsigned short banInicio;
+unsigned short banOperacion, tipoOperacion;
+unsigned short banCheckRS485;
+
+
+unsigned short banRSI, banRSC;
+unsigned char byteRS485;
+unsigned int i_rs485;
+unsigned char tramaCabeceraRS485[4];
+unsigned char tramaPyloadRS485[512];
+unsigned short direccionRS485;
+unsigned short funcionRS485;
+unsigned int numDatosRS485;
+unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+
 
 
 
@@ -448,7 +482,6 @@ unsigned int numDatosPyload;
 void ConfiguracionPrincipal();
 void Muestrear();
 void InterrupcionP1();
-void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsigned short numDatos, unsigned short funcion, unsigned char *payload);
 
 
 
@@ -457,50 +490,38 @@ void EnviarTramaUART(unsigned short puertoUART, unsigned short direccion, unsign
 void main() {
 
  ConfiguracionPrincipal();
- DS3234_init();
 
 
 
- banOperacion = 0;
- tipoOperacion = 0;
 
- banUTI = 0;
- banUTF = 0;
- banUTC = 0;
 
- banLec = 0;
- banEsc = 0;
- banCiclo = 0;
- banSetReloj = 0;
- banSetGPS = 0;
+
+ i = 0;
+ j = 0;
+ x = 0;
+ y = 0;
+
+
+ i_gps = 0;
+ byteGPS = 0;
  banTIGPS = 0;
  banTFGPS = 0;
  banTCGPS = 0;
- fuenteReloj = 0;
+ banSetGPS = 0;
 
- banMuestrear = 0;
- banInicio = 0;
- banLeer = 0;
- banConf = 0;
 
- banCheck = 0;
-
- i = 0;
- x = 0;
- y = 0;
- i_gps = 0;
+ banSetReloj = 0;
  horaSistema = 0;
- i_uart = 0;
- numDatosPyload = 0;
+ fechaSistema = 0;
 
- contMuestras = 0;
- contCiclos = 0;
- contFIFO = 0;
- numFIFO = 0;
- numSetsFIFO = 0;
- contTimer1 = 0;
 
- byteGPS = 0;
+ banRSI = 0;
+ banRSC = 0;
+ byteRS485 = 0;
+ i_rs485 = 0;
+ numDatosRS485 = 0;
+ funcionRS485 = 0;
+
 
  RP1 = 0;
  INT_SINC = 1;
@@ -514,7 +535,8 @@ void main() {
  SPI1BUF = 0x00;
 
  while(1){
-
+ EnviarTramaRS485(2, 255, 0xF3, 10, tramaPruebaRS485);
+ Delay_ms(100);
  }
 
 }
@@ -538,14 +560,14 @@ void ConfiguracionPrincipal(){
  ANSELA = 0;
  ANSELB = 0;
 
- TRISA0_bit = 0;
- TRISA1_bit = 0;
  TRISA2_bit = 0;
- TRISA3_bit = 0;
- TRISA4_bit = 0;
- TRISB10_bit = 0;
- TRISB11_bit = 0;
- TRISB12_bit = 0;
+ INT_SINC_Direction = 0;
+ INT_SINC1_Direction = 0;
+ INT_SINC2_Direction = 0;
+ INT_SINC3_Direction = 0;
+ INT_SINC4_Direction = 0;
+ RP1_Direction = 0;
+ MSRS485_Direction = 0;
 
  TRISB13_bit = 1;
  TRISB14_bit = 1;
@@ -556,7 +578,6 @@ void ConfiguracionPrincipal(){
  RPINR18bits.U1RXR = 0x22;
  RPOR0bits.RP35R = 0x01;
  UART1_Init(9600);
-
  U1RXIF_bit = 0;
  IPC2bits.U1RXIP = 0x04;
  U1STAbits.URXISEL = 0x00;
@@ -564,9 +585,9 @@ void ConfiguracionPrincipal(){
 
  RPINR19bits.U2RXR = 0x2F;
  RPOR1bits.RP36R = 0x03;
- UART2_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
 
- U2STAbits.URXISEL = 0;
+ UART2_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+#line 199 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  U2RXIF_bit = 0;
  IPC7bits.U2RXIP = 0x04;
  U2STAbits.URXISEL = 0x00;
@@ -595,7 +616,7 @@ void ConfiguracionPrincipal(){
  U1RXIE_bit = 0;
  U2RXIE_bit = 1;
  SPI1IE_bit = 0;
- INT1IE_bit = 1;
+ INT1IE_bit = 0;
 
  Delay_ms(200);
 
@@ -610,6 +631,8 @@ void ConfiguracionPrincipal(){
  if (INT1IE_bit==0){
  INT1IE_bit = 1;
  }
+
+ EnviarTramaRS485(2, 255, 0xF2, 6, tiempo);
  }
  banOperacion = 0;
  tipoOperacion = operacion;
@@ -617,6 +640,7 @@ void ConfiguracionPrincipal(){
  RP1 = 1;
  Delay_us(20);
  RP1 = 0;
+
 }
 
 
@@ -630,15 +654,15 @@ void ConfiguracionPrincipal(){
 void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
  SPI1IF_bit = 0;
- buffer = SPI1BUF;
+ bufferSPI = SPI1BUF;
 
 
 
- if ((banOperacion==0)&&(buffer==0xA0)) {
+ if ((banOperacion==0)&&(bufferSPI==0xA0)) {
  banOperacion = 1;
  SPI1BUF = tipoOperacion;
  }
- if ((banOperacion==1)&&(buffer==0xF0)){
+ if ((banOperacion==1)&&(bufferSPI==0xF0)){
  banOperacion = 0;
  tipoOperacion = 0;
  }
@@ -648,16 +672,16 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
- if ((banLec==1)&&(buffer==0xA3)){
+ if ((banLec==1)&&(bufferSPI==0xA3)){
  banLec = 2;
  i = 0;
  SPI1BUF = tramaCompleta[i];
  }
- if ((banLec==2)&&(buffer!=0xF3)){
+ if ((banLec==2)&&(bufferSPI!=0xF3)){
  SPI1BUF = tramaCompleta[i];
  i++;
  }
- if ((banLec==2)&&(buffer==0xF3)){
+ if ((banLec==2)&&(bufferSPI==0xF3)){
  banLec = 0;
  SPI1BUF = 0xFF;
  }
@@ -667,15 +691,15 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
- if ((banSetReloj==0)&&(buffer==0xA4)){
+ if ((banSetReloj==0)&&(bufferSPI==0xA4)){
  banEsc = 1;
  j = 0;
  }
- if ((banEsc==1)&&(buffer!=0xA4)&&(buffer!=0xF4)){
- tiempoRPI[j] = buffer;
+ if ((banEsc==1)&&(bufferSPI!=0xA4)&&(bufferSPI!=0xF4)){
+ tiempoRPI[j] = bufferSPI;
  j++;
  }
- if ((banEsc==1)&&(buffer==0xF4)){
+ if ((banEsc==1)&&(bufferSPI==0xF4)){
  horaSistema = RecuperarHoraRPI(tiempoRPI);
  fechaSistema = RecuperarFechaRPI(tiempoRPI);
 
@@ -689,22 +713,22 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
 
 
- if ((banSetReloj==1)&&(buffer==0xA5)){
+ if ((banSetReloj==1)&&(bufferSPI==0xA5)){
  banSetReloj = 2;
  j = 0;
  SPI1BUF = fuenteReloj;
  }
- if ((banSetReloj==2)&&(buffer!=0xA5)&&(buffer!=0xF5)){
+ if ((banSetReloj==2)&&(bufferSPI!=0xA5)&&(bufferSPI!=0xF5)){
  SPI1BUF = tiempo[j];
  j++;
  }
- if ((banSetReloj==2)&&(buffer==0xF5)){
+ if ((banSetReloj==2)&&(bufferSPI==0xF5)){
  banSetReloj = 0;
  SPI1BUF = 0xFF;
  }
 
 
- if ((banSetReloj==0)&&(buffer==0xA6)){
+ if ((banSetReloj==0)&&(bufferSPI==0xA6)){
 
  GPS_init(1,1);
  banTIGPS = 0;
@@ -718,7 +742,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
 
 
- if ((banSetReloj==0)&&(buffer==0xA7)){
+ if ((banSetReloj==0)&&(bufferSPI==0xA7)){
  horaSistema = RecuperarHoraRTC();
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
@@ -732,25 +756,25 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
- if ((banCheck==0)&&(buffer==0xA8)){
+ if ((banCheckRS485==0)&&(bufferSPI==0xA8)){
 
- banCheck = 1;
-#line 377 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+ banCheckRS485 = 1;
+#line 374 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
- if ((banCheck==1)&&(buffer==0xA9)){
+ if ((banCheckRS485==1)&&(bufferSPI==0xA9)){
  j = 0;
  SPI1BUF = tramaPrueba[j];
  j++;
  }
- if ((banCheck==1)&&(buffer!=0xA9)&&(buffer!=0xF9)){
+ if ((banCheckRS485==1)&&(bufferSPI!=0xA9)&&(bufferSPI!=0xF9)){
  SPI1BUF = tramaPrueba[j];
  j++;
  }
- if ((banCheck==1)&&(buffer==0xF9)){
- banCheck = 0;
-#line 395 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+ if ((banCheckRS485==1)&&(bufferSPI==0xF9)){
+ banCheckRS485 = 0;
+#line 392 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -766,11 +790,19 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
 
  horaSistema++;
+ INT_SINC = ~INT_SINC;
 
 
 
+ INT_SINC1 = 1;
+ INT_SINC2 = 1;
+ INT_SINC3 = 1;
  INT_SINC4 = 1;
  Delay_us(20);
+
+ INT_SINC1 = 0;
+ INT_SINC2 = 0;
+ INT_SINC3 = 0;
  INT_SINC4 = 0;
 
  if (horaSistema==86400){
@@ -781,23 +813,4 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  }
 
-}
-#line 570 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
-void urx_1() org IVT_ADDR_U1RXINTERRUPT {
- U1RXIF_bit = 0;
- byteGPS = U1RXREG;
- U1STAbits.OERR = 0;
-
-}
-
-
-void urx_2() org IVT_ADDR_U2RXINTERRUPT {
- if(U2STAbits.OERR == 1){
- U2STAbits.OERR = 0;
- }
- if(U2STAbits.URXDA == 1){
- byteUART2 = U2RXREG;
- }
- INT_SINC = ~INT_SINC;
- U2RXIF_bit = 0;
 }

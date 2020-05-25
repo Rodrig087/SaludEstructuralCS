@@ -87,7 +87,6 @@ int main(void) {
 	ConfiguracionPrincipal(); 
 	sleep(1);
 	EnviarTiempoLocal();
-	//CheckComunicacionRS485();
 	sleep(2);
 	
     
@@ -279,7 +278,7 @@ void ObtenerTiempoPIC(){
 	printf("%0.2d\n",tiempoPIC[2]);		//aa
 	
 	//IniciarMuestreo();
-	CheckComunicacionRS485();
+	//CheckComunicacionRS485();
 	
 }
 
