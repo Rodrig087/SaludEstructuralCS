@@ -1286,12 +1286,23 @@ b9
 bancheckrs485
 banesc
 baninicio
+baniniciomuestreo
 banlec
 banoperacion
 banrsc
 banrsi
 bansetgps
 bansetreloj
+banspi0
+banspi1
+banspi2
+banspi3
+banspi4
+banspi5
+banspi6
+banspi7
+banspi8
+banspi9
 bantcgps
 bantfgps
 bantigps
@@ -5040,6 +5051,7 @@ indxhld_8
 indxhld_8_bit
 indxhld_9
 indxhld_9_bit
+inputpyloadrs485
 int_1
 int_sinc
 int_sinc_direction
@@ -7108,6 +7120,7 @@ outfnc_0
 outfnc_0_bit
 outfnc_1
 outfnc_1_bit
+outputpyloadrs485
 ov
 ov
 ov_bit
@@ -9052,6 +9065,7 @@ recuperarfechartc
 recuperarhoragps
 recuperarhorarpi
 recuperarhorartc
+referenciatiempo
 refocon
 refoconbits
 refomd
@@ -11381,7 +11395,7 @@ tramacompleta
 tramagps
 tramaprueba
 tramapruebars485
-tramapyloadrs485
+tramasolicitudspi
 trapr
 trapr
 trapr_bit
@@ -12033,6 +12047,7 @@ uen1
 uldiv
 unused
 unused
+urx_2
 urxda
 urxda
 urxda

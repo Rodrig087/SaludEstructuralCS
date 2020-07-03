@@ -9,17 +9,20 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 #include <ADXL355_SPI.c>
 #include <TIEMPO_RTC.c>
 #include <RS485.c>
+#include <TIEMPO_RPI.c>
 
 #include <spiSD.h>
 #include <sdcard.h>
 #include <stdbool.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+//Credenciales:
+#define IDNODO 4
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
-unsigned short const IDNODO = 5;
+#define FP 80000000                                                             //Frecuencia del reloj
+#define PSF 2048                                                                //Primer Sector Fisico de la SD. Este dato se obtiene con el programa EaseUS Partition.
 
 //Subindices:
 unsigned int i, j, x, y;
@@ -36,6 +39,9 @@ sbit sd_detect_port at LATA4_bit;                                               
 sbit sd_detect_tris at TRISA4_bit;
 sbit MSRS485 at LATB12_bit;                                                     //Definicion del pin MS RS485
 sbit MSRS485_Direction at TRISB12_bit;
+
+//Variables para controlar la operacion del sistema:
+unsigned short inicioSistema;
 
 //Variables para manejo del tiempo:
 unsigned short tiempo[6];                                                       //Vector de datos de tiempo del sistema
@@ -57,19 +63,26 @@ short tasaMuestreo;
 short numTMR1;
 
 //Variables para manejo del RS485:
+unsigned long BAUDRATE2, BRGVAL2;                                               //Variables para el calculo del baudrate
 unsigned short banRSI, banRSC;                                                  //Banderas de control de inicio de trama y trama completa
 unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
 unsigned char tramaCabeceraRS485[4];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
-unsigned char tramaPyloadRS485[512];                                            //Vector para almacenar el pyload de la trama RS485
+unsigned char inputPyloadRS485[10];                                                //Vector para almacenar el pyload de entrada de la trama RS485
+unsigned char outputPyloadRS485[512];                                              //Vector para almacenar el pyload de salida de la trama RS485
 unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
+unsigned short subFuncionRS485;                                                                                                        //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
 
 //Variables para manejo del SD:
 const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
-unsigned int sectorSave = 99;                                                   //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
+unsigned long sectorSave = PSF+99;                                              //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
+unsigned long PSE = PSF+100;                                                    //Primer Sector de Escritura de la SD 
+unsigned long
+
 unsigned long sectorSD;                                                         //Variable para almacenar el numero del sector de la SD que se va a escribir
+unsigned long sectorLec;                                                        //Variable para recuperar la informacion del sector de la SD que se solicita leer
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      //Cabecera del bufferSD: | Cte1 | Cte2 | Ct3 | #Bytes/Muestra | MSB_fSample | LSB_fSample |
 unsigned char bufferSD [clusterSizeSD];                                         //Buffer del tamaño del cluster, siempre se guarda este numero de datos en la SD
 unsigned char checkEscSD;                                                       //Esta variable indica si la escritura en la SD se completo correctamente
@@ -86,7 +99,7 @@ void Muestrear();
 void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
-unsigned long LeerSectorSD(bool sobrescribirSD);
+unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -109,6 +122,9 @@ void main() {
      x = 0;
      y = 0;
          
+     //Control sistema:
+     inicioSistema = 0;
+     
      //Tiempo:
      banSetReloj = 0;
      horaSistema = 0;
@@ -131,17 +147,19 @@ void main() {
      i_rs485 = 0;
      numDatosRS485 = 0;
      funcionRS485 = 0;
+     subFuncionRS485 = 0;
       
      //SD:
      sectorSD = 0;
+     sectorLec = 0;
      checkEscSD = 0;
      checkLecSD = 0;
      MSRS485 = 0;                                                               //Estabkece el Max485 en modo lectura
      
      
      //datos de tiempo de prueba
-     horaSistema = 86100;        //23:55:00
-     fechaSistema = 200228;      //AA/mm/dd
+     //horaSistema = 86100;        //23:55:00
+     //fechaSistema = 200228;      //AA/mm/dd
 /*
      //Comprueba si esta conectada la SD:
      while (1) {
@@ -166,13 +184,17 @@ void main() {
      if (sdflags.detected && !sdflags.init_ok) {
           if (SD_Init_Try(10) == SUCCESSFUL_INIT) {
               sdflags.init_ok = true;
-              TEST = 1;
-              sectorSD = LeerSectorSD(true);                                   //Recupera el valor del ultimo sector donde escribio  (true = sobrescribe la SD)
+              //sectorSD = UbicarUltimoSectorSD(1);                                    //Recupera el valor del ultimo sector donde escribio  (true = sobrescribe la SD)
               INT1IE_bit = 1;                                                   //Habilita la interrupcion externa INT1
-              banInicioMuestreo = 1;                                                    //Activa la bandera para permitir el muestreo
+              U1MODE.UARTEN = 1;                                                //Habilita el UART
+              inicioSistema = 1;                                                //Activa la bandera para permitir el inicio del sistema
+              TEST = 1;
            } else {
               sdflags.init_ok = false;
-              //TEST = 0;
+              INT1IE_bit = 0;                                                   //Desabilita la interrupcion externa INT1
+              U1MODE.UARTEN = 0;                                                //Desabilita el UART
+              inicioSistema = 0;                                                //Apaga la bandera de inicio del sistema
+              TEST = 0;
            }
      }
      Delay_ms(2000);
@@ -218,7 +240,7 @@ void ConfiguracionPrincipal(){
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);                            //Inicializa el UART1 con una velocidad de 2Mbps
-     //UART1_Init(9600);
+     U1MODE.UARTEN = 0;                                                         //Desabilita el UART
 
      //Configuracion del puerto SPI2 en modo Master:
      RPINR22bits.SDI2R = 0x21;                                                  //Configura el pin RB1/RPI33 como SDI2 *
@@ -229,20 +251,17 @@ void ConfiguracionPrincipal(){
 
      //Configuracion de la interrupcion externa INT1
      RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
+     INT1IE_bit = 0;                                                            //Interrupcion externa INT1
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
      IPC5bits.INT1IP = 0x01;                                                    //Prioridad en la interrupocion externa 1
 
      //Configuracion del TMR1 con un tiempo de 100ms
      T1CON = 0x0020;
      T1CON.TON = 0;                                                             //Apaga el Timer1
+     T1IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR1
      T1IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR1
      PR1 = 62500;                                                               //Car ga el preload para un tiempo de 100ms
      IPC0bits.T1IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR1
-     
-     //Habilitacion de interrupciones:
-     //U1RXIE_bit = 1;                                                            //Interrupcion por UART1 RX
-     INT1IE_bit = 0;                                                            //Interrupcion externa INT1
-     T1IE_bit = 0;                                                              //Interrupción de desbordamiento TMR1
 
      //Configuracion del acelerometro:
      ADXL355_write_byte(POWER_CTL, DRDY_OFF|STANDBY);                           //Coloco el ADXL en modo STANDBY para pausar las conversiones y limpiar el FIFO
@@ -300,6 +319,7 @@ void Muestrear(){
          T1CON.TON = 1;                                                         //Enciende el Timer1
          
          GuardarTramaSD(tiempo, tramaAceleracion);
+         //TEST = 0;
 
      }
 
@@ -315,7 +335,7 @@ void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
      for (x=0;x<5;x++){
          checkEscSD = SD_Write_Block(bufferLleno,sector);
          if (checkEscSD == DATA_ACCEPTED){
-             TEST = ~TEST;
+             //TEST = ~TEST;
              break;
          }
          Delay_us(10);
@@ -383,7 +403,7 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
         //Guarda en la SD el ultimo sector donde se guardo la trama:
         GuardarSectorSD(sectorSD);
         
-        //TEST = 0;                                                               //Apaga el TEST cuando termina de gurdar la trama
+        TEST = 0;                                                               //Apaga el TEST cuando termina de gurdar la trama
         
 }
 //*****************************************************************************************************************************************
@@ -407,18 +427,18 @@ void GuardarSectorSD(unsigned long sector){
      for (x=0;x<5;x++){
          checkEscSD = SD_Write_Block(bufferSectores,sectorSave);
          if (checkEscSD == DATA_ACCEPTED){
-             TEST = ~TEST;
+             //TEST = ~TEST;
              break;
          }
          Delay_us(10);
      }
-     TEST = 0;
+
 }
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
 //Funcion para leer el ultimo sector que se escribio
-unsigned long LeerSectorSD(bool sobrescribirSD){
+unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
      
      unsigned char bufferSectorFinal[512];                                      //Trama para guardar los datos del sector leido
      unsigned long sectorInicioSD;                                              //Variable donde se almacena el valor del sector inicial
@@ -427,8 +447,8 @@ unsigned long LeerSectorSD(bool sobrescribirSD){
      ptrSectorInicioSD = (unsigned char *) & sectorInicioSD;
      
      //Si sobrescribirSD = True sobrescribe la SD:
-     if (sobrescribirSD==true){
-         sectorInicioSD = 100;                                                  //**Revisar: En la memoria de 4GB Clase 4 que estoy utilizando a este valor le resta 63
+     if (sobrescribirSD==1){
+         sectorInicioSD = PSE;                                                  //Se escoje el PSE para sobrescribir la SD
      } else {
          checkLecSD = 1;
          // Intenta leer los datos del sector como maximo 5 veces:
@@ -445,7 +465,7 @@ unsigned long LeerSectorSD(bool sobrescribirSD){
                 break;
                 Delay_ms(5);
              } else {
-                sectorInicioSD = 200;                                           //Si no pudo realizar la lectura procede a sobreescribir la SD
+                sectorInicioSD = PSE;                                           //Si no pudo realizar la lectura procede a sobreescribir la SD
              }
          }
      }
@@ -455,6 +475,124 @@ unsigned long LeerSectorSD(bool sobrescribirSD){
 }
 //*****************************************************************************************************************************************
 
+//*****************************************************************************************************************************************
+//Funcion para recuperar los datos de aceleracion requeridos
+unsigned short recuperarDatosAceleracion(unsigned char* tramaPeticion){
+        
+        unsigned char bufferSectorLeido[512];                                   //Vector para guardar los datos del sector leido
+        unsigned long sectorLec; 
+        unsigned char *ptrSectorLec;
+        ptrSectorLec = (unsigned char *) & sectorLec;
+        
+        //Recupera la informacion del sector desde el cual se quiere empezar a leer:
+        *ptrSectorLec = tramaPeticion[4];                                       //LSB
+        *(ptrSectorLec+1) = tramaPeticion[3];
+        *(ptrSectorLec+2) = tramaPeticion[2];
+        *(ptrSectorLec+3) = tramaPeticion[1];                                   //MSB
+        
+        checkLecSD = 1;
+        // Intenta leer los datos del sector como maximo 5 veces:
+        for (x=0;x<5;x++){
+            //Lee el sector requerido y lo almacena en el vetor bufferSectorLeido:
+            checkLecSD = SD_Read_Block(bufferSectorLeido, sectorLec);
+            if (checkLecSD==0){
+               break;
+            }
+        }
+        
+        if (checkLecSD==0) {
+           //Comprueba los datos de cabecera:
+           if ((bufferSectorLeido[0]==255)&&(bufferSectorLeido[1]==253)&&(bufferSectorLeido[1]==251)){
+              //Compruebo el dato del tiempo:
+              if (tramaPeticion[5]==0){
+                                
+              } else {
+              //Responde un mensaje de error o busca el siguiente sector donde encuentre las cabeceras
+              }
+           }
+        }
+        
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
+//Funcion para guardar datos de prueba en la SD
+void GuardarPruebaSD(unsigned char* tiempoSD){
+
+         unsigned short contadorEjemploSD;
+         unsigned char aceleracionSD[2506];
+
+        //**Informacion: [Cabecera + tiempo + datos aceleracion] = 2512 bytes = 5 sectores
+        //Por lo tanto se graban 4 buffers completos y 1 un buffer con 464 bytes de aceleracion y 48 ceros
+
+        //DATOS DE PRUEBA:
+        contadorEjemploSD = 0;
+        for (x=0;x<2500;x++){
+            aceleracionSD[x] = contadorEjemploSD;
+            contadorEjemploSD ++;
+            if (contadorEjemploSD >= 255){
+                contadorEjemploSD = 0;
+            }
+        }
+        
+        //Agrega los datos de cabecera al buffer:
+        for (x=0;x<6;x++){
+            bufferSD[x] = cabeceraSD[x];
+        }
+        //Agrega los datos de tiempo al buffer:
+        for (x=0;x<6;x++){
+            bufferSD[6+x] = tiempoSD[x];
+        }
+        //Agrega los primeros 500 bytes de la trama de datos al buffer:
+        for (x=0;x<500;x++){
+            bufferSD[12+x] = aceleracionSD[x];
+        }
+        //Guarda el buffer en la SD:
+        GuardarBufferSD(bufferSD, sectorSD);
+        //Aumenta el indice del sector:
+        sectorSD++;
+
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 500 - 1011:
+        for (x=0;x<512;x++){
+            bufferSD[x] = aceleracionSD[x+500];
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 1012 - 1523:
+        for (x=0;x<512;x++){
+            bufferSD[x] = aceleracionSD[x+1012];
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 1524 - 2035:
+        for (x=0;x<512;x++){
+            bufferSD[x] = aceleracionSD[x+1524];
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+
+        //Guarda en la SD los bytes de la trama de datos desde la posicion 2036 - 2499:
+        for (x=0;x<512;x++){
+            if (x<464){
+               bufferSD[x] = aceleracionSD[x+2036];
+            } else {
+               bufferSD[x] = 0;
+            }
+        }
+        GuardarBufferSD(bufferSD, sectorSD);
+        sectorSD++;
+
+        //Guarda en la SD el ultimo sector donde se guardo la trama:
+        GuardarSectorSD(sectorSD);
+
+        TEST = 0;                                                               //Apaga el TEST cuando termina de gurdar la trama
+
+}
+
+
+//*****************************************************************************************************************************************
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -470,17 +608,21 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
         horaSistema++;                                                          //Incrementa el reloj del sistema
         TEST = ~TEST;
      } else {
-        EnviarTramaRS485(1, IDNODO, 0xF2, 6, tiempo);                           //Envia una solicitud de actualizacion de tiempo al Master
+        //EnviarTramaRS485(1, IDNODO, 0xF2, 6, tiempo);                           //Envia una solicitud de actualizacion de tiempo al Master
      }
 
      if (horaSistema==86400){                                                   //(24*3600)+(0*60)+(0) = 86400
         horaSistema = 0;                                                        //Reinicia el reloj al llegar a las 24:00:00 horas
+        //revisar:
         fechaSistema = IncrementarFecha(fechaSistema);                          //Incrementa la fecha del sistema
      }
 
      if (banInicioMuestreo==1){
-        TEST = 1;
         Muestrear();
+        //Inicio Prueba
+        //AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+        //GuardarPruebaSD(tiempo);
+        //Fin Prueba
      }
 
 }
@@ -539,7 +681,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
      //Recupera el pyload de la trama RS485:                                    //Aqui deberia entrar despues de recuperar la cabecera de trama
      if (banRSI==2){
         if (i_rs485<numDatosRS485){
-           tramaPyloadRS485[i_rs485] = byteRS485;
+           inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
            //TEST = ~TEST;
@@ -573,33 +715,60 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            banRSC = 0;
            i_rs485 = 0;
         }
-        
-        
-        
      }
 
      //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
      if (banRSC==1){
-
+        subFuncionRS485 = inputPyloadRS485[0];                                    
         switch (funcionRS485){
                case 0xF1:
-                    //Inicia el muestreo:
-                    banInicioMuestreo = 1;
-                    break;
-               case 0xF2:
                     //Recupera el tiempo de la trama RS485:
-                    for (x=0;x<6;x++) {
-                        tiempo[x] = tramaPyloadRS485[x];                        //LLeno la trama tiempo con el payload de la trama recuperada
+                    if (subFuncionRS485==0xD1){
+                        for (x=0;x<6;x++) {
+                            tiempo[x] = inputPyloadRS485[x+1];                  //LLena la trama tiempo con el payload de la trama recuperada
+                        }
+                        horaSistema = RecuperarHoraRPI(tiempo);                 //Recupera la hora de la RPi
+                        fechaSistema = RecuperarFechaRPI(tiempo);               //Recupera la fecha de la RPi
+                        banSetReloj = 1;                                        //Activa la bandera para indicar que se establecio la hora y fecha
                     }
-                    banSetReloj = 1;                                            //Activa la bandera para indicar que se establecio la hora y fecha
+                    //Envia la hora local al Master:
+                    if (subFuncionRS485==0xD2){
+                        //Llena el pyload de salida:
+                        outputPyloadRS485[0] = 0xD2;
+                        for (x=0;x<6;x++){
+                            outputPyloadRS485[x+1] = tiempo[x];
+                        }
+                        EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);//Envia la hora local al Master
+                    }
                     break;
+               
+               case 0xF2:
+                    //Inicia el muestreo:
+                    if (subFuncionRS485==0xD1){
+                        sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);      //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
+                        banInicioMuestreo = 1;                                  //Activa la bandera para iniciar el muestreo
+                    }
+                    //Detiene el muestreo:
+                    if (subFuncionRS485==0xD2){
+                       banInicioMuestreo = 0;                                   //Limpia la bandera para detener el muestreo
+                    } 
+                    break;
+               
                case 0xF3:
-                    //Envia una trama de prueba:
-                    //EnviarTramaRS485(1, IDNODO, 0xF3, 10, tramaPruebaRS485);
-                    if (tramaPyloadRS485[8]==18){
-                       TEST = ~TEST;
+                    //Envia informacion de sectores clave:
+                    if (subFuncionRS485==0xD1){
+                            
+                    }
+                    //Inspecciona el contenido del sector solicitado:
+                    if (subFuncionRS485==0xD2){
+                            
+                    }
+                    //Recupera y envia el contenido de los sectores solicitados:
+                    if (subFuncionRS485==0xD3){
+                            
                     }
                     break;
+                    
         }
 
         banRSC = 0;

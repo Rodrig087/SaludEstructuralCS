@@ -311,22 +311,22 @@ unsigned long IncrementarFecha(unsigned long longFecha){
 }
 
 
-void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema){
+void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned short *tramaTiempoSistema){
 
- unsigned char hora;
- unsigned char minuto;
- unsigned char segundo;
- unsigned char dia;
- unsigned char mes;
- unsigned char anio;
+ unsigned short hora;
+ unsigned short minuto;
+ unsigned short segundo;
+ unsigned short dia;
+ unsigned short mes;
+ unsigned short anio;
 
- hora = longHora / 3600;
- minuto = (longHora%3600) / 60;
- segundo = (longHora%3600) % 60;
+ hora = (short)(longHora / 3600);
+ minuto = (short)((longHora%3600) / 60);
+ segundo = (short)((longHora%3600) % 60);
 
- anio = longFecha / 10000;
- mes = (longFecha%10000) / 100;
- dia = (longFecha%10000) % 100;
+ anio = (short)(longFecha / 10000);
+ mes = (short)((longFecha%10000) / 100);
+ dia = (short)((longFecha%10000) % 100);
 
  tramaTiempoSistema[0] = anio;
  tramaTiempoSistema[1] = mes;
@@ -388,6 +388,36 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
 
 }
+#line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/tiempo_rpi.c"
+
+
+
+unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi);
+unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi);
+
+
+
+
+unsigned long RecuperarFechaRPI(unsigned short *tramaTiempoRpi){
+
+ unsigned long fechaRPi;
+
+ fechaRPi = ((long)tramaTiempoRpi[0]*10000)+((long)tramaTiempoRpi[1]*100)+((long)tramaTiempoRpi[2]);
+
+ return fechaRPi;
+
+}
+
+
+unsigned long RecuperarHoraRPI(unsigned short *tramaTiempoRpi){
+
+ unsigned long horaRPi;
+
+ horaRPi = ((long)tramaTiempoRpi[3]*3600)+((long)tramaTiempoRpi[4]*60)+((long)tramaTiempoRpi[5]);
+
+ return horaRPi;
+
+}
 #line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/spisd.h"
 #line 13 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/spisd.h"
 void SPISD_Init(unsigned char speed);
@@ -421,10 +451,7 @@ void Release_SD(void);
 unsigned char SD_Detect(void);
 void SD_Check(void);
 #line 1 "c:/users/public/documents/mikroelektronika/mikroc pro for dspic/include/stdbool.h"
-#line 22 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
-unsigned short const IDNODO = 5;
-
-
+#line 28 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
 unsigned int i, j, x, y;
 
 
@@ -439,6 +466,9 @@ sbit sd_detect_port at LATA4_bit;
 sbit sd_detect_tris at TRISA4_bit;
 sbit MSRS485 at LATB12_bit;
 sbit MSRS485_Direction at TRISB12_bit;
+
+
+unsigned short inicioSistema;
 
 
 unsigned short tiempo[6];
@@ -460,19 +490,26 @@ short tasaMuestreo;
 short numTMR1;
 
 
+unsigned long BAUDRATE2, BRGVAL2;
 unsigned short banRSI, banRSC;
 unsigned char byteRS485;
 unsigned int i_rs485;
 unsigned char tramaCabeceraRS485[4];
-unsigned char tramaPyloadRS485[512];
+unsigned char inputPyloadRS485[10];
+unsigned char outputPyloadRS485[512];
 unsigned int numDatosRS485;
 unsigned short funcionRS485;
+unsigned short subFuncionRS485;
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 
 const unsigned int clusterSizeSD = 512;
-unsigned int sectorSave = 99;
+unsigned long sectorSave =  2048 +99;
+unsigned long PSE =  2048 +100;
+unsigned long
+
 unsigned long sectorSD;
+unsigned long sectorLec;
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
 unsigned char checkEscSD;
@@ -489,7 +526,7 @@ void Muestrear();
 void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
-unsigned long LeerSectorSD( _Bool  sobrescribirSD);
+unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
 
 
 
@@ -513,6 +550,9 @@ void main() {
  y = 0;
 
 
+ inicioSistema = 0;
+
+
  banSetReloj = 0;
  horaSistema = 0;
  fechaSistema = 0;
@@ -534,31 +574,32 @@ void main() {
  i_rs485 = 0;
  numDatosRS485 = 0;
  funcionRS485 = 0;
+ subFuncionRS485 = 0;
 
 
  sectorSD = 0;
+ sectorLec = 0;
  checkEscSD = 0;
  checkLecSD = 0;
  MSRS485 = 0;
-
-
-
- horaSistema = 86100;
- fechaSistema = 200228;
-#line 163 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 181 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
  if (sdflags.detected && !sdflags.init_ok) {
  if (SD_Init_Try(10) ==  0xAA ) {
  sdflags.init_ok =  1 ;
- TEST = 1;
- sectorSD = LeerSectorSD( 1 );
+
  INT1IE_bit = 1;
- banInicioMuestreo = 1;
+ U1MODE.UARTEN = 1;
+ inicioSistema = 1;
+ TEST = 1;
  } else {
  sdflags.init_ok =  0 ;
-
+ INT1IE_bit = 0;
+ U1MODE.UARTEN = 0;
+ inicioSistema = 0;
+ TEST = 0;
  }
  }
  Delay_ms(2000);
@@ -604,7 +645,7 @@ void ConfiguracionPrincipal(){
  U1RXIF_bit = 0;
  IPC2bits.U1RXIP = 0x04;
  UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
-
+ U1MODE.UARTEN = 0;
 
 
  RPINR22bits.SDI2R = 0x21;
@@ -615,20 +656,17 @@ void ConfiguracionPrincipal(){
 
 
  RPINR0 = 0x2E00;
+ INT1IE_bit = 0;
  INT1IF_bit = 0;
  IPC5bits.INT1IP = 0x01;
 
 
  T1CON = 0x0020;
  T1CON.TON = 0;
+ T1IE_bit = 1;
  T1IF_bit = 0;
  PR1 = 62500;
  IPC0bits.T1IP = 0x02;
-
-
-
- INT1IE_bit = 0;
- T1IE_bit = 0;
 
 
  ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
@@ -687,6 +725,7 @@ void Muestrear(){
 
  GuardarTramaSD(tiempo, tramaAceleracion);
 
+
  }
 
  contCiclos++;
@@ -701,7 +740,7 @@ void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
  for (x=0;x<5;x++){
  checkEscSD = SD_Write_Block(bufferLleno,sector);
  if (checkEscSD ==  22 ){
- TEST = ~TEST;
+
  break;
  }
  Delay_us(10);
@@ -769,7 +808,7 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
 
  GuardarSectorSD(sectorSD);
 
-
+ TEST = 0;
 
 }
 
@@ -793,18 +832,18 @@ void GuardarSectorSD(unsigned long sector){
  for (x=0;x<5;x++){
  checkEscSD = SD_Write_Block(bufferSectores,sectorSave);
  if (checkEscSD ==  22 ){
- TEST = ~TEST;
+
  break;
  }
  Delay_us(10);
  }
- TEST = 0;
+
 }
 
 
 
 
-unsigned long LeerSectorSD( _Bool  sobrescribirSD){
+unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
 
  unsigned char bufferSectorFinal[512];
  unsigned long sectorInicioSD;
@@ -813,8 +852,8 @@ unsigned long LeerSectorSD( _Bool  sobrescribirSD){
  ptrSectorInicioSD = (unsigned char *) & sectorInicioSD;
 
 
- if (sobrescribirSD== 1 ){
- sectorInicioSD = 100;
+ if (sobrescribirSD==1){
+ sectorInicioSD = PSE;
  } else {
  checkLecSD = 1;
 
@@ -831,7 +870,7 @@ unsigned long LeerSectorSD( _Bool  sobrescribirSD){
  break;
  Delay_ms(5);
  } else {
- sectorInicioSD = 200;
+ sectorInicioSD = PSE;
  }
  }
  }
@@ -839,6 +878,124 @@ unsigned long LeerSectorSD( _Bool  sobrescribirSD){
  return sectorInicioSD;
 
 }
+
+
+
+
+unsigned short recuperarDatosAceleracion(unsigned char* tramaPeticion){
+
+ unsigned char bufferSectorLeido[512];
+ unsigned long sectorLec;
+ unsigned char *ptrSectorLec;
+ ptrSectorLec = (unsigned char *) & sectorLec;
+
+
+ *ptrSectorLec = tramaPeticion[4];
+ *(ptrSectorLec+1) = tramaPeticion[3];
+ *(ptrSectorLec+2) = tramaPeticion[2];
+ *(ptrSectorLec+3) = tramaPeticion[1];
+
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+
+ checkLecSD = SD_Read_Block(bufferSectorLeido, sectorLec);
+ if (checkLecSD==0){
+ break;
+ }
+ }
+
+ if (checkLecSD==0) {
+
+ if ((bufferSectorLeido[0]==255)&&(bufferSectorLeido[1]==253)&&(bufferSectorLeido[1]==251)){
+
+ if (tramaPeticion[5]==0){
+
+ } else {
+
+ }
+ }
+ }
+
+}
+
+
+
+
+void GuardarPruebaSD(unsigned char* tiempoSD){
+
+ unsigned short contadorEjemploSD;
+ unsigned char aceleracionSD[2506];
+
+
+
+
+
+ contadorEjemploSD = 0;
+ for (x=0;x<2500;x++){
+ aceleracionSD[x] = contadorEjemploSD;
+ contadorEjemploSD ++;
+ if (contadorEjemploSD >= 255){
+ contadorEjemploSD = 0;
+ }
+ }
+
+
+ for (x=0;x<6;x++){
+ bufferSD[x] = cabeceraSD[x];
+ }
+
+ for (x=0;x<6;x++){
+ bufferSD[6+x] = tiempoSD[x];
+ }
+
+ for (x=0;x<500;x++){
+ bufferSD[12+x] = aceleracionSD[x];
+ }
+
+ GuardarBufferSD(bufferSD, sectorSD);
+
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ bufferSD[x] = aceleracionSD[x+500];
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ bufferSD[x] = aceleracionSD[x+1012];
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ bufferSD[x] = aceleracionSD[x+1524];
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ for (x=0;x<512;x++){
+ if (x<464){
+ bufferSD[x] = aceleracionSD[x+2036];
+ } else {
+ bufferSD[x] = 0;
+ }
+ }
+ GuardarBufferSD(bufferSD, sectorSD);
+ sectorSD++;
+
+
+ GuardarSectorSD(sectorSD);
+
+ TEST = 0;
+
+}
+
 
 
 
@@ -856,17 +1013,21 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  horaSistema++;
  TEST = ~TEST;
  } else {
- EnviarTramaRS485(1, IDNODO, 0xF2, 6, tiempo);
+
  }
 
  if (horaSistema==86400){
  horaSistema = 0;
+
  fechaSistema = IncrementarFecha(fechaSistema);
  }
 
  if (banInicioMuestreo==1){
- TEST = 1;
  Muestrear();
+
+
+
+
  }
 
 }
@@ -925,7 +1086,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (banRSI==2){
  if (i_rs485<numDatosRS485){
- tramaPyloadRS485[i_rs485] = byteRS485;
+ inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
 
@@ -948,7 +1109,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==4)){
 
- if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 4 )||(tramaCabeceraRS485[1]==255)){
 
  funcionRS485 = tramaCabeceraRS485[2];
  numDatosRS485 = tramaCabeceraRS485[3];
@@ -959,33 +1120,60 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  banRSC = 0;
  i_rs485 = 0;
  }
-
-
-
  }
 
 
  if (banRSC==1){
-
+ subFuncionRS485 = inputPyloadRS485[0];
  switch (funcionRS485){
  case 0xF1:
 
- banInicioMuestreo = 1;
+ if (subFuncionRS485==0xD1){
+ for (x=0;x<6;x++) {
+ tiempo[x] = inputPyloadRS485[x+1];
+ }
+ horaSistema = RecuperarHoraRPI(tiempo);
+ fechaSistema = RecuperarFechaRPI(tiempo);
+ banSetReloj = 1;
+ }
+
+ if (subFuncionRS485==0xD2){
+
+ outputPyloadRS485[0] = 0xD2;
+ for (x=0;x<6;x++){
+ outputPyloadRS485[x+1] = tiempo[x];
+ }
+ EnviarTramaRS485(1,  4 , 0xF1, 7, outputPyloadRS485);
+ }
  break;
+
  case 0xF2:
 
- for (x=0;x<6;x++) {
- tiempo[x] = tramaPyloadRS485[x];
+ if (subFuncionRS485==0xD1){
+ sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);
+ banInicioMuestreo = 1;
  }
- banSetReloj = 1;
+
+ if (subFuncionRS485==0xD2){
+ banInicioMuestreo = 0;
+ }
  break;
+
  case 0xF3:
 
+ if (subFuncionRS485==0xD1){
 
- if (tramaPyloadRS485[8]==18){
- TEST = ~TEST;
+ }
+
+ if (subFuncionRS485==0xD2){
+
+ }
+
+ if (subFuncionRS485==0xD3){
+
  }
  break;
+
  }
 
  banRSC = 0;

@@ -217,22 +217,22 @@ unsigned long IncrementarFecha(unsigned long longFecha){
 }
 
 
-void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema){
+void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned short *tramaTiempoSistema){
 
- unsigned char hora;
- unsigned char minuto;
- unsigned char segundo;
- unsigned char dia;
- unsigned char mes;
- unsigned char anio;
+ unsigned short hora;
+ unsigned short minuto;
+ unsigned short segundo;
+ unsigned short dia;
+ unsigned short mes;
+ unsigned short anio;
 
- hora = longHora / 3600;
- minuto = (longHora%3600) / 60;
- segundo = (longHora%3600) % 60;
+ hora = (short)(longHora / 3600);
+ minuto = (short)((longHora%3600) / 60);
+ segundo = (short)((longHora%3600) % 60);
 
- anio = longFecha / 10000;
- mes = (longFecha%10000) / 100;
- dia = (longFecha%10000) % 100;
+ anio = (short)(longFecha / 10000);
+ mes = (short)((longFecha%10000) / 100);
+ dia = (short)((longFecha%10000) % 100);
 
  tramaTiempoSistema[0] = anio;
  tramaTiempoSistema[1] = mes;
@@ -452,26 +452,33 @@ unsigned short tiempoRPI[6];
 unsigned short banSetReloj;
 unsigned short fuenteReloj;
 unsigned long horaSistema, fechaSistema;
+unsigned short referenciaTiempo;
 
 
 unsigned short bufferSPI;
 unsigned short banLec, banEsc;
+unsigned char tramaSolicitudSPI[10];
 unsigned char tramaCompleta[2506];
 unsigned char tramaPrueba[10];
 unsigned short banInicio;
 unsigned short banOperacion, tipoOperacion;
 unsigned short banCheckRS485;
+unsigned short banSPI0, banSPI1, banSPI2, banSPI3, banSPI4, banSPI5, banSPI6, banSPI7, banSPI8, banSPI9;
 
 
 unsigned short banRSI, banRSC;
 unsigned char byteRS485;
 unsigned int i_rs485;
 unsigned char tramaCabeceraRS485[4];
-unsigned char tramaPyloadRS485[512];
+unsigned char inputPyloadRS485[512];
+unsigned char outputPyloadRS485[10];
 unsigned short direccionRS485;
 unsigned short funcionRS485;
 unsigned int numDatosRS485;
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+
+
+unsigned short banInicioMuestreo;
 
 
 
@@ -490,7 +497,7 @@ void InterrupcionP1();
 void main() {
 
  ConfiguracionPrincipal();
-
+ DS3234_init();
 
 
 
@@ -500,6 +507,18 @@ void main() {
  j = 0;
  x = 0;
  y = 0;
+
+
+ banSPI0 = 0;
+ banSPI1 = 0;
+ banSPI2 = 0;
+ banSPI3 = 0;
+ banSPI4 = 0;
+ banSPI5 = 0;
+ banSPI6 = 0;
+ banSPI7 = 0;
+ banSPI8 = 0;
+ banSPI9 = 0;
 
 
  i_gps = 0;
@@ -513,6 +532,8 @@ void main() {
  banSetReloj = 0;
  horaSistema = 0;
  fechaSistema = 0;
+ fuenteReloj = 0;
+ referenciaTiempo = 0;
 
 
  banRSI = 0;
@@ -521,6 +542,9 @@ void main() {
  i_rs485 = 0;
  numDatosRS485 = 0;
  funcionRS485 = 0;
+
+
+ banInicioMuestreo = 0;
 
 
  RP1 = 0;
@@ -535,8 +559,8 @@ void main() {
  SPI1BUF = 0x00;
 
  while(1){
- EnviarTramaRS485(2, 255, 0xF3, 10, tramaPruebaRS485);
- Delay_ms(100);
+
+
  }
 
 }
@@ -577,20 +601,20 @@ void ConfiguracionPrincipal(){
 
  RPINR18bits.U1RXR = 0x22;
  RPOR0bits.RP35R = 0x01;
- UART1_Init(9600);
+ U1RXIE_bit = 0;
  U1RXIF_bit = 0;
  IPC2bits.U1RXIP = 0x04;
  U1STAbits.URXISEL = 0x00;
+ UART1_Init(9600);
 
 
  RPINR19bits.U2RXR = 0x2F;
  RPOR1bits.RP36R = 0x03;
-
- UART2_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
-#line 199 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+ U2RXIE_bit = 1;
  U2RXIF_bit = 0;
  IPC7bits.U2RXIP = 0x04;
  U2STAbits.URXISEL = 0x00;
+ UART2_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
 
 
  SPI1STAT.SPIEN = 1;
@@ -613,9 +637,7 @@ void ConfiguracionPrincipal(){
  IPC5bits.INT1IP = 0x01;
 
 
- U1RXIE_bit = 0;
- U2RXIE_bit = 1;
- SPI1IE_bit = 0;
+ SPI1IE_bit = 1;
  INT1IE_bit = 0;
 
  Delay_ms(200);
@@ -627,13 +649,18 @@ void ConfiguracionPrincipal(){
 
  void InterrupcionP1(unsigned short operacion){
 
- if (operacion==0xB2){
+ if (operacion==0xB1){
  if (INT1IE_bit==0){
  INT1IE_bit = 1;
  }
 
- EnviarTramaRS485(2, 255, 0xF2, 6, tiempo);
+ outputPyloadRS485[0] = 0xD1;
+ for (x=1;x<7;x++){
+ outputPyloadRS485[x] = tiempo[x-1];
  }
+ EnviarTramaRS485(2, 255, 0xF1, 7, outputPyloadRS485);
+ }
+
  banOperacion = 0;
  tipoOperacion = operacion;
 
@@ -672,6 +699,38 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
+ if ((banSPI1==0)&&(bufferSPI==0xA1)){
+ banSPI1 = 1;
+ i = 0;
+ }
+ if ((banSPI1==1)&&(bufferSPI!=0xA1)&&(bufferSPI!=0xF1)){
+ tramaSolicitudSPI[i] = bufferSPI;
+ i++;
+ }
+ if ((banSPI1==1)&&(bufferSPI==0xF1)){
+ direccionRS485 = tramaSolicitudSPI[0];
+ outputPyloadRS485[0] = 0xD1;
+ outputPyloadRS485[1] = tramaSolicitudSPI[1];
+ EnviarTramaRS485(2, direccionRS485, 0xF2, 2, outputPyloadRS485);
+ banSPI1 = 0;
+ }
+
+
+ if ((banSPI2==0)&&(bufferSPI==0xA2)){
+ banSPI2 = 1;
+ i = 0;
+ }
+ if ((banSPI2==1)&&(bufferSPI!=0xA2)&&(bufferSPI!=0xF2)){
+ tramaSolicitudSPI[i] = bufferSPI;
+ }
+ if ((banSPI2==1)&&(bufferSPI==0xF2)){
+ direccionRS485 = tramaSolicitudSPI[0];
+ outputPyloadRS485[0] = 0xD2;
+ EnviarTramaRS485(2, direccionRS485, 0xF2, 1, outputPyloadRS485);
+ banSPI2 = 0;
+ }
+
+
  if ((banLec==1)&&(bufferSPI==0xA3)){
  banLec = 2;
  i = 0;
@@ -691,15 +750,16 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
+
  if ((banSetReloj==0)&&(bufferSPI==0xA4)){
- banEsc = 1;
+ banSPI4 = 1;
  j = 0;
  }
- if ((banEsc==1)&&(bufferSPI!=0xA4)&&(bufferSPI!=0xF4)){
+ if ((banSPI4==1)&&(bufferSPI!=0xA4)&&(bufferSPI!=0xF4)){
  tiempoRPI[j] = bufferSPI;
  j++;
  }
- if ((banEsc==1)&&(bufferSPI==0xF4)){
+ if ((banSPI4==1)&&(bufferSPI==0xF4)){
  horaSistema = RecuperarHoraRPI(tiempoRPI);
  fechaSistema = RecuperarFechaRPI(tiempoRPI);
 
@@ -707,30 +767,41 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- banEsc = 0;
+ banSPI4 = 0;
  banSetReloj = 1;
- InterrupcionP1(0XB2);
+ INT_SINC = ~INT_SINC;
+ InterrupcionP1(0xB1);
  }
+
 
 
  if ((banSetReloj==1)&&(bufferSPI==0xA5)){
- banSetReloj = 2;
+ banSPI5 = 1;
  j = 0;
  SPI1BUF = fuenteReloj;
  }
- if ((banSetReloj==2)&&(bufferSPI!=0xA5)&&(bufferSPI!=0xF5)){
+ if ((banSPI5==1)&&(bufferSPI!=0xA5)&&(bufferSPI!=0xF5)){
  SPI1BUF = tiempo[j];
  j++;
  }
- if ((banSetReloj==2)&&(bufferSPI==0xF5)){
+ if ((banSPI5==1)&&(bufferSPI==0xF5)){
+ banSPI5 = 0;
  banSetReloj = 0;
- SPI1BUF = 0xFF;
+
  }
 
 
- if ((banSetReloj==0)&&(bufferSPI==0xA6)){
 
- GPS_init(1,1);
+ if ((banSetReloj==0)&&(bufferSPI==0xA6)){
+ banSPI6 = 1;
+ }
+ if ((banSPI6==1)&&(bufferSPI!=0xA6)&&(bufferSPI!=0xF6)){
+ referenciaTiempo = bufferSPI;
+ }
+ if ((banSPI6==1)&&(bufferSPI==0xF6)){
+ banSPI6 = 0;
+ if (referenciaTiempo==1){
+
  banTIGPS = 0;
  banTCGPS = 0;
  i_gps = 0;
@@ -738,18 +809,30 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if (U1RXIE_bit==0){
  U1RXIE_bit = 1;
  }
+ } else {
 
- }
-
-
- if ((banSetReloj==0)&&(bufferSPI==0xA7)){
  horaSistema = RecuperarHoraRTC();
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  fuenteReloj = 0;
  banSetReloj = 1;
- InterrupcionP1(0xB2);
+ InterrupcionP1(0xB1);
  }
+ }
+
+
+
+ if ((banSetReloj==0)&&(bufferSPI==0xA7)){
+ banSPI7 = 1;
+ }
+ if ((banSPI7==1)&&(bufferSPI!=0xA7)&&(bufferSPI!=0xF7)){
+ direccionRS485 = bufferSPI;
+ }
+ if ((banSPI7==1)&&(bufferSPI==0xF7)){
+ outputPyloadRS485[0] = 0xD1;
+ EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);
+ }
+
 
 
 
@@ -759,7 +842,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banCheckRS485==0)&&(bufferSPI==0xA8)){
 
  banCheckRS485 = 1;
-#line 374 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 452 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -774,7 +857,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
  if ((banCheckRS485==1)&&(bufferSPI==0xF9)){
  banCheckRS485 = 0;
-#line 392 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 470 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -813,4 +896,70 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  }
 
+}
+#line 595 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+void urx_2() org IVT_ADDR_U2RXINTERRUPT {
+
+
+ U2RXIF_bit = 0;
+ byteRS485 = U2RXREG;
+ U2STA.OERR = 0;
+
+
+ if (banRSI==2){
+ if (i_rs485<numDatosRS485){
+ inputPyloadRS485[i_rs485] = byteRS485;
+ i_rs485++;
+ } else {
+ banRSI = 0;
+ banRSC = 1;
+ }
+ }
+
+
+ if ((banRSI==0)&&(banRSC==0)){
+ if (byteRS485==0x3A){
+ banRSI = 1;
+ i_rs485 = 0;
+ }
+ }
+ if ((banRSI==1)&&(i_rs485<3)){
+ tramaCabeceraRS485[i_rs485] = byteRS485;
+ i_rs485++;
+ }
+ if ((banRSI==1)&&(i_rs485==4)){
+
+ if ((tramaCabeceraRS485[1]==direccionRS485)||(tramaCabeceraRS485[1]==255)){
+ banRSI = 2;
+ i_rs485 = 0;
+ } else {
+ banRSI = 0;
+ banRSC = 0;
+ }
+ }
+
+
+ if (banRSC==1){
+
+ funcionRS485 = tramaCabeceraRS485[2];
+ numDatosRS485 = tramaCabeceraRS485[3];
+
+ switch (funcionRS485){
+ case 0xF1:
+
+
+ break;
+ case 0xF2:
+
+
+ break;
+ case 0xF3:
+
+
+ break;
+ }
+
+ banRSC = 0;
+
+ }
 }

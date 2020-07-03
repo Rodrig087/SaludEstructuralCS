@@ -52,12 +52,17 @@ unsigned short contador;
 short fuenteTiempoPic;
 unsigned short tipoOpcion;
 
+unsigned int tiempoInicial;
+unsigned int tiempoFinal;
+unsigned int duracionPrueba;
+unsigned short banPrueba;
+
 //Declaracion de funciones
 int ConfiguracionPrincipal();
 void GuardarVector(unsigned char* tramaD);
 void CrearArchivo();
 void ObtenerOperacion();														//C:0xA0    F:0xF0
-void IniciarMuestreo();															//C:0xA1	F:0xF1
+void IniciarMuestreo(unsigned short sobrescribirSD);							//C:0xA1	F:0xF1
 void DetenerMuestreo();															//C:0xA2	F:0xF2
 void NuevoCiclo();																//C:0xA3	F:0xF3    P:0xB1
 void EnviarTiempoLocal();														//C:0xA4	F:0xF4
@@ -67,6 +72,8 @@ void ObtenerTiempoRTC();										 				//C:0xA7	F:0xF7
 
 void CheckComunicacionRS485();													//C:0xA8	F:0xF8
 void RecuperarTramaPrueba();													//C:0xA9	F:0xF9
+void ObtenerRegistroAceleracion(unsigned short idNodo, unsigned short duracionEvento, unsigned char* tiempoEvento);     //C:0xAA	F:0xFA	
+
 void Saludar();
 
 int main(void) {
@@ -83,6 +90,11 @@ int main(void) {
 	contCiclos = 0;
 	contador = 0;  
 	tipoOpcion = 0;
+	
+	tiempoInicial = 0;       
+	tiempoFinal = 0;
+	duracionPrueba = 300;     //Duracion de la prueba de sincronizacion en segundos
+	banPrueba = 0;
   
 	ConfiguracionPrincipal(); 
 	sleep(1);
@@ -91,6 +103,21 @@ int main(void) {
 	
     
 	while(1){	
+		
+		if (banPrueba==1){
+			time_t tf;
+			struct tm *tm;
+			tf=time(NULL);
+			tm=localtime(&tf);
+			tiempoFinal = (3600*tm->tm_hour)+(60*tm->tm_min)+(tm->tm_sec);
+			if (tiempoFinal==(tiempoInicial+duracionPrueba)){
+				DetenerMuestreo();	
+				system("date");
+				banPrueba = 0;
+				exit (-1);
+			}
+		}
+	
 	}
   
 	bcm2835_spi_end();
@@ -161,7 +188,7 @@ void ObtenerOperacion(){
 	switch (buffer){                                                                     
           case 0xB1:
 		       printf("Recupero 0xB1\n");
-			   IniciarMuestreo();   
+			   NuevoCiclo();   
 			   break;
           case 0xB2:
 		       printf("Recupero 0xB2\n");
@@ -182,9 +209,11 @@ void ObtenerOperacion(){
 	
 }
 
-void IniciarMuestreo(){
+void IniciarMuestreo(unsigned short sobrescribirSD){
 	printf("Iniciando el muestreo...\n");
 	bcm2835_spi_transfer(0xA1);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	bcm2835_spi_transfer(sobrescribirSD);                                       //sobrescribirSD=1: Sobrescribe la SD
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	bcm2835_spi_transfer(0xF1);	
 }
@@ -223,9 +252,10 @@ void EnviarTiempoLocal(){
 	struct tm *tm;
 	t=time(NULL);
 	tm=localtime(&t);
-	tiempoLocal[0] = tm->tm_mday;												//Dia del mes (0-31)
+	
+	tiempoLocal[0] = tm->tm_year-100;											//Anio (contado desde 1900)
 	tiempoLocal[1] = tm->tm_mon+1;												//Mes desde Enero (0-11)
-	tiempoLocal[2] = tm->tm_year-100;											//Anio (contado desde 1900)
+	tiempoLocal[2] = tm->tm_mday;												//Dia del mes (0-31)
 	tiempoLocal[3] = tm->tm_hour;												//Hora
 	tiempoLocal[4] = tm->tm_min;												//Minuto
 	tiempoLocal[5] = tm->tm_sec;												//Segundo 
@@ -242,6 +272,9 @@ void EnviarTiempoLocal(){
     }
 	bcm2835_spi_transfer(0xF4);                                                 //Envia el delimitador de final de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI);
+	
+	tiempoInicial = (tiempoLocal[3]*3600)+(tiempoLocal[4]*60)+tiempoLocal[5];
+	banPrueba = 1;
 
 }
 
@@ -277,7 +310,7 @@ void ObtenerTiempoPIC(){
 	printf("%0.2d/",tiempoPIC[1]);		//MM
 	printf("%0.2d\n",tiempoPIC[2]);		//aa
 	
-	//IniciarMuestreo();
+	IniciarMuestreo(1);
 	//CheckComunicacionRS485();
 	
 }

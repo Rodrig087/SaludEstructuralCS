@@ -1298,6 +1298,7 @@ baniniciomuestreo
 banrsc
 banrsi
 bansetreloj
+baudrate2
 bcd2dec
 bcd2dec16
 bch
@@ -1463,6 +1464,7 @@ brgh
 brgh_bit
 brgh_u1mode_bit
 brgh_u2mode_bit
+brgval2
 buffersd
 bufm
 bufm
@@ -3996,6 +3998,7 @@ gie
 gie
 gie_bit
 guardarbuffersd
+guardarpruebasd
 guardarsectorsd
 guardartramasd
 half
@@ -4863,7 +4866,6 @@ idissen_bit
 idle
 idle
 idle_bit
-idnodo
 idxien
 idxien
 idxien_bit
@@ -5063,7 +5065,9 @@ indxhld_8
 indxhld_8_bit
 indxhld_9
 indxhld_9_bit
+iniciosistema
 init_ok
+inputpyloadrs485
 int_1
 int0ep
 int0ep
@@ -5940,7 +5944,6 @@ lebdly2
 lebdly2bits
 lebdly3
 lebdly3bits
-leersectorsd
 lendian
 lendian
 lendian_bit
@@ -7130,6 +7133,7 @@ outfnc_0
 outfnc_0_bit
 outfnc_1
 outfnc_1_bit
+outputpyloadrs485
 ov
 ov
 ov_bit
@@ -8069,6 +8073,7 @@ pr5_8
 pr5_8_bit
 pr5_9
 pr5_9_bit
+pse
 psemie
 psemie
 psemie_bit
@@ -9071,7 +9076,10 @@ rcount_8
 rcount_8_bit
 rcount_9
 rcount_9_bit
+recuperardatosaceleracion
+recuperarfecharpi
 recuperarfechartc
+recuperarhorarpi
 recuperarhorartc
 refocon
 refoconbits
@@ -9482,6 +9490,7 @@ sdi2r3
 sdi2r4
 sdi2r5
 sdi2r6
+sectorlec
 sectorsave
 sectorsd
 seien
@@ -10794,6 +10803,7 @@ stsel
 stsel_bit
 stsel_u1mode_bit
 stsel_u2mode_bit
+subfuncionrs485
 swap
 swap
 swap
@@ -11425,7 +11435,6 @@ toupper
 tramaaceleracion
 tramacabecerars485
 tramapruebars485
-tramapyloadrs485
 trapr
 trapr
 trapr_bit
@@ -12060,6 +12069,7 @@ uarten
 uarten_bit
 uarten_u1mode_bit
 uarten_u2mode_bit
+ubicarultimosectorsd
 uen
 uen
 uen_0

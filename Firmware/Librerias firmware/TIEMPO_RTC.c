@@ -184,88 +184,88 @@ unsigned long RecuperarFechaRTC(){
 
 //Funcion para incrementar la fecha
 unsigned long IncrementarFecha(unsigned long longFecha){
-	 
-	 unsigned long dia;
+         
+         unsigned long dia;
      unsigned long mes;
      unsigned long anio; 
-	 unsigned long fechaInc;
-	 
-	 anio = longFecha / 10000;
+         unsigned long fechaInc;
+         
+         anio = longFecha / 10000;
      mes = (longFecha%10000) / 100;
      dia = (longFecha%10000) % 100;
-	 
-	 if (dia<28){
-		dia++;		 
-	 } else {
-		if (mes==2){
-			//Comprueba si es año biciesto:
-			if (((anio-16)%4)==0){
-				if (dia==29){
-					dia = 1;
-					mes++;	
-				} else {
-					dia++;
-				}
-			} else {
-				dia = 1;
-				mes++;
-			}
-		} else {
-			if (dia<30){
-				dia++;
-			} else {
-				if (mes==4||mes==6||mes==9||mes==11){
-					if (dia==30){
-						dia = 1;
-						mes++;
-					} else {
-						dia++;
-					}
-				}
-				if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
-					if (dia==31){
-						dia = 1;
-						mes++;
-					} else {
-						dia++;
-					}
-				}
-				if ((dia!=1)&&(mes==12)){
-					if (dia==31){
-						dia = 1;
-						mes = 1;
-						anio++;
-					} else {
-						dia++;
-					}
-				}
-			}
+         
+         if (dia<28){
+                dia++;                 
+         } else {
+                if (mes==2){
+                        //Comprueba si es año biciesto:
+                        if (((anio-16)%4)==0){
+                                if (dia==29){
+                                        dia = 1;
+                                        mes++;        
+                                } else {
+                                        dia++;
+                                }
+                        } else {
+                                dia = 1;
+                                mes++;
+                        }
+                } else {
+                        if (dia<30){
+                                dia++;
+                        } else {
+                                if (mes==4||mes==6||mes==9||mes==11){
+                                        if (dia==30){
+                                                dia = 1;
+                                                mes++;
+                                        } else {
+                                                dia++;
+                                        }
+                                }
+                                if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
+                                        if (dia==31){
+                                                dia = 1;
+                                                mes++;
+                                        } else {
+                                                dia++;
+                                        }
+                                }
+                                if ((dia!=1)&&(mes==12)){
+                                        if (dia==31){
+                                                dia = 1;
+                                                mes = 1;
+                                                anio++;
+                                        } else {
+                                                dia++;
+                                        }
+                                }
+                        }
         }
-		
-	 }
-	 
-	 fechaInc = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
-	 return fechaInc;	 
-	
+                
+         }
+         
+         fechaInc = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
+         return fechaInc;         
+        
 }
 
 //Funcion para ajustar la hora y la fecha del sistema
-void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned char *tramaTiempoSistema){
+void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned short *tramaTiempoSistema){
 
-     unsigned char hora;
-     unsigned char minuto;
-     unsigned char segundo;
-     unsigned char dia;
-     unsigned char mes;
-     unsigned char anio;
+     unsigned short hora;
+     unsigned short minuto;
+     unsigned short segundo;
+     unsigned short dia;
+     unsigned short mes;
+     unsigned short anio;
 
-     hora = longHora / 3600;
-     minuto = (longHora%3600) / 60;
-     segundo = (longHora%3600) % 60;
+     hora = (short)(longHora / 3600);
+     minuto = (short)((longHora%3600) / 60);
+     segundo = (short)((longHora%3600) % 60);
 
-     anio = longFecha / 10000;
-     mes = (longFecha%10000) / 100;
-     dia = (longFecha%10000) % 100;
+     anio = (short)(longFecha / 10000);
+     mes = (short)((longFecha%10000) / 100);
+     dia = (short)((longFecha%10000) % 100);
      
      tramaTiempoSistema[0] = anio;
      tramaTiempoSistema[1] = mes;

@@ -16,13 +16,20 @@ main
 			_Divide_32x32
 		SPI1_Init_Advanced
 		SPI2_Init
+	DS3234_init
+		SPI2_Init_Advanced
+		DS3234_write_byte
+			SPI2_Write
+				SPI2_Read
+		SPI2_Init
+urx_2
+int_1
+spi_1
 	EnviarTramaRS485
 		UART1_Write
 		UART1_Tx_Idle
 		UART2_Write
 		UART2_Tx_Idle
-int_1
-spi_1
 	RecuperarHoraRPI
 		_Multiply_32x32
 	RecuperarFechaRPI
@@ -32,15 +39,10 @@ spi_1
 		_Modulus_32x32
 	InterrupcionP1
 		EnviarTramaRS485
-	GPS_init
-		UART1_Write_Text
-			UART1_Write
-		UART1_Init
 	RecuperarHoraRTC
 		SPI2_Init_Advanced
 		DS3234_read_byte
 			SPI2_Write
-				SPI2_Read
 			SPI2_Read
 		Bcd2Dec
 		SPI2_Init
