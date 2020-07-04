@@ -720,7 +720,7 @@ void Muestrear(){
  }
  }
 
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+
 
  contMuestras = 0;
  contFIFO = 0;
@@ -1014,6 +1014,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  if (banSetReloj==1){
  horaSistema++;
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  TEST = ~TEST;
  } else {
 
@@ -1112,7 +1113,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==4)){
 
- if ((tramaCabeceraRS485[1]== 4 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 5 )||(tramaCabeceraRS485[1]==255)){
 
  funcionRS485 = tramaCabeceraRS485[2];
  numDatosRS485 = tramaCabeceraRS485[3];
@@ -1146,7 +1147,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  for (x=0;x<6;x++){
  outputPyloadRS485[x+1] = tiempo[x];
  }
- EnviarTramaRS485(1,  4 , 0xF1, 7, outputPyloadRS485);
+ EnviarTramaRS485(1,  5 , 0xF1, 7, outputPyloadRS485);
  }
  break;
 

@@ -25,6 +25,7 @@ unsigned int x;
 unsigned short buffer;
 unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
+unsigned char tramaPyloadRS485[512];
 
 short fuenteTiempoPic;
 
@@ -39,6 +40,8 @@ int ConfiguracionPrincipal();
 void ObtenerOperacion();														//C:0xA0    F:0xF0
 void ObtenerTiempoMaster();														//C:0xA5	F:0xF5    P:0xB1
 void ObtenerTiempoNodo(unsigned short direccion);								//C:0xA7	F:0xF7
+void ObtenerPyloadRS485(unsigned int numBytesPyload);							//C:0xAA	F:0xFA
+
 
 
 int main(int argc, char *argv[]) {
@@ -52,6 +55,9 @@ int main(int argc, char *argv[]) {
 	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
+	
+	//Muestra la hora del sistema:
+	system("date");
 	
 	//Obtencion de fuente de reloj:
 	if (direccionNodo==255){
@@ -160,8 +166,8 @@ void ObtenerOperacion(){
 			       ObtenerTiempoMaster(); 
 			   }
 			   //Tiempo del nodo:
-			   if (subFuncionSPI==0xD1){
-				   
+			   if (subFuncionSPI==0xD2){
+				   ObtenerPyloadRS485(numBytesSPI);
 			   }
 			   break;
           case 0xB2:
@@ -225,7 +231,29 @@ void ObtenerTiempoNodo(unsigned short direccion){
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	bcm2835_spi_transfer(0xF7);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-}								
+}		
+
+//C:0xAA	F:0xFA
+void ObtenerPyloadRS485(unsigned int numBytesPyload){
+	
+	printf("Contenido del pyload de la trama RS485:\n");
+	
+	bcm2835_spi_transfer(0xAA);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	for (i=0;i<numBytesPyload;i++){
+        buffer = bcm2835_spi_transfer(0x00);
+        tramaPyloadRS485[i] = buffer;
+        bcm2835_delayMicroseconds(TIEMPO_SPI);
+    }
+	bcm2835_spi_transfer(0xFA);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	
+	for (i=0;i<numBytesPyload;i++){
+		printf("%d ",tramaPyloadRS485[i]);
+	}
+	printf("\n");
+	exit (-1);
+}						
 
 //**************************************************************************************************************************************
 

@@ -17,7 +17,7 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 4
+#define IDNODO 5
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
@@ -315,7 +315,7 @@ void Muestrear(){
              }
          }
 
-         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+         //AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
          
          contMuestras = 0;                                                      //Limpia el contador de muestras
          contFIFO = 0;                                                          //Limpia el contador de FIFOs
@@ -609,6 +609,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
      if (banSetReloj==1){
         horaSistema++;                                                          //Incrementa el reloj del sistema
+        AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza la trama de tiempo
         TEST = ~TEST;
      } else {
         //EnviarTramaRS485(1, IDNODO, 0xF2, 6, tiempo);                           //Envia una solicitud de actualizacion de tiempo al Master

@@ -464,7 +464,7 @@ unsigned char tramaPrueba[10];
 unsigned short banInicio;
 unsigned short banOperacion;
 unsigned short banCheckRS485;
-unsigned short banSPI0, banSPI1, banSPI2, banSPI3, banSPI4, banSPI5, banSPI6, banSPI7, banSPI8, banSPI9;
+unsigned short banSPI0, banSPI1, banSPI2, banSPI3, banSPI4, banSPI5, banSPI6, banSPI7, banSPI8, banSPI9, banSPIA;
 
 
 unsigned short banRSI, banRSC;
@@ -521,6 +521,7 @@ void main() {
  banSPI7 = 0;
  banSPI8 = 0;
  banSPI9 = 0;
+ banSPIA = 0;
 
 
  i_gps = 0;
@@ -848,6 +849,21 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
+ if ((banSPIA==0)&&(bufferSPI==0xAA)){
+ banSPIA = 1;
+ SPI1BUF = inputPyloadRS485[0];
+ i = 1;
+ }
+ if ((banSPIA==1)&&(bufferSPI!=0xAA)&&(bufferSPI!=0xFA)){
+ SPI1BUF = inputPyloadRS485[i];
+ i++;
+ }
+ if ((banSPIA==1)&&(bufferSPI==0xFA)){
+ banSPIA = 0;
+ }
+
+
+
 
 
 
@@ -855,7 +871,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banCheckRS485==0)&&(bufferSPI==0xA8)){
 
  banCheckRS485 = 1;
-#line 465 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 481 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -870,7 +886,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
  if ((banCheckRS485==1)&&(bufferSPI==0xF9)){
  banCheckRS485 = 0;
-#line 483 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 499 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -909,7 +925,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  }
 
 }
-#line 607 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 623 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
 void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
 
@@ -958,11 +974,8 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  subFuncionRS485 = inputPyloadRS485[0];
  switch (funcionRS485){
  case 0xF1:
-
-
- InterrupcionP1(0xB1,0xD2,6);
-
-
+#line 680 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+ InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
  break;
  case 0xF2:
 
