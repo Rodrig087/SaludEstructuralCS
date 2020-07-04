@@ -2,15 +2,15 @@
 warning: 0	1501	Specified search path does not exist: 'C:\Users\Ivan\Desktop\Milton Muñoz\Proyectos\Git\SaludEstructuralCS\Firmware\Master'	 
 warning: 0	1502	Specified include path does not exist: 'C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Librerias firmware'	 
 diagnostics: 0	121	Loading...	 
-hint: 51	1354	 warning: "/*" within comment     //*****************************************************************************************************************************************  recuperadas    los nodos:    ceive buffer; receive buffer has one or more characters	C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Master\Master.c
-hint: 59	1354	 warning: "/*" within comment     //*****************************************************************************************************************************************  recuperadas del RTC  validos  tos en la trama  ive buffer has one or more characters	C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Master\Master.c
+hint: 52	1354	 warning: "/*" within comment     //*****************************************************************************************************************************************  recuperadas   cal a los nodos:  ve buffer; receive buffer has one or more characters	C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Master\Master.c
+hint: 60	1354	 warning: "/*" within comment     //*****************************************************************************************************************************************  recuperadas del RTC  validos  tos en la trama  ive buffer has one or more characters	C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Master\Master.c
 diagnostics: 0	122	Compilation Started	tiempo_rtc.c
 hint: 89	1163	Variable 'valueSet' has been declared, but not used	tiempo_rtc.c
 hint: 0	1004	interrupt handler (spi_1 at 0x0028)	Master.c
 hint: 0	1004	interrupt handler (int_1 at 0x003C)	Master.c
 hint: 0	1004	interrupt handler (urx_2 at 0x0050)	Master.c
-diagnostics: 659	123	Compiled Successfully	Master.c
-warning: 164	1519	Logical expression is always: 'False'	Master.c
+diagnostics: 674	123	Compiled Successfully	Master.c
+warning: 167	1519	Logical expression is always: 'False'	Master.c
 hint: 77	1164	Variable 'value' has been eliminated by optimizer	Master.c
 hint: 130	1164	Variable 'valueRead' has been eliminated by optimizer	Master.c
 hint: 131	1164	Variable 'hora' has been eliminated by optimizer	Master.c
@@ -21,11 +21,11 @@ hint: 64	1164	Variable 'fechaGPS' has been eliminated by optimizer	Master.c
 hint: 95	1164	Variable 'horaGPS' has been eliminated by optimizer	Master.c
 hint: 12	1164	Variable 'fechaRPi' has been eliminated by optimizer	Master.c
 hint: 23	1164	Variable 'horaRPi' has been eliminated by optimizer	Master.c
-diagnostics: 0	127	All files Compiled in 219 ms	 
+diagnostics: 0	127	All files Compiled in 188 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
-hint: 0	1144	Static RAM (bytes): 3128   Dynamic RAM (bytes): 25544	Static RAM (bytes): 3128   Dynamic RAM (bytes): 25544
-hint: 0	1144	Used ROM (bytes): 4680 (3%)  Free ROM (bytes): 171428 (97%)	Used ROM (bytes): 4680 (3%)  Free ROM (bytes): 171428 (97%)
+hint: 0	1144	Static RAM (bytes): 3129   Dynamic RAM (bytes): 25542	Static RAM (bytes): 3129   Dynamic RAM (bytes): 25542
+hint: 0	1144	Used ROM (bytes): 4782 (3%)  Free ROM (bytes): 171326 (97%)	Used ROM (bytes): 4782 (3%)  Free ROM (bytes): 171326 (97%)
 diagnostics: 0	125	Project Linked Successfully	Master.mcpds
-diagnostics: 0	128	Linked in 266 ms	 
-diagnostics: 0	129	Project 'Master.mcpds' completed: 704 ms	 
-diagnostics: 0	103	Finished successfully: 02 jul. 2020, 16:29:04	Master.mcpds
+diagnostics: 0	128	Linked in 250 ms	 
+diagnostics: 0	129	Project 'Master.mcpds' completed: 641 ms	 
+diagnostics: 0	103	Finished successfully: 04 jul. 2020, 00:42:05	Master.mcpds

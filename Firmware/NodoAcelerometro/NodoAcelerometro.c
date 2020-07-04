@@ -75,6 +75,8 @@ unsigned short funcionRS485;                                                    
 unsigned short subFuncionRS485;                                                                                                        //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
 
+unsigned short banU2;
+
 //Variables para manejo del SD:
 const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
 unsigned long sectorSave = PSF+99;                                              //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
@@ -148,6 +150,8 @@ void main() {
      numDatosRS485 = 0;
      funcionRS485 = 0;
      subFuncionRS485 = 0;
+     
+     banU2 = 1;
       
      //SD:
      sectorSD = 0;
@@ -184,9 +188,6 @@ void main() {
      if (sdflags.detected && !sdflags.init_ok) {
           if (SD_Init_Try(10) == SUCCESSFUL_INIT) {
               sdflags.init_ok = true;
-              //sectorSD = UbicarUltimoSectorSD(1);                                    //Recupera el valor del ultimo sector donde escribio  (true = sobrescribe la SD)
-              INT1IE_bit = 1;                                                   //Habilita la interrupcion externa INT1
-              U1MODE.UARTEN = 1;                                                //Habilita el UART
               inicioSistema = 1;                                                //Activa la bandera para permitir el inicio del sistema
               TEST = 1;
            } else {
@@ -201,6 +202,8 @@ void main() {
 
      //Entra al bucle princial del programa:
      while(1){
+              //EnviarTramaRS485(1, 255, 0xF3, 10, tramaPruebaRS485);
+              //Delay_ms(100);
      }
 
 }
@@ -240,7 +243,7 @@ void ConfiguracionPrincipal(){
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);                            //Inicializa el UART1 con una velocidad de 2Mbps
-     U1MODE.UARTEN = 0;                                                         //Desabilita el UART
+     //U1MODE.UARTEN = 0;                                                         //Desabilita el UART
 
      //Configuracion del puerto SPI2 en modo Master:
      RPINR22bits.SDI2R = 0x21;                                                  //Configura el pin RB1/RPI33 como SDI2 *
@@ -251,7 +254,7 @@ void ConfiguracionPrincipal(){
 
      //Configuracion de la interrupcion externa INT1
      RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
-     INT1IE_bit = 0;                                                            //Interrupcion externa INT1
+     INT1IE_bit = 1;                                                            //Interrupcion externa INT1
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
      IPC5bits.INT1IP = 0x01;                                                    //Prioridad en la interrupocion externa 1
 

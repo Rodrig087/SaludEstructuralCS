@@ -502,6 +502,8 @@ unsigned short funcionRS485;
 unsigned short subFuncionRS485;
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
+unsigned short banU2;
+
 
 const unsigned int clusterSizeSD = 512;
 unsigned long sectorSave =  2048 +99;
@@ -576,22 +578,21 @@ void main() {
  funcionRS485 = 0;
  subFuncionRS485 = 0;
 
+ banU2 = 1;
+
 
  sectorSD = 0;
  sectorLec = 0;
  checkEscSD = 0;
  checkLecSD = 0;
  MSRS485 = 0;
-#line 181 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 185 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
  if (sdflags.detected && !sdflags.init_ok) {
  if (SD_Init_Try(10) ==  0xAA ) {
  sdflags.init_ok =  1 ;
-
- INT1IE_bit = 1;
- U1MODE.UARTEN = 1;
  inicioSistema = 1;
  TEST = 1;
  } else {
@@ -606,6 +607,8 @@ void main() {
 
 
  while(1){
+
+
  }
 
 }
@@ -645,7 +648,7 @@ void ConfiguracionPrincipal(){
  U1RXIF_bit = 0;
  IPC2bits.U1RXIP = 0x04;
  UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
- U1MODE.UARTEN = 0;
+
 
 
  RPINR22bits.SDI2R = 0x21;
@@ -656,7 +659,7 @@ void ConfiguracionPrincipal(){
 
 
  RPINR0 = 0x2E00;
- INT1IE_bit = 0;
+ INT1IE_bit = 1;
  INT1IF_bit = 0;
  IPC5bits.INT1IP = 0x01;
 

@@ -8594,6 +8594,7 @@ ptper_8
 ptper_8_bit
 ptper_9
 ptper_9_bit
+ptrnumbytesspi
 ptsidl
 ptsidl
 ptsidl_bit
@@ -10766,6 +10767,7 @@ stsel
 stsel_bit
 stsel_u1mode_bit
 stsel_u2mode_bit
+subfuncionrs485
 swap
 swap
 swap
@@ -11144,7 +11146,6 @@ tgen
 tgen_bit
 tiempo
 tiemporpi
-tipooperacion
 tmr1
 tmr1_0
 tmr1_0_bit

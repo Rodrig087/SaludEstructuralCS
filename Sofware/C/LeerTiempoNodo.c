@@ -125,20 +125,47 @@ int ConfiguracionPrincipal(){
 //C:0xA0    F:0xF0
 void ObtenerOperacion(){
 	
+	unsigned short funcionSPI;
+	unsigned short subFuncionSPI;
+	unsigned short numBytesMSB;
+	unsigned short numBytesLSB;
+	unsigned int numBytesSPI; 
+    unsigned char *ptrnumBytesSPI;
+	ptrnumBytesSPI = (unsigned char *) & numBytesSPI;
+	
+	//Recupera: [operacion, byteLSB, byteMSB]
 	bcm2835_spi_transfer(0xA0);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	buffer = bcm2835_spi_transfer(0x00);
+	funcionSPI = bcm2835_spi_transfer(0x00);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	bcm2835_spi_transfer(0xF0);		
+	subFuncionSPI = bcm2835_spi_transfer(0x00);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	numBytesLSB = bcm2835_spi_transfer(0x00);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	numBytesMSB = bcm2835_spi_transfer(0x00);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	bcm2835_spi_transfer(0xF0);	
 
-	switch (buffer){                                                                     
+	*ptrnumBytesSPI = numBytesLSB;
+	*(ptrnumBytesSPI+1) = numBytesMSB;
+	
+	printf("Funcion: %X\n", funcionSPI);
+	printf("Subfuncion: %X\n", subFuncionSPI);
+	printf("Numero de bytes: %d\n", numBytesSPI);
+	
+	switch (funcionSPI){                                                                     
           case 0xB1:
-		       printf("Recupero 0xB1\n");
-			   ObtenerTiempoMaster(); 
+		       //Respuesta de la sincronizacion:
+			   if (subFuncionSPI==0xD1){
+			       ObtenerTiempoMaster(); 
+			   }
+			   //Tiempo del nodo:
+			   if (subFuncionSPI==0xD1){
+				   
+			   }
 			   break;
           case 0xB2:
-		       printf("Recupero 0xB2\n"); 
-			   
+		       printf("Opcion no disponible");			   
                break;
 		  case 0xB3:
 		       printf("Opcion no disponible");  
