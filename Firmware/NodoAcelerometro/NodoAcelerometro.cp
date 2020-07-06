@@ -353,7 +353,7 @@ extern sfr sbit MSRS485_Direction;
 
 
 
-void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char *payload){
+void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short funcion, unsigned short subfuncion, unsigned short numDatos, unsigned char *payload){
 
  unsigned int iDatos;
 
@@ -362,6 +362,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  UART1_Write(0x3A);
  UART1_Write(direccion);
  UART1_Write(funcion);
+ UART1_Write(subfuncion);
  UART1_Write(numDatos);
  for (iDatos=0;iDatos<numDatos;iDatos++){
  UART1_Write(payload[iDatos]);
@@ -377,6 +378,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  UART2_Write(0x3A);
  UART2_Write(direccion);
  UART2_Write(funcion);
+ UART2_Write(subfuncion);
  UART2_Write(numDatos);
  for (iDatos=0;iDatos<numDatos;iDatos++){
  UART2_Write(payload[iDatos]);
@@ -1107,16 +1109,17 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  i_rs485 = 0;
  }
  }
- if ((banRSI==1)&&(i_rs485<4)){
+ if ((banRSI==1)&&(i_rs485<5)){
  tramaCabeceraRS485[i_rs485] = byteRS485;
  i_rs485++;
  }
- if ((banRSI==1)&&(i_rs485==4)){
+ if ((banRSI==1)&&(i_rs485==5)){
 
- if ((tramaCabeceraRS485[1]== 5 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 4 )||(tramaCabeceraRS485[1]==255)){
 
  funcionRS485 = tramaCabeceraRS485[2];
- numDatosRS485 = tramaCabeceraRS485[3];
+ subFuncionRS485 = tramaCabeceraRS485[3];
+ numDatosRS485 = tramaCabeceraRS485[4];
  banRSI = 2;
  i_rs485 = 0;
  } else {
@@ -1128,13 +1131,13 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
  if (banRSC==1){
- subFuncionRS485 = inputPyloadRS485[0];
+
  switch (funcionRS485){
  case 0xF1:
 
  if (subFuncionRS485==0xD1){
  for (x=0;x<6;x++) {
- tiempo[x] = inputPyloadRS485[x+1];
+ tiempo[x] = inputPyloadRS485[x];
  }
  horaSistema = RecuperarHoraRPI(tiempo);
  fechaSistema = RecuperarFechaRPI(tiempo);
@@ -1143,18 +1146,20 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD2){
 
- outputPyloadRS485[0] = 0xD2;
  for (x=0;x<6;x++){
- outputPyloadRS485[x+1] = tiempo[x];
+ outputPyloadRS485[x] = tiempo[x];
  }
- EnviarTramaRS485(1,  5 , 0xF1, 7, outputPyloadRS485);
+
+
+ INT1IE_bit = 0;
+
  }
  break;
 
  case 0xF2:
 
  if (subFuncionRS485==0xD1){
- sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);
+ sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[0]);
  banInicioMuestreo = 1;
  }
 

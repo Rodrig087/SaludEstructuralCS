@@ -61,11 +61,6 @@ urx_1
 		_Multiply_32x32
 	RecuperarFechaRPI
 		_Multiply_32x32
-	EnviarTramaRS485
-		UART1_Write
-		UART1_Tx_Idle
-		UART2_Write
-		UART2_Tx_Idle
 	UbicarUltimoSectorSD
 		SD_Read_Block
 			Select_SD

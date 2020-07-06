@@ -27,22 +27,18 @@ unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
 unsigned char tramaPyloadRS485[512];
 
-int direccionNodo;
-unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
-unsigned char pyloadNodo[10];
-
 short fuenteTiempoPic;
 
 unsigned int tiempoInicial;
 unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
-
+int direccionNodo;
 
 //Declaracion de funciones
 int ConfiguracionPrincipal();
 void ObtenerOperacion();														//C:0xA0    F:0xF0
-void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short subfuncion, unsigned short numDatos, unsigned char* pyload); //C:0xA1    F:0xF1   
+void ObtenerTiempoMaster();														//C:0xA5	F:0xF5    P:0xB1
 void ObtenerTiempoNodo(unsigned short direccion);								//C:0xA7	F:0xF7
 void ObtenerPyloadRS485(unsigned int numBytesPyload);							//C:0xAA	F:0xFA
 
@@ -57,20 +53,22 @@ int main(int argc, char *argv[]) {
 	x = 0;
 	direccionNodo = (short)(atoi(argv[1]));
 	
-	funcionNodo = 0xF1;
-	subFuncionNodo = 0xD2;
-	numDatosNodo = 1;
-	pyloadNodo[0] = 0;
-	
-	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
 	
 	//Muestra la hora del sistema:
 	system("date");
 	
-	//Envia la solicitud al nodo:
-	EnviarSolicitudNodo(direccionNodo, funcionNodo, subFuncionNodo, numDatosNodo, pyloadNodo);
+	//Obtencion de fuente de reloj:
+	if (direccionNodo==255){
+		//EnviarTiempoLocal();
+	} 
+	if (direccionNodo>0&&direccionNodo<=5){
+		ObtenerTiempoNodo(direccionNodo);	
+	} 
+	if (direccionNodo>5){
+		ObtenerTiempoNodo(5);
+	}
 	
 	sleep(5);
 	bcm2835_spi_end();
@@ -111,9 +109,17 @@ int ConfiguracionPrincipal(){
 	//Configuracion libreria WiringPi:
     wiringPiSetup();
     pinMode(P1, INPUT);
+	pinMode(MCLR, OUTPUT);
 	pinMode(TEST, OUTPUT);
 	wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
-		
+	
+	//Genera un pulso para resetear el dsPIC:
+	digitalWrite (MCLR, HIGH);
+	delay (100) ;
+	digitalWrite (MCLR,  LOW); 
+	delay (100) ;
+	digitalWrite (MCLR, HIGH);
+	
 	//printf("Configuracion completa\n");
 	
 }
@@ -136,7 +142,6 @@ void ObtenerOperacion(){
 	//Recupera: [operacion, byteLSB, byteMSB]
 	bcm2835_spi_transfer(0xA0);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	
 	funcionSPI = bcm2835_spi_transfer(0x00);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	subFuncionSPI = bcm2835_spi_transfer(0x00);
@@ -145,9 +150,7 @@ void ObtenerOperacion(){
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	numBytesMSB = bcm2835_spi_transfer(0x00);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	
-	bcm2835_spi_transfer(0xF0);
-    bcm2835_delayMicroseconds(TIEMPO_SPI);	
+	bcm2835_spi_transfer(0xF0);	
 
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
@@ -160,7 +163,7 @@ void ObtenerOperacion(){
           case 0xB1:
 		       //Respuesta de la sincronizacion:
 			   if (subFuncionSPI==0xD1){
-			       printf("Opcion no disponible"); 
+			       ObtenerTiempoMaster(); 
 			   }
 			   //Tiempo del nodo:
 			   if (subFuncionSPI==0xD2){
@@ -184,45 +187,65 @@ void ObtenerOperacion(){
 	
 }
 
-//C:0xA1	F:0xF1
-void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short subfuncion, unsigned short numDatos, unsigned char* pyload){
+//C:0xA5	F:0xF5 
+void ObtenerTiempoMaster(){
 	
-	printf("enviando solicitud al nodo: %d\n", direccion);
-		
-	bcm2835_spi_transfer(0xA1);
+	printf("Hora Master: ");	
+	bcm2835_spi_transfer(0xA5);                                                 //Envia el delimitador de final de trama
+    bcm2835_delayMicroseconds(TIEMPO_SPI);
+	
+	fuenteTiempoPic = bcm2835_spi_transfer(0x00);								//Recibe el byte que indica la fuente de tiempo del PIC
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
-	bcm2835_spi_transfer(direccion);								
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	bcm2835_spi_transfer(funcion);								
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	bcm2835_spi_transfer(subfuncion);								
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	bcm2835_spi_transfer(numDatos);								
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
-		
-	for (i=0;i<numDatos;i++){
-		bcm2835_spi_transfer(pyload[0]);								
-		bcm2835_delayMicroseconds(TIEMPO_SPI);
+	for (i=0;i<6;i++){
+        buffer = bcm2835_spi_transfer(0x00);
+        tiempoPIC[i] = buffer;													//Guarda la hora y fecha devuelta por el dsPIC
+        bcm2835_delayMicroseconds(TIEMPO_SPI);
+    }
+
+	bcm2835_spi_transfer(0xF5);                                                 //Envia el delimitador de final de trama
+    bcm2835_delayMicroseconds(TIEMPO_SPI);
+	
+	if (fuenteTiempoPic==0){
+		printf("RTC ");
+	} 
+	if (fuenteTiempoPic==1){
+		printf("GPS ");
 	}
 	
-	bcm2835_spi_transfer(0xF1);
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	printf("%0.2d:",tiempoPIC[3]);		//hh
+	printf("%0.2d:",tiempoPIC[4]);		//mm
+	printf("%0.2d ",tiempoPIC[5]);		//ss
+	printf("%0.2d/",tiempoPIC[0]);		//dd
+	printf("%0.2d/",tiempoPIC[1]);		//MM
+	printf("%0.2d\n",tiempoPIC[2]);		//aa
+				
 }
 
-//C:0xA2	F:0xF2
+//C:0xA7	F:0xF7
+void ObtenerTiempoNodo(unsigned short direccion){
+	printf("Obteniendo fecha/hora del nodo: %d\n", direccion);
+	bcm2835_spi_transfer(0xA7);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	bcm2835_spi_transfer(direccion);								
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	bcm2835_spi_transfer(0xF7);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+}		
+
+//C:0xAA	F:0xFA
 void ObtenerPyloadRS485(unsigned int numBytesPyload){
 	
 	printf("Contenido del pyload de la trama RS485:\n");
 	
-	bcm2835_spi_transfer(0xA2);
+	bcm2835_spi_transfer(0xAA);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	for (i=0;i<numBytesPyload;i++){
         buffer = bcm2835_spi_transfer(0x00);
         tramaPyloadRS485[i] = buffer;
         bcm2835_delayMicroseconds(TIEMPO_SPI);
     }
-	bcm2835_spi_transfer(0xF2);
+	bcm2835_spi_transfer(0xFA);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
 	for (i=0;i<numBytesPyload;i++){
@@ -230,8 +253,7 @@ void ObtenerPyloadRS485(unsigned int numBytesPyload){
 	}
 	printf("\n");
 	exit (-1);
-	
-}
+}						
 
 //**************************************************************************************************************************************
 

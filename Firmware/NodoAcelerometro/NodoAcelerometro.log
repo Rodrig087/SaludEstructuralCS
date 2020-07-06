@@ -10,7 +10,7 @@ warning: 518	1503	Result is not defined in function: 'recuperarDatosAceleracion'
 hint: 0	1004	interrupt handler (int_1 at 0x003C)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (Timer1Int at 0x001A)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (urx_1 at 0x002A)	NodoAcelerometro.c
-diagnostics: 783	123	Compiled Successfully	NodoAcelerometro.c
+diagnostics: 786	123	Compiled Successfully	NodoAcelerometro.c
 warning: 204	1519	Logical expression is always: 'False'	NodoAcelerometro.c
 warning: 450	1512	variable 'sectorInicioSD' might not have been initialized	NodoAcelerometro.c
 warning: 488	1512	variable 'sectorLec' might not have been initialized	NodoAcelerometro.c
@@ -33,11 +33,11 @@ hint: 92	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 313	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 328	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 346	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
-diagnostics: 0	127	All files Compiled in 312 ms	 
+diagnostics: 0	127	All files Compiled in 313 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
 hint: 0	1144	Static RAM (bytes): 3873   Dynamic RAM (bytes): 24798	Static RAM (bytes): 3873   Dynamic RAM (bytes): 24798
-hint: 0	1144	Used ROM (bytes): 6409 (4%)  Free ROM (bytes): 169699 (96%)	Used ROM (bytes): 6409 (4%)  Free ROM (bytes): 169699 (96%)
+hint: 0	1144	Used ROM (bytes): 6167 (4%)  Free ROM (bytes): 169941 (96%)	Used ROM (bytes): 6167 (4%)  Free ROM (bytes): 169941 (96%)
 diagnostics: 0	125	Project Linked Successfully	NodoAcelerometro.mcpds
-diagnostics: 0	128	Linked in 266 ms	 
-diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 797 ms	 
-diagnostics: 0	103	Finished successfully: 04 jul. 2020, 02:48:17	NodoAcelerometro.mcpds
+diagnostics: 0	128	Linked in 250 ms	 
+diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 781 ms	 
+diagnostics: 0	103	Finished successfully: 05 jul. 2020, 18:30:31	NodoAcelerometro.mcpds

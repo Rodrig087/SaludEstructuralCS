@@ -17,7 +17,7 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 5
+#define IDNODO 4
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
@@ -68,11 +68,11 @@ unsigned short banRSI, banRSC;                                                  
 unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
 unsigned char tramaCabeceraRS485[4];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
-unsigned char inputPyloadRS485[10];                                                //Vector para almacenar el pyload de entrada de la trama RS485
-unsigned char outputPyloadRS485[512];                                              //Vector para almacenar el pyload de salida de la trama RS485
+unsigned char inputPyloadRS485[10];                                             //Vector para almacenar el pyload de entrada de la trama RS485
+unsigned char outputPyloadRS485[512];                                           //Vector para almacenar el pyload de salida de la trama RS485
 unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
-unsigned short subFuncionRS485;                                                                                                        //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
+unsigned short subFuncionRS485;                                                 //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
 
 unsigned short banU2;
@@ -702,16 +702,17 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            i_rs485 = 0;
         }
      }
-     if ((banRSI==1)&&(i_rs485<4)){
-        tramaCabeceraRS485[i_rs485] = byteRS485;                                //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
+     if ((banRSI==1)&&(i_rs485<5)){
+        tramaCabeceraRS485[i_rs485] = byteRS485;                                //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, Subfuncion, NumeroDatos]
         i_rs485++;
      }
-     if ((banRSI==1)&&(i_rs485==4)){
+     if ((banRSI==1)&&(i_rs485==5)){
         //Comprueba la direccion:
         if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
            //TEST = ~TEST;
            funcionRS485 = tramaCabeceraRS485[2];
-           numDatosRS485 = tramaCabeceraRS485[3];
+           subFuncionRS485 = tramaCabeceraRS485[3];
+                   numDatosRS485 = tramaCabeceraRS485[4];
            banRSI = 2;
            i_rs485 = 0;
         } else {
@@ -723,13 +724,13 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
      //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
      if (banRSC==1){
-        subFuncionRS485 = inputPyloadRS485[0];                                    
+                                            
         switch (funcionRS485){
                case 0xF1:
                     //Recupera el tiempo de la trama RS485:
                     if (subFuncionRS485==0xD1){
                         for (x=0;x<6;x++) {
-                            tiempo[x] = inputPyloadRS485[x+1];                  //LLena la trama tiempo con el payload de la trama recuperada
+                            tiempo[x] = inputPyloadRS485[x];                    //LLena la trama tiempo con el payload de la trama recuperada
                         }
                         horaSistema = RecuperarHoraRPI(tiempo);                 //Recupera la hora de la RPi
                         fechaSistema = RecuperarFechaRPI(tiempo);               //Recupera la fecha de la RPi
@@ -738,18 +739,20 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     //Envia la hora local al Master:
                     if (subFuncionRS485==0xD2){
                         //Llena el pyload de salida:
-                        outputPyloadRS485[0] = 0xD2;
                         for (x=0;x<6;x++){
-                            outputPyloadRS485[x+1] = tiempo[x];
+                            outputPyloadRS485[x] = tiempo[x];
                         }
-                        EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);//Envia la hora local al Master
+                        //EnviarTramaRS485(1, IDNODO, 0xF1, 0xD2, 6, outputPyloadRS485);//Envia la hora local al Master
+                                                
+                        INT1IE_bit = 0;
+                                                
                     }
                     break;
                
                case 0xF2:
                     //Inicia el muestreo:
                     if (subFuncionRS485==0xD1){
-                        sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);      //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
+                        sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[0]);   //inputPyloadRS485[0] = sobrescribir (0=no, 1=si)
                         banInicioMuestreo = 1;                                  //Activa la bandera para iniciar el muestreo
                     }
                     //Detiene el muestreo:

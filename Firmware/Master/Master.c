@@ -62,6 +62,7 @@ unsigned short bufferSPI;
 unsigned short banLec, banEsc;                                                                                                              //Numero de bytes que se van a enviar a la RPi por SPI
 unsigned char *ptrnumBytesSPI;                                                  //Puntero asociado al numero de bytes SPI
 unsigned char tramaSolicitudSPI[10];                                            //Vector para almacenar los datos de solicitud que envia la RPi a traves del SPI
+unsigned char tramaSolicitudNodo[10];
 unsigned char tramaCompleta[2506];                                              //Vector para almacenar 10 vectores datosFIFO, 250 cabeceras de muestras y el vector tiempo
 unsigned char tramaPrueba[10];                                                  //Trama de 10 elementos para probar la comunicacion RS485
 unsigned short banInicio;
@@ -76,11 +77,12 @@ unsigned int i_rs485;                                                           
 unsigned char tramaCabeceraRS485[4];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
 unsigned char inputPyloadRS485[512];                                            //Vector para almacenar el pyload de la trama RS485 recibida
 unsigned char outputPyloadRS485[10];                                            //Vector para almacenar el pyload de la trama RS485 a enviar
+unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
 unsigned short direccionRS485;                                                  //Varaible para la direccion del nodo. Broadcast = 255
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
 unsigned short subFuncionRS485;                                                 //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
-unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
-unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
+unsigned short numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
+
 
 //Variables para el control del muestreo:
 unsigned short banInicioMuestreo;
@@ -124,7 +126,7 @@ void main() {
      banSPI7 = 0;
      banSPI8 = 0;
      banSPI9 = 0;
-         banSPIA = 0;
+     banSPIA = 0;
               
      //GPS:
      i_gps = 0;
@@ -166,7 +168,7 @@ void main() {
      SPI1BUF = 0x00;
 
      while(1){
-              //EnviarTramaRS485(2, 255, 0xF3, 10, tramaPruebaRS485);
+              //EnviarTramaRS485(2, 255, 0xF3, 0xD1, 10, tramaPruebaRS485);
               //Delay_ms(100);
      }
 
@@ -266,7 +268,7 @@ void ConfiguracionPrincipal(){
         for (x=1;x<7;x++){
             outputPyloadRS485[x] = tiempo[x-1];
         }
-        EnviarTramaRS485(2, 255, 0xF1, 7, outputPyloadRS485);                   //Envia la hora local a los nodos
+        EnviarTramaRS485(2, 255, 0xF1, 0xD1, 6, outputPyloadRS485);             //Envia la hora local a todos los nodos
      }
      
      //Asocia el puntero a la variable:
@@ -315,53 +317,53 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //************************************************************************************************************************************
      
      //************************************************************************************************************************************
-     //Rutinas de control del muestreo:
-     
-     //Rutina para iniciar el muestreo (C:0xA1   F:0xF1):
+     //(C:0xA1   F:0xF1)
+     //Rutina de reenvio de instrucciones a los nodos (C:0xA1   F:0xF1):
      if ((banSPI1==0)&&(bufferSPI==0xA1)){
         banSPI1 = 1;
         i = 0;
      }
      if ((banSPI1==1)&&(bufferSPI!=0xA1)&&(bufferSPI!=0xF1)){
-        tramaSolicitudSPI[i] = bufferSPI;                                       //Recupera la direccion del nodo y el indicador de sobrescritura de la SD
+        tramaSolicitudNodo[i] = bufferSPI;                                      //Recupera la trama de solicitud enviada por la RPi
         i++;
      }
      if ((banSPI1==1)&&(bufferSPI==0xF1)){
-        direccionRS485 = tramaSolicitudSPI[0];
-        outputPyloadRS485[0] = 0xD1;                                            //Subfuncion iniciar muestreo
-        outputPyloadRS485[1] = tramaSolicitudSPI[1];                            //Payload sobrescribir SD
-        EnviarTramaRS485(2, direccionRS485, 0xF2, 2, outputPyloadRS485);        //Envia la solicitud al nodo
-        banSPI1 = 0;                                                                                                                
+        banSPI1 = 0;                                                            
+        direccionRS485 = tramaSolicitudNodo[0];
+        funcionRS485 = tramaSolicitudNodo[1];
+        subFuncionRS485 = tramaSolicitudNodo[2];
+        numDatosRS485 = tramaSolicitudNodo[3];
+        outputPyloadRS485[0] = 0;
+        //Llena la trama outputPyloadRS485 con los datos de solicitud:
+        /*for (x=0;x<numDatosRS485;x++){
+            outputPyloadRS485[x] = tramaSolicitudSPI[x+4];
+        }*/
+        
+        //Reenvia la solicitud al nodo por RS485:
+        EnviarTramaRS485(2, direccionRS485, funcionRS485, subFuncionRS485, numDatosRS485, outputPyloadRS485);
+        //EnviarTramaRS485(2, 4, 0xF1, 0xD2, 1, outputPyloadRS485);
+        
+        if (funcionRS485==0xF1){
+           INT1IE_bit = 0;
+        }
+        
      }
-     
-     //Rutina para detener el muestreo (C:0xA2   F:0xF2):
+     //************************************************************************************************************************************
+         
+     //************************************************************************************************************************************
+     //(C:0xA2   F:0xF2)
+     //Rutina para enviar el contenido del pyload de la trama RS485 a la RPi:
      if ((banSPI2==0)&&(bufferSPI==0xA2)){
         banSPI2 = 1;
-        i = 0;
+        SPI1BUF = inputPyloadRS485[0];
+        i = 1;
      }
      if ((banSPI2==1)&&(bufferSPI!=0xA2)&&(bufferSPI!=0xF2)){
-        tramaSolicitudSPI[i] = bufferSPI;                                       //Recupera la direccion del nodo
-     }
-     if ((banSPI2==1)&&(bufferSPI==0xF2)){
-        direccionRS485 = tramaSolicitudSPI[0];
-        outputPyloadRS485[0] = 0xD2;                                            //Subfuncion detener muestreo
-        EnviarTramaRS485(2, direccionRS485, 0xF2, 1, outputPyloadRS485);        //Envia la solicitud al nodo
-        banSPI2 = 0;
-     }
-
-     //Rutina de lectura de los datos del acelerometro (C:0xA3   F:0xF3):
-     if ((banLec==1)&&(bufferSPI==0xA3)){                                       //Verifica si la bandera de inicio de trama esta activa
-        banLec = 2;                                                             //Activa la bandera de lectura
-        i = 0;
-        SPI1BUF = tramaCompleta[i];                                             //**Aqui envio a la RPi la trama de aceleracion recuperada de los nodos
-     }
-     if ((banLec==2)&&(bufferSPI!=0xF3)){
-        SPI1BUF = tramaCompleta[i];
+        SPI1BUF = inputPyloadRS485[i];
         i++;
      }
-     if ((banLec==2)&&(bufferSPI==0xF3)){                                       //Si detecta el delimitador de final de trama:
-        banLec = 0;                                                             //Limpia la bandera de lectura
-        SPI1BUF = 0xFF;
+     if ((banSPI2==1)&&(bufferSPI==0xF2)){
+        banSPI2 = 0;
      }
      //************************************************************************************************************************************
 
@@ -392,31 +394,15 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      }
 
      //(C:0xA5   F:0xF5)
-     //Rutina para enviar la hora local a la RPi y a los nodos:
-     if ((banSetReloj==1)&&(bufferSPI==0xA5)){
+     //Rutina para obtener la referencia de tiempo (1=GPS, 2=RTC):
+     if ((banSetReloj==0)&&(bufferSPI==0xA5)){
         banSPI5 = 1;
-        j = 0;
-        SPI1BUF = fuenteReloj;                                                  //Envia el indicador de fuente de reloj (0:RTC, 1:GPS)
      }
      if ((banSPI5==1)&&(bufferSPI!=0xA5)&&(bufferSPI!=0xF5)){
-        SPI1BUF = tiempo[j];
-        j++;
-     }
-     if ((banSPI5==1)&&(bufferSPI==0xF5)){                                      
-        banSPI5 = 0;
-        banSetReloj = 0;                                                        //Limpia la bandera de lectura
-     }
-
-     //(C:0xA6   F:0xF6)
-     //Rutina para obtener la referencia de tiempo (1=GPS, 2=RTC):
-     if ((banSetReloj==0)&&(bufferSPI==0xA6)){
-        banSPI6 = 1;
-     }
-     if ((banSPI6==1)&&(bufferSPI!=0xA6)&&(bufferSPI!=0xF6)){
         referenciaTiempo =  bufferSPI;                                          //Recupera la opcion de referencia de tiempo solicitada
      }
-     if ((banSPI6==1)&&(bufferSPI==0xF6)){
-            banSPI6 = 0; 
+     if ((banSPI5==1)&&(bufferSPI==0xF5)){
+            banSPI5 = 0; 
             if (referenciaTiempo==1){
                 //Recupera el tiempo del GPS:
                 banTIGPS = 0;                                                   //Limpia la bandera de inicio de trama  del GPS
@@ -435,71 +421,25 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
                 banSetReloj = 1;
                 InterrupcionP1(0xB1,0xD1,6);                                    //Envia la hora local a la RPi
             }
-     }  
-         
-     //(C:0xA7   F:0xF7)
-     //Rutina para obtener el tiempo de los nodos:
-     if ((banSetReloj==0)&&(bufferSPI==0xA7)){
-        banSPI7 = 1;
-     }
-     if ((banSPI7==1)&&(bufferSPI!=0xA7)&&(bufferSPI!=0xF7)){
-        direccionRS485 =  bufferSPI;                                            //Recupera la direccion del nodo solicitado
-     }
-     if ((banSPI7==1)&&(bufferSPI==0xF7)){
-        outputPyloadRS485[0] = 0xD2;                                            //Llena el pyload de salidad con la subfuncion solicitada
-        EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);        //Envia la solicitud al nodo
-     }
-         
-     //(C:0xAA   F:0xFA)
-     //Rutina para enviar el contenido del pyload de la trama RS485 a la RPi:
-     if ((banSPIA==0)&&(bufferSPI==0xAA)){
-        banSPIA = 1;
-        SPI1BUF = inputPyloadRS485[0];
-        i = 1;
-     }
-     if ((banSPIA==1)&&(bufferSPI!=0xAA)&&(bufferSPI!=0xFA)){
-        SPI1BUF = inputPyloadRS485[i];
-        i++;
-     }
-     if ((banSPIA==1)&&(bufferSPI==0xFA)){
-        banSPIA = 0;
-     }
-         
-     //************************************************************************************************************************************
-     
-     //************************************************************************************************************************************
-     //Rutinas de prueba de la comunicacion RS485:
-     
-     //Rutina para testeo de la comunicacion RS485 (C:0xA8   F:0xF8):
-     if ((banCheckRS485==0)&&(bufferSPI==0xA8)){
-        //InterrupcionP1(0xB3);                                                   //Envia una solicitud de prueba
-        banCheckRS485 = 1;
-        //**Aqui debo incluir la rutina de peticion de la trama de prueba al nodo por medio de RS485
-        /*for (x=0;x<10;x++){
-            tramaPrueba[x] = x;
-        }*/
-     }
-     
-     //Rutina para enviar la trama de prueba (C:0xA9   F:0xF9):
-     if ((banCheckRS485==1)&&(bufferSPI==0xA9)){
+     } 
+
+     //(C:0xA6   F:0xF6)
+     //Rutina para enviar la hora local a la RPi y a los nodos:
+     if ((banSetReloj==1)&&(bufferSPI==0xA6)){
+        banSPI6 = 1;
         j = 0;
-        SPI1BUF = tramaPrueba[j];
+        SPI1BUF = fuenteReloj;                                                  //Envia el indicador de fuente de reloj (0:RTC, 1:GPS)
+     }
+     if ((banSPI6==1)&&(bufferSPI!=0xA6)&&(bufferSPI!=0xF6)){
+        SPI1BUF = tiempo[j];
         j++;
      }
-     if ((banCheckRS485==1)&&(bufferSPI!=0xA9)&&(bufferSPI!=0xF9)){
-        SPI1BUF = tramaPrueba[j];
-        j++;
-     }
-     if ((banCheckRS485==1)&&(bufferSPI==0xF9)){
-        banCheckRS485 = 0;
-        //limpia la trama de prueba
-        /*for (x=0;x<10;x++){
-            tramaPrueba[x] = 0;
-        }*/
-     }
-     
-     //************************************************************************************************************************************
-     
+     if ((banSPI6==1)&&(bufferSPI==0xF6)){                                      
+        banSPI6 = 0;
+        banSetReloj = 0;                                                        //Limpia la bandera de lectura
+     }         
+     //************************************************************************************************************************************    
+    
 }
 //*****************************************************************************************************************************************
 
@@ -645,15 +585,16 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
            i_rs485 = 0;
         }
      }
-     if ((banRSI==1)&&(i_rs485<4)){
+     if ((banRSI==1)&&(i_rs485<5)){
         tramaCabeceraRS485[i_rs485] = byteRS485;                                 //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
         i_rs485++;
      }
-     if ((banRSI==1)&&(i_rs485==4)){
+     if ((banRSI==1)&&(i_rs485==5)){
         //Comprueba la direccion del nodo solicitado:
         if (tramaCabeceraRS485[1]==direccionRS485){
            funcionRS485 = tramaCabeceraRS485[2];
-           numDatosRS485 = tramaCabeceraRS485[3];
+           subFuncionRS485 = tramaCabeceraRS485[3];
+           numDatosRS485 = tramaCabeceraRS485[4];
            banRSI = 2;
            i_rs485 = 0;
         } else {
@@ -664,8 +605,7 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      }
 
      //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
-     if (banRSC==1){
-        subFuncionRS485 = inputPyloadRS485[0];         
+     if (banRSC==1){         
         switch (funcionRS485){
                case 0xF1:
                     //Envia una solicitud de lectura SPI a la RPi:

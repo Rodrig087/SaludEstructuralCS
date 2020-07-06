@@ -38,8 +38,8 @@ int fuenteTiempo;
 int ConfiguracionPrincipal();
 void ObtenerOperacion();														//C:0xA0    F:0xF0
 void EnviarTiempoLocal();														//C:0xA4	F:0xF4
-void ObtenerTiempoMaster();														//C:0xA5	F:0xF5    P:0xB1
-void ObtenerReferenciaTiempo(unsigned short referencia);						//C:0xA6	F:0xF6
+void ObtenerReferenciaTiempo(unsigned short referencia);						//C:0xA5	F:0xF5
+void ObtenerTiempoMaster();														//C:0xA6	F:0xF6    
 void SetRelojLocal(unsigned char* tramaTiempo);
 
 
@@ -102,7 +102,6 @@ int ConfiguracionPrincipal(){
 	//Configuracion libreria WiringPi:
     wiringPiSetup();
     pinMode(P1, INPUT);
-	pinMode(MCLR, OUTPUT);
 	pinMode(TEST, OUTPUT);
 	wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
 		
@@ -208,11 +207,24 @@ void EnviarTiempoLocal(){
 
 }
 
-//C:0xA5	F:0xF5 
+//C:0xA5	F:0xF5
+void ObtenerReferenciaTiempo(unsigned short referencia){ 
+	//referencia = 1 -> GPS
+	//referencia = 2 -> RTC
+	printf("Obteniendo hora del GPS...\n");
+	bcm2835_spi_transfer(0xA5);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	bcm2835_spi_transfer(referencia);								
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	bcm2835_spi_transfer(0xF5);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+}
+
+//C:0xA6	F:0xF6 
 void ObtenerTiempoMaster(){
 	
 	printf("Hora dsPIC: ");	
-	bcm2835_spi_transfer(0xA5);                                                 //Envia el delimitador de final de trama
+	bcm2835_spi_transfer(0xA6);                                                 //Envia el delimitador de final de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
 	fuenteTiempoPic = bcm2835_spi_transfer(0x00);								//Recibe el byte que indica la fuente de tiempo del PIC
@@ -224,7 +236,7 @@ void ObtenerTiempoMaster(){
         bcm2835_delayMicroseconds(TIEMPO_SPI);
     }
 
-	bcm2835_spi_transfer(0xF5);                                                 //Envia el delimitador de final de trama
+	bcm2835_spi_transfer(0xF6);                                                 //Envia el delimitador de final de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
 	if (fuenteTiempoPic==0){
@@ -245,21 +257,11 @@ void ObtenerTiempoMaster(){
 	if (fuenteTiempo==1){
 		SetRelojLocal(tiempoPIC);		
 	}
-			
+ 
+	exit (-1);
+	
 }
 
-//C:0xA6	F:0xF6
-void ObtenerReferenciaTiempo(unsigned short referencia){ 
-	//referencia = 1 -> GPS
-	//referencia = 2 -> RTC
-	printf("Obteniendo hora del GPS...\n");
-	bcm2835_spi_transfer(0xA6);
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	bcm2835_spi_transfer(referencia);								
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	bcm2835_spi_transfer(0xF6);
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
-}
 //**************************************************************************************************************************************
 
 //**************************************************************************************************************************************
