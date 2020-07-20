@@ -5066,6 +5066,7 @@ indxhld_8
 indxhld_8_bit
 indxhld_9
 indxhld_9_bit
+informacionsectores
 iniciosistema
 init_ok
 inputpyloadrs485
@@ -8075,6 +8076,7 @@ pr5_8_bit
 pr5_9
 pr5_9_bit
 pse
+psec
 psemie
 psemie
 psemie_bit

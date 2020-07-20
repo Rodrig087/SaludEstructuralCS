@@ -106,7 +106,7 @@ int ConfiguracionPrincipal(){
 	pinMode(TEST, OUTPUT);
 	wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
 		
-	//printf("Configuracion completa\n");
+	printf("Configuracion completa\n");
 	
 }
 //**************************************************************************************************************************************
@@ -245,7 +245,9 @@ void ObtenerTiempoMaster(){
 	if (fuenteTiempo==1){
 		SetRelojLocal(tiempoPIC);		
 	}
-			
+
+	exit (-1);
+	
 }
 
 //C:0xA6	F:0xF6

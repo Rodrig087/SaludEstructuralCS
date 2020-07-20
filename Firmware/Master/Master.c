@@ -62,6 +62,7 @@ unsigned short bufferSPI;
 unsigned short banLec, banEsc;                                                                                                              //Numero de bytes que se van a enviar a la RPi por SPI
 unsigned char *ptrnumBytesSPI;                                                  //Puntero asociado al numero de bytes SPI
 unsigned char tramaSolicitudSPI[10];                                            //Vector para almacenar los datos de solicitud que envia la RPi a traves del SPI
+unsigned char tramaSolicitudNodo[10];                                           //Vector para almacenar los datos de solicitud que se reenvia a los nodos
 unsigned char tramaCompleta[2506];                                              //Vector para almacenar 10 vectores datosFIFO, 250 cabeceras de muestras y el vector tiempo
 unsigned char tramaPrueba[10];                                                  //Trama de 10 elementos para probar la comunicacion RS485
 unsigned short banInicio;
@@ -381,10 +382,9 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      if ((banSPI4==1)&&(bufferSPI==0xF4)){
         horaSistema = RecuperarHoraRPI(tiempoRPI);                              //Recupera la hora de la RPi
         fechaSistema = RecuperarFechaRPI(tiempoRPI);                            //Recupera la fecha de la RPi
-        //**Esta fallando de nuevo el chip DS3234
-        //DS3234_setDate(horaSistema, fechaSistema);                              //Configura la hora en el RTC
-        //horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
-        //fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
+        DS3234_setDate(horaSistema, fechaSistema);                              //Configura la hora en el RTC
+        horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
+        fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
         banSPI4 = 0;
         banSetReloj = 1;                                                        //Activa la bandera para utilizar el tiempo
@@ -449,6 +449,35 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         outputPyloadRS485[0] = 0xD2;                                            //Llena el pyload de salidad con la subfuncion solicitada
         EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);        //Envia la solicitud al nodo
      }
+     
+     //(C:0xA8   F:0xF8)
+     //Rutina de reenvio de instrucciones a los nodos (C:0xA8   F:0xF8):
+     if ((banSPI8==0)&&(bufferSPI==0xA8)){
+        banSPI8 = 1;
+        i = 0;
+     }
+     if ((banSPI8==1)&&(bufferSPI!=0xA8)&&(bufferSPI!=0xF8)){
+        tramaSolicitudNodo[i] = bufferSPI;                                      //Recupera la trama de solicitud enviada por la RPi
+        i++;
+     }
+     if ((banSPI8==1)&&(bufferSPI==0xF8)){
+        banSPI8 = 0;
+        direccionRS485 = tramaSolicitudNodo[0];
+        funcionRS485 = tramaSolicitudNodo[1];
+        numDatosRS485 = tramaSolicitudNodo[2];
+        //Llena la trama outputPyloadRS485 con los datos de solicitud:
+        if (numDatosRS485>1){
+            for (x=0;x<numDatosRS485;x++){
+                outputPyloadRS485[x] = tramaSolicitudSPI[x+3];
+            }
+        } else {
+            outputPyloadRS485[0] = tramaSolicitudNodo[3];
+        }
+        //Reenvia la solicitud al nodo por RS485:
+        EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
+     }
+     
+     //
          
      //(C:0xAA   F:0xFA)
      //Rutina para enviar el contenido del pyload de la trama RS485 a la RPi:
@@ -684,7 +713,7 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
                     
                     break;
                case 0xF3:
-                    //Envia una trama de prueba:
+                    InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
                   
                     break;
                 }

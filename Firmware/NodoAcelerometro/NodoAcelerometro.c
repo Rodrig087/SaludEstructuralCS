@@ -81,8 +81,7 @@ unsigned short banU2;
 const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
 unsigned long sectorSave = PSF+99;                                              //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
 unsigned long PSE = PSF+100;                                                    //Primer Sector de Escritura de la SD 
-unsigned long
-
+unsigned long PSEC;                                                                                                                                //Primer sector escrito en el ciclo actual de muestreo
 unsigned long sectorSD;                                                         //Variable para almacenar el numero del sector de la SD que se va a escribir
 unsigned long sectorLec;                                                        //Variable para recuperar la informacion del sector de la SD que se solicita leer
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      //Cabecera del bufferSD: | Cte1 | Cte2 | Ct3 | #Bytes/Muestra | MSB_fSample | LSB_fSample |
@@ -102,6 +101,8 @@ void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
 unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
+void InformacionSectores(unsigned char* tramaInfoSec);
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -154,6 +155,7 @@ void main() {
      banU2 = 1;
       
      //SD:
+     PSEC = 0;
      sectorSD = 0;
      sectorLec = 0;
      checkEscSD = 0;
@@ -479,6 +481,50 @@ unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
+//Funcion para recuperar informacion de los sectores
+void InformacionSectores(unsigned char* tramaInfoSec){
+        
+     unsigned char *ptrPSF;                                                     //Puntero primer sector fisico
+     unsigned char *ptrPSE;                                                     //Puntero primer sector de escritura
+     unsigned char *ptrPSEC;                                                    //Puntero primer sector escrito en el ciclo actual
+     unsigned char *ptrSA;                                                      //Puntero sector actual
+     unsigned long PSFv = PSF;                                                  //**No se puede asociar el puntero a esta contante
+        
+     //Asociacion de los punteros a las variables:
+     ptrPSF = (unsigned char *) & PSFv;
+     ptrPSE = (unsigned char *) & PSE;
+     ptrPSEC = (unsigned char *) & PSEC;
+     ptrSA = (unsigned char *) & sectorSD;
+        
+     if (banInicioMuestreo==0){
+        PSEC = 0;
+        sectorSD = UbicarUltimoSectorSD(0);                                     //Calcula el ultimo sector escrito
+     } else {
+        sectorSD = sectorSD - 1;                                                //Calcula el sector actual
+     }
+                        
+     tramaInfoSec[0] = 0xD1;                                                    //Subfuncion
+     tramaInfoSec[1] = *ptrPSF;                                                 //LSB PSF
+     tramaInfoSec[2] = *(ptrPSF+1);
+     tramaInfoSec[3] = *(ptrPSF+2);
+     tramaInfoSec[4] = *(ptrPSF+3);                                             //MSB PSF
+     tramaInfoSec[5] = *ptrPSE;                                                 //LSB PSE
+     tramaInfoSec[6] = *(ptrPSE+1);
+     tramaInfoSec[7] = *(ptrPSE+2);
+     tramaInfoSec[8] = *(ptrPSE+3);                                             //MSB PSE
+     tramaInfoSec[9] = *ptrPSEC;                                                //LSB PSEC
+     tramaInfoSec[10] = *(ptrPSEC+1);
+     tramaInfoSec[11] = *(ptrPSEC+2);
+     tramaInfoSec[12] = *(ptrPSEC+3);                                           //MSB PSEC
+     tramaInfoSec[13] = *ptrSA;                                                 //LSB SA
+     tramaInfoSec[14] = *(ptrSA+1);
+     tramaInfoSec[15] = *(ptrSA+2);
+     tramaInfoSec[16] = *(ptrSA+3);                                             //MSB SA
+        
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
 //Funcion para recuperar los datos de aceleracion requeridos
 unsigned short recuperarDatosAceleracion(unsigned char* tramaPeticion){
         
@@ -749,7 +795,8 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                case 0xF2:
                     //Inicia el muestreo:
                     if (subFuncionRS485==0xD1){
-                        sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);      //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
+                        sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);   //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
+                        PSEC = sectorSD;                                        //Guarda el numero del primer sector escrito en este ciclo de muestreo
                         banInicioMuestreo = 1;                                  //Activa la bandera para iniciar el muestreo
                     }
                     //Detiene el muestreo:
@@ -761,7 +808,9 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                case 0xF3:
                     //Envia informacion de sectores clave:
                     if (subFuncionRS485==0xD1){
-                            
+                       //Llena el pyload de salida y envia la trama de respuesta al Master:
+                        InformacionSectores(outputPyloadRS485);
+                        EnviarTramaRS485(1, IDNODO, 0xF3, 17, outputPyloadRS485);
                     }
                     //Inspecciona el contenido del sector solicitado:
                     if (subFuncionRS485==0xD2){

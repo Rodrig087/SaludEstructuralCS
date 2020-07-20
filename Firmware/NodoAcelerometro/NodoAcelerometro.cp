@@ -508,8 +508,7 @@ unsigned short banU2;
 const unsigned int clusterSizeSD = 512;
 unsigned long sectorSave =  2048 +99;
 unsigned long PSE =  2048 +100;
-unsigned long
-
+unsigned long PSEC;
 unsigned long sectorSD;
 unsigned long sectorLec;
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
@@ -529,6 +528,8 @@ void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
 unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
+void InformacionSectores(unsigned char* tramaInfoSec);
+
 
 
 
@@ -581,12 +582,13 @@ void main() {
  banU2 = 1;
 
 
+ PSEC = 0;
  sectorSD = 0;
  sectorLec = 0;
  checkEscSD = 0;
  checkLecSD = 0;
  MSRS485 = 0;
-#line 185 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 187 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
@@ -885,6 +887,50 @@ unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
 
 
 
+void InformacionSectores(unsigned char* tramaInfoSec){
+
+ unsigned char *ptrPSF;
+ unsigned char *ptrPSE;
+ unsigned char *ptrPSEC;
+ unsigned char *ptrSA;
+ unsigned long PSFv =  2048 ;
+
+
+ ptrPSF = (unsigned char *) & PSFv;
+ ptrPSE = (unsigned char *) & PSE;
+ ptrPSEC = (unsigned char *) & PSEC;
+ ptrSA = (unsigned char *) & sectorSD;
+
+ if (banInicioMuestreo==0){
+ PSEC = 0;
+ sectorSD = UbicarUltimoSectorSD(0);
+ } else {
+ sectorSD = sectorSD - 1;
+ }
+
+ tramaInfoSec[0] = 0xD1;
+ tramaInfoSec[1] = *ptrPSF;
+ tramaInfoSec[2] = *(ptrPSF+1);
+ tramaInfoSec[3] = *(ptrPSF+2);
+ tramaInfoSec[4] = *(ptrPSF+3);
+ tramaInfoSec[5] = *ptrPSE;
+ tramaInfoSec[6] = *(ptrPSE+1);
+ tramaInfoSec[7] = *(ptrPSE+2);
+ tramaInfoSec[8] = *(ptrPSE+3);
+ tramaInfoSec[9] = *ptrPSEC;
+ tramaInfoSec[10] = *(ptrPSEC+1);
+ tramaInfoSec[11] = *(ptrPSEC+2);
+ tramaInfoSec[12] = *(ptrPSEC+3);
+ tramaInfoSec[13] = *ptrSA;
+ tramaInfoSec[14] = *(ptrSA+1);
+ tramaInfoSec[15] = *(ptrSA+2);
+ tramaInfoSec[16] = *(ptrSA+3);
+
+}
+
+
+
+
 unsigned short recuperarDatosAceleracion(unsigned char* tramaPeticion){
 
  unsigned char bufferSectorLeido[512];
@@ -1155,6 +1201,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD1){
  sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);
+ PSEC = sectorSD;
  banInicioMuestreo = 1;
  }
 
@@ -1167,6 +1214,8 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD1){
 
+ InformacionSectores(outputPyloadRS485);
+ EnviarTramaRS485(1,  5 , 0xF3, 17, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD2){

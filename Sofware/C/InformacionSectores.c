@@ -1,6 +1,6 @@
 //Compilar:
-//gcc LeerTiempoNodo.c -o /home/pi/Ejecutables/leertiemponodo -lbcm2835 -lwiringPi 
-//gcc LeerTiempoNodo.c -o leertiemponodo -lbcm2835 -lwiringPi 
+//gcc InformacionSectores.c -o /home/pi/Ejecutables/informacionsectores -lbcm2835 -lwiringPi 
+//gcc InformacionSectores.c -o informacionsectores -lbcm2835 -lwiringPi 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,15 +33,18 @@ unsigned int tiempoInicial;
 unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
+
+
 int direccionNodo;
+unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
+unsigned char pyloadNodo[10];
 
 //Declaracion de funciones
 int ConfiguracionPrincipal();
-void ObtenerOperacion();														    //C:0xA0    F:0xF0
-void ObtenerTiempoMaster();														    //C:0xA5	F:0xF5    P:0xB1
-void ObtenerTiempoNodo(unsigned short direccion);								    //C:0xA7	F:0xF7
-void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485);	//C:0xAA	F:0xFA
-void ImprimirTiempoNodo(unsigned char* pyloadRS485);
+void ObtenerOperacion();														                                                 //C:0xA0    F:0xF0
+void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload);	     //C:0xA8	F:0xF8
+void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485);							                     //C:0xAA	F:0xFA
+void ImprimirInformacionSector(unsigned char* pyloadRS485);
 
 
 int main(int argc, char *argv[]) {
@@ -51,7 +54,13 @@ int main(int argc, char *argv[]) {
 	//Inicializa las variables:
 	i = 0;
 	x = 0;
+	
 	direccionNodo = (short)(atoi(argv[1]));
+	funcionNodo = 0xF3;
+	numDatosNodo = 1;
+	
+	subFuncionNodo = 0xD1;
+	pyloadNodo[0] = subFuncionNodo;
 	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
@@ -59,15 +68,12 @@ int main(int argc, char *argv[]) {
 	//Muestra la hora del sistema:
 	system("date");
 	
-	//Obtencion de fuente de reloj:
-	if (direccionNodo==255){
-		//EnviarTiempoLocal();
-	} 
+	
 	if (direccionNodo>0&&direccionNodo<=5){
-		ObtenerTiempoNodo(direccionNodo);	
+		EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);	
 	} 
 	if (direccionNodo>5){
-		ObtenerTiempoNodo(5);
+		EnviarSolicitudNodo(5, funcionNodo, numDatosNodo, pyloadNodo);
 	}
 	
 	sleep(5);
@@ -112,8 +118,9 @@ int ConfiguracionPrincipal(){
 	pinMode(MCLR, OUTPUT);
 	pinMode(TEST, OUTPUT);
 	wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
-		
-	//printf("Configuracion completa\n");
+	
+	
+	printf("Configuracion completa\n");
 	
 }
 //**************************************************************************************************************************************
@@ -153,22 +160,17 @@ void ObtenerOperacion(){
 	printf("Numero de bytes: %d\n", numBytesSPI);
 	
 	switch (funcionSPI){                                                                     
-          case 0xB1:
-		       //Respuesta de la sincronizacion:
-			   if (subFuncionSPI==0xD1){
-			       ObtenerTiempoMaster(); 
-			   }
-			   //Tiempo del nodo:
-			   if (subFuncionSPI==0xD2){
-				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
-				   ImprimirTiempoNodo(tramaPyloadRS485);
-			   }
+          //Funciones de tiempo:
+		  case 0xB1:
+		       printf("Opcion no disponible"); 
 			   break;
-          case 0xB2:
-		       printf("Opcion no disponible");			   
-               break;
-		  case 0xB3:
-		       printf("Opcion no disponible");  
+		  //Funciones de lectura de sectores:
+          case 0xB3:
+		       //Tiempo del nodo:
+			   if (subFuncionSPI==0xD1){
+				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
+				   ImprimirInformacionSector(tramaPyloadRS485);
+			   }		   
                break;
           default:
                printf("Error: Operacion invalida\n");  
@@ -181,86 +183,103 @@ void ObtenerOperacion(){
 	
 }
 
-//C:0xA5	F:0xF5 
-void ObtenerTiempoMaster(){
+//C:0xA8	F:0xF8
+void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
-	printf("Hora Master: ");	
-	bcm2835_spi_transfer(0xA5);                                                 //Envia el delimitador de final de trama
-    bcm2835_delayMicroseconds(TIEMPO_SPI);
-	
-	fuenteTiempoPic = bcm2835_spi_transfer(0x00);								//Recibe el byte que indica la fuente de tiempo del PIC
+	printf("Enviando solicitud al nodo: %d\n", direccion);
+		
+	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
-	for (i=0;i<6;i++){
-        buffer = bcm2835_spi_transfer(0x00);
-        tiempoPIC[i] = buffer;													//Guarda la hora y fecha devuelta por el dsPIC
-        bcm2835_delayMicroseconds(TIEMPO_SPI);
-    }
-
-	bcm2835_spi_transfer(0xF5);                                                 //Envia el delimitador de final de trama
-    bcm2835_delayMicroseconds(TIEMPO_SPI);
-	
-	if (fuenteTiempoPic==0){
-		printf("RTC ");
-	} 
-	if (fuenteTiempoPic==1){
-		printf("GPS ");
-	}
-	
-	printf("%0.2d:",tiempoPIC[3]);		//hh
-	printf("%0.2d:",tiempoPIC[4]);		//mm
-	printf("%0.2d ",tiempoPIC[5]);		//ss
-	printf("%0.2d/",tiempoPIC[0]);		//dd
-	printf("%0.2d/",tiempoPIC[1]);		//MM
-	printf("%0.2d\n",tiempoPIC[2]);		//aa
-				
-}
-
-//C:0xA7	F:0xF7
-void ObtenerTiempoNodo(unsigned short direccion){
-	printf("Obteniendo fecha/hora del nodo: %d\n", direccion);
-	bcm2835_spi_transfer(0xA7);
-	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	bcm2835_spi_transfer(direccion);								
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-	bcm2835_spi_transfer(0xF7);
+	bcm2835_spi_transfer(funcion);								
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-}		
+	bcm2835_spi_transfer(numDatos);								
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	
+	bcm2835_spi_transfer(0xD1);								
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	/*
+	for (i=0;i<numDatos;i++){
+		bcm2835_spi_transfer(pyload[i]);								
+		bcm2835_delayMicroseconds(TIEMPO_SPI);
+	}
+	*/
+	bcm2835_spi_transfer(0xF8);
+	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	
+}
+
 
 //C:0xAA	F:0xFA
 void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485){
-		
+	
 	bcm2835_spi_transfer(0xAA);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	for (i=0;i<numBytesPyload;i++){
         buffer = bcm2835_spi_transfer(0x00);
-        tramaPyloadRS485[i] = buffer;
+        pyloadRS485[i] = buffer;
         bcm2835_delayMicroseconds(TIEMPO_SPI);
     }
 	bcm2835_spi_transfer(0xFA);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-		
-}						
+	
+}		
+
 //**************************************************************************************************************************************
 
 //**************************************************************************************************************************************
 //Procesamiento pyload trama RS485:
 
-void ImprimirTiempoNodo(unsigned char* pyloadRS485){
+void ImprimirInformacionSector(unsigned char* pyloadRS485){
 	
-	printf("Hora actual del nodo: %d\n", direccionNodo);
+	unsigned char *ptrPSF;                                                      //Puntero primer sector fisico
+	unsigned char *ptrPSE;                                                      //Puntero primer sector de escritura
+	unsigned char *ptrPSEC;                                                     //Puntero primer sector escrito en el ciclo actual 
+	unsigned char *ptrSA;                                                       //Puntero sector actual
 	
-	printf("%0.2d/", pyloadRS485[1]);
-	printf("%0.2d/", pyloadRS485[2]);
-	printf("%0.2d ", pyloadRS485[3]);
-	printf("%0.2d:", pyloadRS485[4]);
-	printf("%0.2d:", pyloadRS485[5]);
-	printf("%0.2d\n", pyloadRS485[6]);
+	unsigned long PSF;
+	unsigned long PSE;
+	unsigned long PSEC;
+	unsigned long SA;
+	
+	//Asociacion de los punteros a las variables:	
+	ptrPSF = (unsigned char *) & PSF;
+	ptrPSE = (unsigned char *) & PSE;
+	ptrPSEC = (unsigned char *) & PSEC;
+	ptrSA = (unsigned char *) & SA;
+	
+	*ptrPSF = pyloadRS485[1];                                                  //LSB PSF
+	*(ptrPSF+1) = pyloadRS485[2];
+	*(ptrPSF+2) = pyloadRS485[3];
+	*(ptrPSF+3) = pyloadRS485[4];                                              //MSB PSF
+	*ptrPSE = pyloadRS485[5];                                                  //LSB PSE
+	*(ptrPSE+1) = pyloadRS485[6];
+	*(ptrPSE+2) = pyloadRS485[7];
+	*(ptrPSE+3) = pyloadRS485[8];                                              //MSB PSE
+	*ptrPSEC = pyloadRS485[9];                                                 //LSB PSEC
+	*(ptrPSEC+1) = pyloadRS485[10];
+	*(ptrPSEC+2) = pyloadRS485[11];
+	*(ptrPSEC+3) = pyloadRS485[12];                                            //MSB PSEC
+	*ptrSA = pyloadRS485[13];                                                  //LSB SA
+	*(ptrSA+1) = pyloadRS485[14];
+	*(ptrSA+2) = pyloadRS485[15];
+	*(ptrSA+3) = pyloadRS485[16];                                              //MSB SA
+	
+	printf("Primer sector fisico: %d\n", PSF);
+	printf("Primer sector de escritura: %d\n", PSE);
+	printf("Primer sector escrito en el ciclo actual: %d\n", PSEC);
+	printf("Sector actual: %d\n", SA);
 	
 	exit (-1);
 	
 }
+
 //**************************************************************************************************************************************
+
+
+
 
 
 

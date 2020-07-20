@@ -459,6 +459,7 @@ unsigned short bufferSPI;
 unsigned short banLec, banEsc;
 unsigned char *ptrnumBytesSPI;
 unsigned char tramaSolicitudSPI[10];
+unsigned char tramaSolicitudNodo[10];
 unsigned char tramaCompleta[2506];
 unsigned char tramaPrueba[10];
 unsigned short banInicio;
@@ -778,10 +779,9 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banSPI4==1)&&(bufferSPI==0xF4)){
  horaSistema = RecuperarHoraRPI(tiempoRPI);
  fechaSistema = RecuperarFechaRPI(tiempoRPI);
-
-
-
-
+ DS3234_setDate(horaSistema, fechaSistema);
+ horaSistema = RecuperarHoraRTC();
+ fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  banSPI4 = 0;
  banSetReloj = 1;
@@ -849,6 +849,35 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
+ if ((banSPI8==0)&&(bufferSPI==0xA8)){
+ banSPI8 = 1;
+ i = 0;
+ }
+ if ((banSPI8==1)&&(bufferSPI!=0xA8)&&(bufferSPI!=0xF8)){
+ tramaSolicitudNodo[i] = bufferSPI;
+ i++;
+ }
+ if ((banSPI8==1)&&(bufferSPI==0xF8)){
+ banSPI8 = 0;
+ direccionRS485 = tramaSolicitudNodo[0];
+ funcionRS485 = tramaSolicitudNodo[1];
+ numDatosRS485 = tramaSolicitudNodo[2];
+
+ if (numDatosRS485>1){
+ for (x=0;x<numDatosRS485;x++){
+ outputPyloadRS485[x] = tramaSolicitudSPI[x+3];
+ }
+ } else {
+ outputPyloadRS485[0] = tramaSolicitudNodo[3];
+ }
+
+ EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
+ }
+
+
+
+
+
  if ((banSPIA==0)&&(bufferSPI==0xAA)){
  banSPIA = 1;
  SPI1BUF = inputPyloadRS485[0];
@@ -871,7 +900,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banCheckRS485==0)&&(bufferSPI==0xA8)){
 
  banCheckRS485 = 1;
-#line 481 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 510 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -886,7 +915,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
  if ((banCheckRS485==1)&&(bufferSPI==0xF9)){
  banCheckRS485 = 0;
-#line 499 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 528 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  }
 
 
@@ -925,7 +954,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  }
 
 }
-#line 623 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 652 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
 void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
 
@@ -974,7 +1003,7 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  subFuncionRS485 = inputPyloadRS485[0];
  switch (funcionRS485){
  case 0xF1:
-#line 680 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 709 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
  InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
  break;
  case 0xF2:
@@ -982,7 +1011,7 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  break;
  case 0xF3:
-
+ InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
 
  break;
  }
