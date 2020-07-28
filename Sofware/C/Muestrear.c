@@ -108,17 +108,7 @@ int ConfiguracionPrincipal(){
 		
 	//Configuracion libreria WiringPi:
     wiringPiSetup();
-    pinMode(P1, INPUT);
-	pinMode(MCLR, OUTPUT);
 	pinMode(TEST, OUTPUT);
-	//wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
-	
-	//Genera un pulso para resetear el dsPIC:
-	digitalWrite (MCLR, HIGH);
-	delay (100) ;
-	digitalWrite (MCLR,  LOW); 
-	delay (100) ;
-	digitalWrite (MCLR, HIGH);
 	
 	//printf("Configuracion completa\n");
 	

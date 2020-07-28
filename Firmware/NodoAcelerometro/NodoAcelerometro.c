@@ -17,12 +17,14 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 5
+#define IDNODO 4
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
 #define FP 80000000                                                             //Frecuencia del reloj
 #define PSF 2048                                                                //Primer Sector Fisico de la SD. Este dato se obtiene con el programa EaseUS Partition.
+#define SIZESD  7772160                                                         //Numero total de sectores de la SD (visto con el software HxD)
+//#define SIZESD 15265792
 
 //Subindices:
 unsigned int i, j, x, y;
@@ -67,10 +69,11 @@ unsigned long BAUDRATE2, BRGVAL2;                                               
 unsigned short banRSI, banRSC;                                                  //Banderas de control de inicio de trama y trama completa
 unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
-unsigned char tramaCabeceraRS485[4];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
-unsigned char inputPyloadRS485[10];                                                //Vector para almacenar el pyload de entrada de la trama RS485
-unsigned char outputPyloadRS485[512];                                              //Vector para almacenar el pyload de salida de la trama RS485
+unsigned char tramaCabeceraRS485[10];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
+unsigned char inputPyloadRS485[10];                                             //Vector para almacenar el pyload de entrada de la trama RS485
+unsigned char outputPyloadRS485[525];                                           //Vector para almacenar el pyload de salida de la trama RS485
 unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
+unsigned char *ptrnumDatosRS485;
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
 unsigned short subFuncionRS485;                                                                                                        //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
@@ -102,6 +105,7 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
 unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
+unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticion, unsigned char* tramaDatosSec);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -148,10 +152,11 @@ void main() {
      banRSC = 0;
      byteRS485 = 0;
      i_rs485 = 0;
-     numDatosRS485 = 0;
      funcionRS485 = 0;
      subFuncionRS485 = 0;
-     
+     numDatosRS485 = 0;
+     ptrnumDatosRS485 = (unsigned char *) & numDatosRS485;
+              
      banU2 = 1;
       
      //SD:
@@ -525,41 +530,82 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
-//Funcion para recuperar los datos de aceleracion requeridos
-unsigned short recuperarDatosAceleracion(unsigned char* tramaPeticion){
+//Funcion para leer los datos de un sector
+unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticion, unsigned char* tramaDatosSec){
         
-        unsigned char bufferSectorLeido[512];                                   //Vector para guardar los datos del sector leido
-        unsigned long sectorLec; 
-        unsigned char *ptrSectorLec;
-        ptrSectorLec = (unsigned char *) & sectorLec;
-        
-        //Recupera la informacion del sector desde el cual se quiere empezar a leer:
-        *ptrSectorLec = tramaPeticion[4];                                       //LSB
-        *(ptrSectorLec+1) = tramaPeticion[3];
-        *(ptrSectorLec+2) = tramaPeticion[2];
-        *(ptrSectorLec+3) = tramaPeticion[1];                                   //MSB
-        
-        checkLecSD = 1;
-        // Intenta leer los datos del sector como maximo 5 veces:
-        for (x=0;x<5;x++){
-            //Lee el sector requerido y lo almacena en el vetor bufferSectorLeido:
-            checkLecSD = SD_Read_Block(bufferSectorLeido, sectorLec);
-            if (checkLecSD==0){
-               break;
+     unsigned char *ptrsectorReq;                                               //Puntero primer sector fisico
+     unsigned long sectorReq;                                                   //Variable para recuperar el sector requerido
+     unsigned char bufferSectorReq[512];                                        //Trama para recuperar el buffer leido
+     unsigned int numDatosSec;
+     
+     unsigned int contadorSector;
+         
+     if (modoLec==0){
+         //Recupera solo los datos de cabecera y tiempo:
+         numDatosSec = 12;
+     } else {
+         //Recupera todos los datos del sector:
+         numDatosSec = 512;
+     }
+     
+     //Asociacion de los punteros a las variables:
+     ptrsectorReq = (unsigned char *) & sectorReq;
+     *ptrsectorReq = tramaPeticion[1];                                          //LSB sectorReq
+     *(ptrsectorReq+1) = tramaPeticion[2];
+     *(ptrsectorReq+2) = tramaPeticion[3];
+     *(ptrsectorReq+3) = tramaPeticion[4];                                      //MSB sectorReq
+     
+     //Comprueba que el sector a leer este dentro del rango de sectores permitidos:
+     if ((sectorReq>=PSE)&&(sectorReq<SIZESD)){
+
+         checkLecSD = 1;
+         // Intenta leer los datos del sector como maximo 5 veces:
+         for (x=0;x<5;x++){
+             //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
+             checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
+             //checkLecSD = 0, significa que la lectura fue exitosa:
+             if (checkLecSD==0) {
+                //Almacena el datos en la variable sectorInicioSD:
+                tramaDatosSec[0] = tramaPeticion[0];                            //Subfuncion
+
+                for (y=0;y<numDatosSec;y++){
+                    tramaDatosSec[y+1] = bufferSectorReq[y];
+                }
+
+                /*
+                //prueba
+                contadorSector = 0;
+                for (y=0;y<numDatosSec;y++){
+                    tramaDatosSec[y+1] =  contadorSector;
+                    contadorSector++;
+                    if (contadorSector==255){
+                       contadorSector = 0;
+                    }
+                    if ((y>170)&&(y<340)){
+                       tramaDatosSec[y+1] = 0;
+                    }
+                }
+                */
+                numDatosSec = numDatosSec + 1;
+                break;
+            } else {
+                //Indica el error E1: Error al leer la SD
+                tramaDatosSec[0] = 0xEE;
+                tramaDatosSec[1] = 0xE2;
+                numDatosSec = 2;
             }
         }
-        
-        if (checkLecSD==0) {
-           //Comprueba los datos de cabecera:
-           if ((bufferSectorLeido[0]==255)&&(bufferSectorLeido[1]==253)&&(bufferSectorLeido[1]==251)){
-              //Compruebo el dato del tiempo:
-              if (tramaPeticion[5]==0){
-                                
-              } else {
-              //Responde un mensaje de error o busca el siguiente sector donde encuentre las cabeceras
-              }
-           }
-        }
+     
+    } else {
+    
+        //Indica el error E2: Sector fuera de rango
+        tramaDatosSec[0] = 0xEE;
+        tramaDatosSec[1] = 0xE1;
+        numDatosSec = 2;
+    
+    }
+    
+    return numDatosSec;
         
 }
 //*****************************************************************************************************************************************
@@ -669,10 +715,6 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
      if (banInicioMuestreo==1){
         Muestrear();
-        //Inicio Prueba
-        //AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
-        //GuardarPruebaSD(tiempo);
-        //Fin Prueba
      }
 
 }
@@ -748,16 +790,16 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            i_rs485 = 0;
         }
      }
-     if ((banRSI==1)&&(i_rs485<4)){
-        tramaCabeceraRS485[i_rs485] = byteRS485;                                //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
+     if ((banRSI==1)&&(i_rs485<5)){
+        tramaCabeceraRS485[i_rs485] = byteRS485;                                //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatosLSB, NumeroDatosMSB]
         i_rs485++;
      }
-     if ((banRSI==1)&&(i_rs485==4)){
+     if ((banRSI==1)&&(i_rs485==5)){
         //Comprueba la direccion:
         if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
-           //TEST = ~TEST;
            funcionRS485 = tramaCabeceraRS485[2];
-           numDatosRS485 = tramaCabeceraRS485[3];
+           *(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
+           *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
            banRSI = 2;
            i_rs485 = 0;
         } else {
@@ -814,11 +856,15 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     }
                     //Inspecciona el contenido del sector solicitado:
                     if (subFuncionRS485==0xD2){
-                            
+                       //Recupera los datos de cabecera y tiempo y envia la trama de respuesta al Master:
+                        numDatosRS485 = LeerDatosSector(0, inputPyloadRS485, outputPyloadRS485);
+                        EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
                     }
                     //Recupera y envia el contenido de los sectores solicitados:
                     if (subFuncionRS485==0xD3){
-                            
+                        //Recupera todos los datos del sector requerido y envia la trama de respuesta al Master:
+                        numDatosRS485 = LeerDatosSector(1, inputPyloadRS485, outputPyloadRS485);
+                        EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
                     }
                     break;
                     
@@ -833,17 +879,3 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 //*****************************************************************************************************************************************
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-// Pruebas //
-//Interrupcion UART1
-void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
-     //Recupera el byte recibido en cada interrupcion:
-     U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
-     byteRS485 = U1RXREG;                                                       //Lee el byte de la trama enviada por el GPS
-     OERR_bit = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
-
-     if (byteRS485==0x3A){
-        TEST = ~TEST;
-     }
-}
-*/

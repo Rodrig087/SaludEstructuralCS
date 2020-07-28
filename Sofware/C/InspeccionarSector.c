@@ -1,6 +1,6 @@
 //Compilar:
-//gcc InformacionSectores.c -o /home/pi/Ejecutables/informacionsectores -lbcm2835 -lwiringPi 
-//gcc InformacionSectores.c -o informacionsectores -lbcm2835 -lwiringPi 
+//gcc InspeccionarSector.c -o /home/pi/Ejecutables/inspeccionarsector -lbcm2835 -lwiringPi 
+//gcc InspeccionarSector.c -o inspeccionarsector -lbcm2835 -lwiringPi 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,12 +20,11 @@
 
 
 //Declaracion de variables
-unsigned short i;
-unsigned int x;
+unsigned int i, x;
 unsigned short buffer;
 unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
-unsigned char tramaPyloadRS485[512];
+unsigned char tramaPyloadRS485[515];
 
 short fuenteTiempoPic;
 
@@ -35,8 +34,9 @@ unsigned int duracionPrueba;
 unsigned short banPrueba;
 
 
-int direccionNodo;
+int direccionNodo,sectorReq;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
+unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
 
 //Declaracion de funciones
@@ -44,7 +44,7 @@ int ConfiguracionPrincipal();
 void ObtenerOperacion();														                                                 //C:0xA0    F:0xF0
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload);	     //C:0xA8	F:0xF8
 void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485);							                     //C:0xAA	F:0xFA
-void ImprimirInformacionSectores(unsigned char* pyloadRS485);
+void ImprimirDatosSector(unsigned char* pyloadRS485);
 
 
 int main(int argc, char *argv[]) {
@@ -56,18 +56,30 @@ int main(int argc, char *argv[]) {
 	x = 0;
 	
 	direccionNodo = (short)(atoi(argv[1]));
-	funcionNodo = 0xF3;
-	numDatosNodo = 1;
+	sectorReq = atoi(argv[2]);
+	//Asociacion de los punteros a las variables:
+    ptrSectorReq = (unsigned char *) & sectorReq;
 	
-	subFuncionNodo = 0xD1;
+	funcionNodo = 0xF3;
+	numDatosNodo = 5;
+	
+	subFuncionNodo = 0xD2;
 	pyloadNodo[0] = subFuncionNodo;
+	
+	pyloadNodo[1] = *ptrSectorReq;
+	pyloadNodo[2] = *(ptrSectorReq+1);
+	pyloadNodo[3] = *(ptrSectorReq+2);
+	pyloadNodo[4] = *(ptrSectorReq+3);
+	
+	//prueba
+	for (i=0;i<numDatosNodo;i++){
+		printf("%X ", pyloadNodo[i]);
+	}
+	printf("\n");
+	//fin prueba
 	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
-	
-	//Muestra la hora del sistema:
-	system("date");
-	
 	
 	if (direccionNodo>0&&direccionNodo<=5){
 		EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);	
@@ -167,9 +179,9 @@ void ObtenerOperacion(){
 		  //Funciones de lectura de sectores:
           case 0xB3:
 		       //Tiempo del nodo:
-			   if (subFuncionSPI==0xD1){
+			   if (subFuncionSPI==0xD2){
 				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
-				   ImprimirInformacionSectores(tramaPyloadRS485);
+				   ImprimirDatosSector(tramaPyloadRS485);
 			   }		   
                break;
           default:
@@ -197,12 +209,12 @@ void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsig
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	bcm2835_spi_transfer(numDatos);								
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
-		
+	
 	for (i=0;i<numDatos;i++){
 		bcm2835_spi_transfer(pyload[i]);								
 		bcm2835_delayMicroseconds(TIEMPO_SPI);
 	}
-	
+		
 	bcm2835_spi_transfer(0xF8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
@@ -229,45 +241,28 @@ void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485)
 //**************************************************************************************************************************************
 //Procesamiento pyload trama RS485:
 
-void ImprimirInformacionSectores(unsigned char* pyloadRS485){
+void ImprimirDatosSector(unsigned char* pyloadRS485){
+		
+	//Verifica los datos de cabecera:
 	
-	unsigned char *ptrPSF;                                                      //Puntero primer sector fisico
-	unsigned char *ptrPSE;                                                      //Puntero primer sector de escritura
-	unsigned char *ptrPSEC;                                                     //Puntero primer sector escrito en el ciclo actual 
-	unsigned char *ptrSA;                                                       //Puntero sector actual
-	
-	unsigned long PSF;
-	unsigned long PSE;
-	unsigned long PSEC;
-	unsigned long SA;
-	
-	//Asociacion de los punteros a las variables:	
-	ptrPSF = (unsigned char *) & PSF;
-	ptrPSE = (unsigned char *) & PSE;
-	ptrPSEC = (unsigned char *) & PSEC;
-	ptrSA = (unsigned char *) & SA;
-	
-	*ptrPSF = pyloadRS485[1];                                                  //LSB PSF
-	*(ptrPSF+1) = pyloadRS485[2];
-	*(ptrPSF+2) = pyloadRS485[3];
-	*(ptrPSF+3) = pyloadRS485[4];                                              //MSB PSF
-	*ptrPSE = pyloadRS485[5];                                                  //LSB PSE
-	*(ptrPSE+1) = pyloadRS485[6];
-	*(ptrPSE+2) = pyloadRS485[7];
-	*(ptrPSE+3) = pyloadRS485[8];                                              //MSB PSE
-	*ptrPSEC = pyloadRS485[9];                                                 //LSB PSEC
-	*(ptrPSEC+1) = pyloadRS485[10];
-	*(ptrPSEC+2) = pyloadRS485[11];
-	*(ptrPSEC+3) = pyloadRS485[12];                                            //MSB PSEC
-	*ptrSA = pyloadRS485[13];                                                  //LSB SA
-	*(ptrSA+1) = pyloadRS485[14];
-	*(ptrSA+2) = pyloadRS485[15];
-	*(ptrSA+3) = pyloadRS485[16];                                              //MSB SA
-	
-	printf("Primer sector fisico: %d\n", PSF);
-	printf("Primer sector de escritura: %d\n", PSE);
-	printf("Primer sector escrito en el ciclo actual: %d\n", PSEC);
-	printf("Sector actual: %d\n", SA);
+	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
+		printf("%0.2d/", pyloadRS485[7]);
+		printf("%0.2d/", pyloadRS485[8]);
+		printf("%0.2d ", pyloadRS485[9]);
+		printf("%0.2d:", pyloadRS485[10]);
+		printf("%0.2d:", pyloadRS485[11]);
+		printf("%0.2d\n", pyloadRS485[12]);
+	} else {
+		if (pyloadRS485[1]==0xE1){
+			printf("Error E1: No se pudo leer la SD\n");
+		} else {
+			printf("Error E2: El sector no contiene los datos requeridos\n");
+			for (i=0;i<13;i++){
+				printf("%X ", pyloadRS485[i]);
+			}
+			printf("\n");
+		}
+	}
 	
 	exit (-1);
 	

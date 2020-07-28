@@ -74,13 +74,14 @@ unsigned short banSPI0, banSPI1, banSPI2, banSPI3, banSPI4, banSPI5, banSPI6, ba
 unsigned short banRSI, banRSC;                                                  //Banderas de control de inicio de trama y trama completa
 unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
-unsigned char tramaCabeceraRS485[4];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
-unsigned char inputPyloadRS485[512];                                            //Vector para almacenar el pyload de la trama RS485 recibida
+unsigned char tramaCabeceraRS485[10];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
+unsigned char inputPyloadRS485[525];                                            //Vector para almacenar el pyload de la trama RS485 recibida
 unsigned char outputPyloadRS485[10];                                            //Vector para almacenar el pyload de la trama RS485 a enviar
 unsigned short direccionRS485;                                                  //Varaible para la direccion del nodo. Broadcast = 255
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
 unsigned short subFuncionRS485;                                                 //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
 unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
+unsigned char *ptrnumDatosRS485;
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
 
 //Variables para el control del muestreo:
@@ -125,7 +126,7 @@ void main() {
      banSPI7 = 0;
      banSPI8 = 0;
      banSPI9 = 0;
-         banSPIA = 0;
+     banSPIA = 0;
               
      //GPS:
      i_gps = 0;
@@ -147,9 +148,10 @@ void main() {
      banRSC = 0;
      byteRS485 = 0;
      i_rs485 = 0;
-     numDatosRS485 = 0;
      funcionRS485 = 0;
      subFuncionRS485 = 0;
+     numDatosRS485 = 0;
+     ptrnumDatosRS485 = (unsigned char *) & numDatosRS485;
      
      //Muestreo:
      banInicioMuestreo = 0;
@@ -439,13 +441,14 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
          
      //(C:0xA7   F:0xF7)
      //Rutina para obtener el tiempo de los nodos:
-     if ((banSetReloj==0)&&(bufferSPI==0xA7)){
+     if ((banSPI7==0)&&(bufferSPI==0xA7)){
         banSPI7 = 1;
      }
      if ((banSPI7==1)&&(bufferSPI!=0xA7)&&(bufferSPI!=0xF7)){
         direccionRS485 =  bufferSPI;                                            //Recupera la direccion del nodo solicitado
      }
      if ((banSPI7==1)&&(bufferSPI==0xF7)){
+        banSPI7 = 0;
         outputPyloadRS485[0] = 0xD2;                                            //Llena el pyload de salidad con la subfuncion solicitada
         EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);        //Envia la solicitud al nodo
      }
@@ -468,11 +471,12 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         //Llena la trama outputPyloadRS485 con los datos de solicitud:
         if (numDatosRS485>1){
             for (x=0;x<numDatosRS485;x++){
-                outputPyloadRS485[x] = tramaSolicitudSPI[x+3];
+                outputPyloadRS485[x] = tramaSolicitudNodo[x+3];  
             }
         } else {
             outputPyloadRS485[0] = tramaSolicitudNodo[3];
         }
+        
         //Reenvia la solicitud al nodo por RS485:
         EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
      }
@@ -498,15 +502,15 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      
      //************************************************************************************************************************************
      //Rutinas de prueba de la comunicacion RS485:
-     
+     /*
      //Rutina para testeo de la comunicacion RS485 (C:0xA8   F:0xF8):
-     if ((banCheckRS485==0)&&(bufferSPI==0xA8)){
+     if ((banCheckRS485==0)&&(bufferSPI==0xAB)){
         //InterrupcionP1(0xB3);                                                   //Envia una solicitud de prueba
         banCheckRS485 = 1;
         //**Aqui debo incluir la rutina de peticion de la trama de prueba al nodo por medio de RS485
-        /*for (x=0;x<10;x++){
+        for (x=0;x<10;x++){
             tramaPrueba[x] = x;
-        }*/
+        }
      }
      
      //Rutina para enviar la trama de prueba (C:0xA9   F:0xF9):
@@ -522,11 +526,11 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      if ((banCheckRS485==1)&&(bufferSPI==0xF9)){
         banCheckRS485 = 0;
         //limpia la trama de prueba
-        /*for (x=0;x<10;x++){
+        for (x=0;x<10;x++){
             tramaPrueba[x] = 0;
-        }*/
+        }
      }
-     
+     */
      //************************************************************************************************************************************
      
 }
@@ -674,15 +678,17 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
            i_rs485 = 0;
         }
      }
-     if ((banRSI==1)&&(i_rs485<4)){
+     if ((banRSI==1)&&(i_rs485<5)){
         tramaCabeceraRS485[i_rs485] = byteRS485;                                 //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
         i_rs485++;
      }
-     if ((banRSI==1)&&(i_rs485==4)){
+     if ((banRSI==1)&&(i_rs485==5)){
         //Comprueba la direccion del nodo solicitado:
         if (tramaCabeceraRS485[1]==direccionRS485){
+        //if (tramaCabeceraRS485[1]==4){
            funcionRS485 = tramaCabeceraRS485[2];
-           numDatosRS485 = tramaCabeceraRS485[3];
+           *(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
+           *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
            banRSI = 2;
            i_rs485 = 0;
         } else {
@@ -697,24 +703,14 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
         subFuncionRS485 = inputPyloadRS485[0];         
         switch (funcionRS485){
                case 0xF1:
-                    //Envia una solicitud de lectura SPI a la RPi:
-                    //prueba:
-                    /*inputPyloadRS485[1] = 1;
-                    inputPyloadRS485[2] = 2;
-                    inputPyloadRS485[3] = 3;
-                    inputPyloadRS485[4] = 4;
-                    inputPyloadRS485[5] = 5;
-                    inputPyloadRS485[6] = 6;*/
-                    
                     InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
                     break;
                case 0xF2:
-                    
-                    
+                                        
                     break;
                case 0xF3:
                     InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
-                  
+                    //InterrupcionP1(0xB3,subFuncionRS485,512);
                     break;
                 }
                 

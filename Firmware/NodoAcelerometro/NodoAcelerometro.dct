@@ -5946,6 +5946,7 @@ lebdly2
 lebdly2bits
 lebdly3
 lebdly3bits
+leerdatossector
 lendian
 lendian
 lendian_bit
@@ -8612,6 +8613,7 @@ ptper_8
 ptper_8_bit
 ptper_9
 ptper_9_bit
+ptrnumdatosrs485
 ptsidl
 ptsidl
 ptsidl_bit
@@ -9079,7 +9081,6 @@ rcount_8
 rcount_8_bit
 rcount_9
 rcount_9_bit
-recuperardatosaceleracion
 recuperarfecharpi
 recuperarfechartc
 recuperarhorarpi

@@ -14,16 +14,26 @@ extern sfr sbit MSRS485_Direction;
 //*****************************************************************************************************************************************
 
 //Funcion para enviar una trama de n datos a travez del MAX485
-void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char *payload){
+void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsigned short funcion, unsigned int numDatos, unsigned char *payload){
 
      unsigned int iDatos;
-     
+     unsigned char numDatosLSB;
+     unsigned char numDatosMSB;
+     unsigned char *ptrnumDatos;
+         
+     //Asocia el puntero a la variable:
+     ptrnumDatos = (unsigned char *) & numDatos;
+     numDatosLSB = *(ptrnumDatos);                                              //LSB numDatos 
+     numDatosMSB = *(ptrnumDatos+1);                                            //MSB numDatos 
+             
+         
      if (puertoUART == 1){
         MSRS485 = 1;                                                            //Establece el Max485 en modo escritura
         UART1_Write(0x3A);                                                      //Envia la cabecera de la trama
         UART1_Write(direccion);                                                 //Envia la direccion del destinatario
         UART1_Write(funcion);                                                   //Envia el codigo de la funcion
-        UART1_Write(numDatos);                                                  //Envia el numero de datos
+        UART1_Write(numDatosLSB);                                               //Envia el LSB del numero de datos
+        UART1_Write(numDatosMSB);                                               //Envia el MSB del numero de datos
         for (iDatos=0;iDatos<numDatos;iDatos++){                                //Envia la carga util de datos
             UART1_Write(payload[iDatos]);
         }
@@ -38,7 +48,8 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
         UART2_Write(0x3A);                                                      //Envia la cabecera de la trama
         UART2_Write(direccion);                                                 //Envia la direccion del destinatario
         UART2_Write(funcion);                                                   //Envia el codigo de la funcion
-        UART2_Write(numDatos);                                                  //Envia el numero de datos
+        UART2_Write(numDatosLSB);                                               //Envia el LSB del numero de datos
+        UART2_Write(numDatosMSB);                                               //Envia el MSB del numero de datos
         for (iDatos=0;iDatos<numDatos;iDatos++){                                //Envia la carga util de datos
             UART2_Write(payload[iDatos]);
         }

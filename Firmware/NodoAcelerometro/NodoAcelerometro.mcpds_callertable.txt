@@ -77,6 +77,8 @@ urx_1
 			Release_SD
 	InformacionSectores
 		UbicarUltimoSectorSD
+	LeerDatosSector
+		SD_Read_Block
 Timer1Int
 	ADXL355_read_byte
 	ADXL355_read_FIFO
