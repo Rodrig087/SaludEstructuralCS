@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	while(1){	
 		
 		    printf("Prueba numero: %d\n", contador); 
-			system("sudo ./leeraceleracion 4 18383");
+			system("sudo ./inspeccionarsector 4 2813");
 			contador++;
 			printf("\n");
 			delay (1000);

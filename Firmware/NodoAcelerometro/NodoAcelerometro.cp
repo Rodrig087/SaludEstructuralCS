@@ -963,7 +963,7 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, un
  }
 
 
- if ((sectorReq>=PSE)&&(sectorReq< 7772160 )){
+ if ((sectorReq>=PSE)&&(sectorReq< 15265792 )){
 
  checkLecSD = 1;
 
@@ -1285,7 +1285,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==5)){
 
- if ((tramaCabeceraRS485[1]== 4 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 5 )||(tramaCabeceraRS485[1]==255)){
  funcionRS485 = tramaCabeceraRS485[2];
  *(ptrnumDatosRS485) = tramaCabeceraRS485[3];
  *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];
@@ -1319,7 +1319,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  for (x=0;x<6;x++){
  outputPyloadRS485[x+1] = tiempo[x];
  }
- EnviarTramaRS485(1,  4 , 0xF1, 7, outputPyloadRS485);
+ EnviarTramaRS485(1,  5 , 0xF1, 7, outputPyloadRS485);
  }
  break;
 
@@ -1348,19 +1348,19 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  if (subFuncionRS485==0xD1){
 
  InformacionSectores(outputPyloadRS485);
- EnviarTramaRS485(1,  4 , 0xF3, 17, outputPyloadRS485);
+ EnviarTramaRS485(1,  5 , 0xF3, 17, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD2){
 
  numDatosRS485 = LeerDatosSector(0xD2, sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  4 , 0xF3, numDatosRS485, outputPyloadRS485);
+ EnviarTramaRS485(1,  5 , 0xF3, numDatosRS485, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD3){
 
  RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  4 , 0xF3, 2507, outputPyloadRS485);
+ EnviarTramaRS485(1,  5 , 0xF3, 2507, outputPyloadRS485);
  }
  break;
 

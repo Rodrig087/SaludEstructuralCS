@@ -2884,8 +2884,8 @@ L_LeerDatosSector134:
 	BRA GEU	L__LeerDatosSector406
 	GOTO	L__LeerDatosSector298
 L__LeerDatosSector406:
-	MOV	#38912, W0
-	MOV	#118, W1
+	MOV	#61440, W0
+	MOV	#232, W1
 	CP	W11, W0
 	CPB	W12, W1
 	BRA LTU	L__LeerDatosSector407
@@ -4256,7 +4256,7 @@ L__urx_1308:
 ;NodoAcelerometro.c,888 :: 		if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
 	MOV	#lo_addr(_tramaCabeceraRS485+1), W0
 	MOV.B	[W0], W0
-	CP.B	W0, #4
+	CP.B	W0, #5
 	BRA NZ	L__urx_1461
 	GOTO	L__urx_1316
 L__urx_1461:
@@ -4413,7 +4413,7 @@ L_urx_1260:
 ;NodoAcelerometro.c,922 :: 		EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);//Envia la hora local al Master
 	MOV	#7, W13
 	MOV.B	#241, W12
-	MOV.B	#4, W11
+	MOV.B	#5, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0
@@ -4499,7 +4499,7 @@ L__urx_1470:
 ;NodoAcelerometro.c,951 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 17, outputPyloadRS485);
 	MOV	#17, W13
 	MOV.B	#243, W12
-	MOV.B	#4, W11
+	MOV.B	#5, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0
@@ -4525,7 +4525,7 @@ L__urx_1471:
 ;NodoAcelerometro.c,957 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
 	MOV	W0, W13
 	MOV.B	#243, W12
-	MOV.B	#4, W11
+	MOV.B	#5, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0
@@ -4549,7 +4549,7 @@ L__urx_1472:
 ;NodoAcelerometro.c,963 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 2507, outputPyloadRS485);
 	MOV	#2507, W13
 	MOV.B	#243, W12
-	MOV.B	#4, W11
+	MOV.B	#5, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0

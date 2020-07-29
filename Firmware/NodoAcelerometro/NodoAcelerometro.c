@@ -17,14 +17,14 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 4
+#define IDNODO 5
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
 #define FP 80000000                                                             //Frecuencia del reloj
 #define PSF 2048                                                                //Primer Sector Fisico de la SD. Este dato se obtiene con el programa EaseUS Partition.
-#define SIZESD  7772160                                                         //Numero total de sectores de la SD (visto con el software HxD)
-//#define SIZESD 15265792
+//#define SIZESD  7772160                                                         //Numero total de sectores de la SD (visto con el software HxD)
+#define SIZESD 15265792
 
 //Subindices:
 unsigned int i, j, x, y;

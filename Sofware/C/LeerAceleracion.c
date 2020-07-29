@@ -35,8 +35,9 @@ unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
 
-int direccionNodo,sectorReq;
+int direccionNodo,sectorReq, duracionSeg;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
+unsigned short banSolicitud, contSolicitud;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
 
@@ -57,39 +58,51 @@ int main(int argc, char *argv[]) {
 	//Inicializa las variables:
 	i = 0;
 	x = 0;
+	banSolicitud = 0;
+	contSolicitud = 0;
 	
 	direccionNodo = (short)(atoi(argv[1]));
 	sectorReq = atoi(argv[2]);
+	duracionSeg = (short)(atoi(argv[3]));
+	
 	//Asociacion de los punteros a las variables:
     ptrSectorReq = (unsigned char *) & sectorReq;
 	
 	funcionNodo = 0xF3;
 	numDatosNodo = 5;
-	
 	subFuncionNodo = 0xD3;
-	pyloadNodo[0] = subFuncionNodo;
 	
+	pyloadNodo[0] = subFuncionNodo;
 	pyloadNodo[1] = *ptrSectorReq;
 	pyloadNodo[2] = *(ptrSectorReq+1);
 	pyloadNodo[3] = *(ptrSectorReq+2);
 	pyloadNodo[4] = *(ptrSectorReq+3);
 	
-	//prueba
-	for (i=0;i<numDatosNodo;i++){
-		printf("%X ", pyloadNodo[i]);
-	}
-	printf("\n");
-	//fin prueba
-	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
 	
-	if (direccionNodo>0&&direccionNodo<=5){
-		EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);	
-	} 
-	if (direccionNodo>5){
-		EnviarSolicitudNodo(5, funcionNodo, numDatosNodo, pyloadNodo);
+	gettimeofday(&tv1, NULL);
+	
+	while(contSolicitud<duracionSeg){
+		if (banSolicitud==0){
+			banSolicitud = 1;
+			printf("\nLectura: %d\n", contSolicitud);
+			//Envia la solicitud al nodo:
+			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
+			//Incrementa el sector:
+			sectorReq = sectorReq + 5;
+			pyloadNodo[0] = subFuncionNodo;
+			pyloadNodo[1] = *ptrSectorReq;
+			pyloadNodo[2] = *(ptrSectorReq+1);
+			pyloadNodo[3] = *(ptrSectorReq+2);
+			pyloadNodo[4] = *(ptrSectorReq+3);
+			//Incrementa el contador de solicitudes:
+			contSolicitud++;
+		}
 	}
+	
+	gettimeofday(&tv2, NULL);
+	printf ("Tiempo total = %f ms\n",(double) (tv2.tv_usec - tv1.tv_usec) / 1000);
 	
 	sleep(5);
 	bcm2835_spi_end();
@@ -197,10 +210,9 @@ void ObtenerOperacion(){
 //C:0xA8	F:0xF8
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
-	printf("Enviando solicitud al nodo: %d\n", direccion);
+	printf("Enviando solicitud al nodo...\n");
+	printf("Dir: %d, Funcion: %X, #Datos: %d, Subfuncion: %X, Sector: %d\n", direccion, funcion, numDatos, pyload[0], sectorReq);
 		
-	gettimeofday(&tv1, NULL);
-	
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
@@ -218,6 +230,8 @@ void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsig
 		
 	bcm2835_spi_transfer(0xF8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
+	
+	printf("termino solicitud al nodo...\n");
 	
 }
 
@@ -311,14 +325,8 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 	printf("Z: ");
 	printf("%2.8f ", zAceleracion); 
 	printf("|\n"); 
-	
-	
-	gettimeofday(&tv2, NULL);
-	//printf ("Total time = %f seconds\n",(double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
-	printf ("Tiempo total = %f ms\n",(double) (tv2.tv_usec - tv1.tv_usec) / 1000);
-	
-	exit (-1);
-	
+		
+	banSolicitud = 0;
 }
 
 //**************************************************************************************************************************************
