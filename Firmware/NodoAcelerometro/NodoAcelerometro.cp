@@ -507,14 +507,14 @@ unsigned char byteRS485;
 unsigned int i_rs485;
 unsigned char tramaCabeceraRS485[10];
 unsigned char inputPyloadRS485[10];
-unsigned char outputPyloadRS485[525];
+unsigned char outputPyloadRS485[2600];
 unsigned int numDatosRS485;
 unsigned char *ptrnumDatosRS485;
 unsigned short funcionRS485;
 unsigned short subFuncionRS485;
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-
-unsigned short banU2;
+unsigned char *ptrsectorReq;
+unsigned long sectorReq;
 
 
 const unsigned int clusterSizeSD = 512;
@@ -541,7 +541,8 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
 unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticion, unsigned char* tramaDatosSec);
+unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 
 
@@ -592,8 +593,7 @@ void main() {
  subFuncionRS485 = 0;
  numDatosRS485 = 0;
  ptrnumDatosRS485 = (unsigned char *) & numDatosRS485;
-
- banU2 = 1;
+ ptrsectorReq = (unsigned char *) & sectorReq;
 
 
  PSEC = 0;
@@ -945,29 +945,22 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 
 
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticion, unsigned char* tramaDatosSec){
+unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
- unsigned char *ptrsectorReq;
- unsigned long sectorReq;
  unsigned char bufferSectorReq[512];
  unsigned int numDatosSec;
 
  unsigned int contadorSector;
 
- if (modoLec==0){
+ tramaDatosSec[0] = modoLec;
+ if (modoLec==0xD2){
 
  numDatosSec = 12;
- } else {
+ }
+ if (modoLec==0xD3){
 
  numDatosSec = 512;
  }
-
-
- ptrsectorReq = (unsigned char *) & sectorReq;
- *ptrsectorReq = tramaPeticion[1];
- *(ptrsectorReq+1) = tramaPeticion[2];
- *(ptrsectorReq+2) = tramaPeticion[3];
- *(ptrsectorReq+3) = tramaPeticion[4];
 
 
  if ((sectorReq>=PSE)&&(sectorReq< 7772160 )){
@@ -980,12 +973,10 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticio
 
  if (checkLecSD==0) {
 
- tramaDatosSec[0] = tramaPeticion[0];
-
  for (y=0;y<numDatosSec;y++){
  tramaDatosSec[y+1] = bufferSectorReq[y];
  }
-#line 589 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 580 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
  numDatosSec = numDatosSec + 1;
  break;
  } else {
@@ -1006,6 +997,104 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticio
  }
 
  return numDatosSec;
+
+}
+
+
+
+
+void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg){
+
+ unsigned char bufferSectorReq[512];
+ unsigned short tiempoAcel[6];
+ unsigned long contSector;
+
+ tramaAcelSeg[0] = 0xD3;
+ contSector = 0;
+
+
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+ checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+ if (checkLecSD==0) {
+
+ for (y=0;y<6;y++){
+ tiempoAcel[y] = bufferSectorReq[y+6];
+ }
+
+ for (y=0;y<500;y++){
+ tramaAcelSeg[y+1] = bufferSectorReq[y+12];
+ }
+ contSector++;
+ break;
+ }
+ }
+
+
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+ checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+ if (checkLecSD==0) {
+
+ for (y=0;y<512;y++){
+ tramaAcelSeg[y+501] = bufferSectorReq[y];
+ }
+ contSector++;
+ break;
+ }
+ }
+
+
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+ checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+ if (checkLecSD==0) {
+
+ for (y=0;y<512;y++){
+ tramaAcelSeg[y+1013] = bufferSectorReq[y];
+ }
+ contSector++;
+ break;
+ }
+ }
+
+
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+ checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+ if (checkLecSD==0) {
+
+ for (y=0;y<512;y++){
+ tramaAcelSeg[y+1525] = bufferSectorReq[y];
+ }
+ contSector++;
+ break;
+ }
+ }
+
+
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+ checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+ if (checkLecSD==0) {
+
+ for (y=0;y<464;y++){
+ tramaAcelSeg[y+2037] = bufferSectorReq[y];
+ }
+ contSector++;
+ break;
+ }
+ }
+
+
+ for (x=0;x<6;x++){
+ tramaAcelSeg[2501+x] = tiempoAcel[x];
+ }
 
 }
 
@@ -1249,6 +1338,13 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  case 0xF3:
 
+
+ *ptrsectorReq = inputPyloadRS485[1];
+ *(ptrsectorReq+1) = inputPyloadRS485[2];
+ *(ptrsectorReq+2) = inputPyloadRS485[3];
+ *(ptrsectorReq+3) = inputPyloadRS485[4];
+
+
  if (subFuncionRS485==0xD1){
 
  InformacionSectores(outputPyloadRS485);
@@ -1257,14 +1353,14 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD2){
 
- numDatosRS485 = LeerDatosSector(0, inputPyloadRS485, outputPyloadRS485);
+ numDatosRS485 = LeerDatosSector(0xD2, sectorReq, outputPyloadRS485);
  EnviarTramaRS485(1,  4 , 0xF3, numDatosRS485, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD3){
 
- numDatosRS485 = LeerDatosSector(1, inputPyloadRS485, outputPyloadRS485);
- EnviarTramaRS485(1,  4 , 0xF3, numDatosRS485, outputPyloadRS485);
+ RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
+ EnviarTramaRS485(1,  4 , 0xF3, 2507, outputPyloadRS485);
  }
  break;
 

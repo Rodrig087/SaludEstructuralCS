@@ -483,7 +483,7 @@ unsigned short banRSI, banRSC;
 unsigned char byteRS485;
 unsigned int i_rs485;
 unsigned char tramaCabeceraRS485[10];
-unsigned char inputPyloadRS485[525];
+unsigned char inputPyloadRS485[2600];
 unsigned char outputPyloadRS485[10];
 unsigned short direccionRS485;
 unsigned short funcionRS485;

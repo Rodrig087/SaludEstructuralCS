@@ -1298,7 +1298,6 @@ baniniciomuestreo
 banrsc
 banrsi
 bansetreloj
-banu2
 baudrate2
 bcd2dec
 bcd2dec16
@@ -8614,6 +8613,7 @@ ptper_8_bit
 ptper_9
 ptper_9_bit
 ptrnumdatosrs485
+ptrsectorreq
 ptsidl
 ptsidl
 ptsidl_bit
@@ -9085,6 +9085,7 @@ recuperarfecharpi
 recuperarfechartc
 recuperarhorarpi
 recuperarhorartc
+recuperartramaaceleracion
 refocon
 refoconbits
 refomd
@@ -9495,6 +9496,7 @@ sdi2r4
 sdi2r5
 sdi2r6
 sectorlec
+sectorreq
 sectorsave
 sectorsd
 seien

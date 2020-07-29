@@ -75,7 +75,7 @@ unsigned short banRSI, banRSC;                                                  
 unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
 unsigned char tramaCabeceraRS485[10];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
-unsigned char inputPyloadRS485[525];                                            //Vector para almacenar el pyload de la trama RS485 recibida
+unsigned char inputPyloadRS485[2600];                                            //Vector para almacenar el pyload de la trama RS485 recibida
 unsigned char outputPyloadRS485[10];                                            //Vector para almacenar el pyload de la trama RS485 a enviar
 unsigned short direccionRS485;                                                  //Varaible para la direccion del nodo. Broadcast = 255
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion

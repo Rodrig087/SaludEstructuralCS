@@ -79,6 +79,8 @@ urx_1
 		UbicarUltimoSectorSD
 	LeerDatosSector
 		SD_Read_Block
+	RecuperarTramaAceleracion
+		SD_Read_Block
 Timer1Int
 	ADXL355_read_byte
 	ADXL355_read_FIFO

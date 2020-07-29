@@ -71,14 +71,14 @@ unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
 unsigned char tramaCabeceraRS485[10];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
 unsigned char inputPyloadRS485[10];                                             //Vector para almacenar el pyload de entrada de la trama RS485
-unsigned char outputPyloadRS485[525];                                           //Vector para almacenar el pyload de salida de la trama RS485
+unsigned char outputPyloadRS485[2600];                                          //Vector para almacenar el pyload de salida de la trama RS485
 unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
 unsigned char *ptrnumDatosRS485;
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
-unsigned short subFuncionRS485;                                                                                                        //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
+unsigned short subFuncionRS485;                                                 //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
-
-unsigned short banU2;
+unsigned char *ptrsectorReq;                                                    //Puntero sector requerido
+unsigned long sectorReq;                                                        //Variable para recuperar el sector requerido
 
 //Variables para manejo del SD:
 const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
@@ -105,7 +105,8 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarSectorSD(unsigned long sector);
 unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticion, unsigned char* tramaDatosSec);
+unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -156,8 +157,7 @@ void main() {
      subFuncionRS485 = 0;
      numDatosRS485 = 0;
      ptrnumDatosRS485 = (unsigned char *) & numDatosRS485;
-              
-     banU2 = 1;
+     ptrsectorReq = (unsigned char *) & sectorReq;         
       
      //SD:
      PSEC = 0;
@@ -531,30 +531,23 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 //*****************************************************************************************************************************************
 //Funcion para leer los datos de un sector
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticion, unsigned char* tramaDatosSec){
-        
-     unsigned char *ptrsectorReq;                                               //Puntero primer sector fisico
-     unsigned long sectorReq;                                                   //Variable para recuperar el sector requerido
+unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+             
      unsigned char bufferSectorReq[512];                                        //Trama para recuperar el buffer leido
      unsigned int numDatosSec;
      
      unsigned int contadorSector;
          
-     if (modoLec==0){
+     tramaDatosSec[0] = modoLec;                                                //Subfuncion
+         if (modoLec==0xD2){
          //Recupera solo los datos de cabecera y tiempo:
          numDatosSec = 12;
-     } else {
+     }
+         if (modoLec==0xD3){
          //Recupera todos los datos del sector:
          numDatosSec = 512;
      }
-     
-     //Asociacion de los punteros a las variables:
-     ptrsectorReq = (unsigned char *) & sectorReq;
-     *ptrsectorReq = tramaPeticion[1];                                          //LSB sectorReq
-     *(ptrsectorReq+1) = tramaPeticion[2];
-     *(ptrsectorReq+2) = tramaPeticion[3];
-     *(ptrsectorReq+3) = tramaPeticion[4];                                      //MSB sectorReq
-     
+           
      //Comprueba que el sector a leer este dentro del rango de sectores permitidos:
      if ((sectorReq>=PSE)&&(sectorReq<SIZESD)){
 
@@ -566,8 +559,6 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticio
              //checkLecSD = 0, significa que la lectura fue exitosa:
              if (checkLecSD==0) {
                 //Almacena el datos en la variable sectorInicioSD:
-                tramaDatosSec[0] = tramaPeticion[0];                            //Subfuncion
-
                 for (y=0;y<numDatosSec;y++){
                     tramaDatosSec[y+1] = bufferSectorReq[y];
                 }
@@ -606,6 +597,104 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned char* tramaPeticio
     }
     
     return numDatosSec;
+        
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
+//Funcion para recuperar un segundo de datos de aceleracion 
+void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg){
+        
+    unsigned char bufferSectorReq[512];                                         //Trama para recuperar el buffer leido
+    unsigned short tiempoAcel[6];                                               //Trama de tiempo del vector de aceleracion
+    unsigned long contSector;
+        
+    tramaAcelSeg[0] = 0xD3;                                                     //Subfuncion
+    contSector = 0;
+        
+    //Lee el primer sector:
+    checkLecSD = 1;
+    // Intenta leer los datos del sector como maximo 5 veces:
+    for (x=0;x<5;x++){
+        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+        if (checkLecSD==0) {
+            //Recupera los datos de tiempo:
+            for (y=0;y<6;y++){
+                tiempoAcel[y] = bufferSectorReq[y+6];
+            }
+            //Recupera los primeros 500 bytes de aceleracion:
+            for (y=0;y<500;y++){
+                tramaAcelSeg[y+1] = bufferSectorReq[y+12];
+            }
+            contSector++;
+            break;
+        } 
+    }
+        
+    //Lee el segundo sector:
+    checkLecSD = 1;
+    // Intenta leer los datos del sector como maximo 5 veces:
+    for (x=0;x<5;x++){
+        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+        if (checkLecSD==0) {
+            //Recupera los siguientes 512 bytes de aceleracion (500 - 1011):
+            for (y=0;y<512;y++){
+                tramaAcelSeg[y+501] = bufferSectorReq[y];
+            }
+            contSector++;
+            break;
+        } 
+    }
+        
+    //Lee el tercer sector:
+    checkLecSD = 1;
+    // Intenta leer los datos del sector como maximo 5 veces:
+    for (x=0;x<5;x++){
+        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+        if (checkLecSD==0) {
+            //Recupera los siguientes 512 bytes de aceleracion (1012 - 1523):
+            for (y=0;y<512;y++){
+                tramaAcelSeg[y+1013] = bufferSectorReq[y];
+            }
+            contSector++;
+            break;
+        } 
+    }
+        
+    //Lee el cuarto sector:
+    checkLecSD = 1;
+    // Intenta leer los datos del sector como maximo 5 veces:
+    for (x=0;x<5;x++){
+        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+        if (checkLecSD==0) {
+            //Recupera los siguientes 512 bytes de aceleracion (1524 - 2035):
+            for (y=0;y<512;y++){
+                tramaAcelSeg[y+1525] = bufferSectorReq[y];
+            }
+            contSector++;
+            break;
+        } 
+    }
+        
+    //Lee el quinto sector:
+    checkLecSD = 1;
+    // Intenta leer los datos del sector como maximo 5 veces:
+    for (x=0;x<5;x++){
+        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+        if (checkLecSD==0) {
+            //Recupera los ultimos 464 bytes de aceleracion (2036 - 2499):
+            for (y=0;y<464;y++){
+                tramaAcelSeg[y+2037] = bufferSectorReq[y];
+            }
+            contSector++;
+            break;
+        } 
+    }
+        
+    //Agrega la trama de tiempo al final de la trama de aceleracion (Para conincidir con el formato de datos anterior):
+    for (x=0;x<6;x++){
+    tramaAcelSeg[2501+x] = tiempoAcel[x];
+    }
         
 }
 //*****************************************************************************************************************************************
@@ -848,6 +937,13 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     break;
                
                case 0xF3:
+                    
+                    //Extrae el dato del sector requerido (subfunciones D2 y D3):
+                    *ptrsectorReq = inputPyloadRS485[1];                        //LSB sectorReq
+                    *(ptrsectorReq+1) = inputPyloadRS485[2];
+                    *(ptrsectorReq+2) = inputPyloadRS485[3];
+                    *(ptrsectorReq+3) = inputPyloadRS485[4];                    //MSB sectorReq
+                                        
                     //Envia informacion de sectores clave:
                     if (subFuncionRS485==0xD1){
                        //Llena el pyload de salida y envia la trama de respuesta al Master:
@@ -857,14 +953,14 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     //Inspecciona el contenido del sector solicitado:
                     if (subFuncionRS485==0xD2){
                        //Recupera los datos de cabecera y tiempo y envia la trama de respuesta al Master:
-                        numDatosRS485 = LeerDatosSector(0, inputPyloadRS485, outputPyloadRS485);
+                        numDatosRS485 = LeerDatosSector(0xD2, sectorReq, outputPyloadRS485);
                         EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
                     }
-                    //Recupera y envia el contenido de los sectores solicitados:
+                    //Recupera los datos de aceleracion de un segundo:
                     if (subFuncionRS485==0xD3){
                         //Recupera todos los datos del sector requerido y envia la trama de respuesta al Master:
-                        numDatosRS485 = LeerDatosSector(1, inputPyloadRS485, outputPyloadRS485);
-                        EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
+                        RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
+                        EnviarTramaRS485(1, IDNODO, 0xF3, 2507, outputPyloadRS485);
                     }
                     break;
                     

@@ -9,7 +9,9 @@
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
+#include <sys/time.h>
 
 //Declaracion de constantes
 #define P1 0																	//Pin 11 GPIO
@@ -24,7 +26,7 @@ unsigned int i, x;
 unsigned short buffer;
 unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
-unsigned char tramaPyloadRS485[525];
+unsigned char tramaPyloadRS485[2600];
 
 short fuenteTiempoPic;
 
@@ -33,11 +35,12 @@ unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
 
-
 int direccionNodo,sectorReq;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
+
+struct timeval  tv1, tv2;
 
 //Declaracion de funciones
 int ConfiguracionPrincipal();
@@ -179,9 +182,9 @@ void ObtenerOperacion(){
 		  //Funciones de lectura de sectores:
           case 0xB3:
 		       //Tiempo del nodo:
-			   if (subFuncionSPI==0xD2){
-				   //ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
-				   //ImprimirDatosSector(tramaPyloadRS485);
+			   if (subFuncionSPI==0xD3){
+				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
+				   ImprimirDatosSector(tramaPyloadRS485);
 			   }		   
                break;
           default:
@@ -196,6 +199,8 @@ void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsig
 	
 	printf("Enviando solicitud al nodo: %d\n", direccion);
 		
+	gettimeofday(&tv1, NULL);
+	
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
@@ -220,6 +225,7 @@ void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsig
 //C:0xAA	F:0xFA
 void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485){
 	
+	printf("Recuperando pyload...\n");
 	bcm2835_spi_transfer(0xAA);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	for (i=0;i<numBytesPyload;i++){
@@ -238,27 +244,78 @@ void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485)
 //Procesamiento pyload trama RS485:
 
 void ImprimirDatosSector(unsigned char* pyloadRS485){
+	
+	unsigned short xData[3];
+	unsigned short yData[3];
+	unsigned short zData[3];
+	
+	int xValue;
+	int yValue;
+	int zValue;
+	double xAceleracion;
+	double yAceleracion;
+	double zAceleracion;
 		
 	//Verifica los datos de cabecera:
+	printf("Imprimiendo datos...\n");
 	
-	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
-		printf("%0.2d/", pyloadRS485[7]);
-		printf("%0.2d/", pyloadRS485[8]);
-		printf("%0.2d ", pyloadRS485[9]);
-		printf("%0.2d:", pyloadRS485[10]);
-		printf("%0.2d:", pyloadRS485[11]);
-		printf("%0.2d\n", pyloadRS485[12]);
-	} else {
-		if (pyloadRS485[1]==0xE1){
-			printf("Error E1: No se pudo leer la SD\n");
-		} else {
-			printf("Error E2: El sector no contiene los datos requeridos\n");
-			for (i=0;i<13;i++){
-				printf("%X ", pyloadRS485[i]);
-			}
-			printf("\n");
-		}
+	//Imprime la hora y fecha recuperada de la trama de datos:
+	printf("Datos de la trama:\n");
+	printf("| ");
+	printf("%0.2d:", pyloadRS485[2507-3]);			//hh
+	printf("%0.2d:", pyloadRS485[2507-2]);			//mm
+	printf("%0.2d ", pyloadRS485[2507-1]);			//ss
+	printf("%0.2d/", pyloadRS485[2507-6]);			//aa
+	printf("%0.2d/", pyloadRS485[2507-5]);			//mm
+	printf("%0.2d ", pyloadRS485[2507-4]);			//dd
+	printf("| ");
+	
+	//Imprime los primeros datos de aceleracion:
+	for (x=0;x<3;x++){
+		xData[x] = pyloadRS485[x+2];	
+		yData[x] = pyloadRS485[x+5];	
+		zData[x] = pyloadRS485[x+8];	
 	}
+	
+	//Calculo aceleracion eje x:
+	xValue = ((xData[0]<<12)&0xFF000)+((xData[1]<<4)&0xFF0)+((xData[2]>>4)&0xF);
+	// Apply two complement
+	if (xValue >= 0x80000) {
+		xValue = xValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
+		xValue = -1*(((~xValue)+1)& 0x7FFFF);
+	}
+	xAceleracion = xValue * (9.8/pow(2,18));
+	
+	//Calculo aceleracion eje y:
+	yValue = ((yData[0]<<12)&0xFF000)+((yData[1]<<4)&0xFF0)+((yData[2]>>4)&0xF);
+	// Apply two complement
+	if (yValue >= 0x80000) {
+		yValue = yValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
+		yValue = -1*(((~yValue)+1)& 0x7FFFF);
+	}
+	yAceleracion = yValue * (9.8/pow(2,18));
+	
+	//Calculo aceleracion eje z:
+	zValue = ((zData[0]<<12)&0xFF000)+((zData[1]<<4)&0xFF0)+((zData[2]>>4)&0xF);
+	// Apply two complement
+	if (zValue >= 0x80000) {
+		zValue = zValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
+		zValue = -1*(((~zValue)+1)& 0x7FFFF);
+	}
+	zAceleracion = zValue * (9.8/pow(2,18));	
+			
+	printf("X: ");
+	printf("%2.8f ", xAceleracion);
+	printf("Y: ");
+	printf("%2.8f ", yAceleracion);
+	printf("Z: ");
+	printf("%2.8f ", zAceleracion); 
+	printf("|\n"); 
+	
+	
+	gettimeofday(&tv2, NULL);
+	//printf ("Total time = %f seconds\n",(double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
+	printf ("Tiempo total = %f ms\n",(double) (tv2.tv_usec - tv1.tv_usec) / 1000);
 	
 	exit (-1);
 	

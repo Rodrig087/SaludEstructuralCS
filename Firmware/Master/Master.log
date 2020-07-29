@@ -23,11 +23,11 @@ hint: 95	1164	Variable 'horaGPS' has been eliminated by optimizer	Master.c
 hint: 12	1164	Variable 'fechaRPi' has been eliminated by optimizer	Master.c
 hint: 23	1164	Variable 'horaRPi' has been eliminated by optimizer	Master.c
 hint: 22	1164	Variable 'ptrnumDatos' has been eliminated by optimizer	Master.c
-diagnostics: 0	127	All files Compiled in 187 ms	 
+diagnostics: 0	127	All files Compiled in 218 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
-hint: 0	1144	Static RAM (bytes): 3150   Dynamic RAM (bytes): 25522	Static RAM (bytes): 3150   Dynamic RAM (bytes): 25522
+hint: 0	1144	Static RAM (bytes): 5225   Dynamic RAM (bytes): 23446	Static RAM (bytes): 5225   Dynamic RAM (bytes): 23446
 hint: 0	1144	Used ROM (bytes): 5290 (3%)  Free ROM (bytes): 170818 (97%)	Used ROM (bytes): 5290 (3%)  Free ROM (bytes): 170818 (97%)
 diagnostics: 0	125	Project Linked Successfully	Master.mcpds
-diagnostics: 0	128	Linked in 266 ms	 
-diagnostics: 0	129	Project 'Master.mcpds' completed: 672 ms	 
-diagnostics: 0	103	Finished successfully: 27 jul. 2020, 18:46:23	Master.mcpds
+diagnostics: 0	128	Linked in 250 ms	 
+diagnostics: 0	129	Project 'Master.mcpds' completed: 687 ms	 
+diagnostics: 0	103	Finished successfully: 28 jul. 2020, 18:16:22	Master.mcpds
