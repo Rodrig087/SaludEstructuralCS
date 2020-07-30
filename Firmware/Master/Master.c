@@ -351,21 +351,6 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         EnviarTramaRS485(2, direccionRS485, 0xF2, 1, outputPyloadRS485);        //Envia la solicitud al nodo
         banSPI2 = 0;
      }
-
-     //Rutina de lectura de los datos del acelerometro (C:0xA3   F:0xF3):
-     if ((banLec==1)&&(bufferSPI==0xA3)){                                       //Verifica si la bandera de inicio de trama esta activa
-        banLec = 2;                                                             //Activa la bandera de lectura
-        i = 0;
-        SPI1BUF = tramaCompleta[i];                                             //**Aqui envio a la RPi la trama de aceleracion recuperada de los nodos
-     }
-     if ((banLec==2)&&(bufferSPI!=0xF3)){
-        SPI1BUF = tramaCompleta[i];
-        i++;
-     }
-     if ((banLec==2)&&(bufferSPI==0xF3)){                                       //Si detecta el delimitador de final de trama:
-        banLec = 0;                                                             //Limpia la bandera de lectura
-        SPI1BUF = 0xFF;
-     }
      //************************************************************************************************************************************
 
      //************************************************************************************************************************************
@@ -440,7 +425,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      }  
          
      //(C:0xA7   F:0xF7)
-     //Rutina para obtener el tiempo de los nodos:
+     //Rutina para enviar la solicitud de tiempo a los nodos:
      if ((banSPI7==0)&&(bufferSPI==0xA7)){
         banSPI7 = 1;
      }
@@ -456,33 +441,59 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //(C:0xA8   F:0xF8)
      //Rutina de reenvio de instrucciones a los nodos (C:0xA8   F:0xF8):
      if ((banSPI8==0)&&(bufferSPI==0xA8)){
-        banSPI8 = 1;
+        //Cambia el estado de las otras banderas para evitar interferencias:
+        banSPI0 = 2;
+        banSPI1 = 2;
+        banSPI2 = 2;
+        banSPI4 = 2;
+        banSPI5 = 2;
+        banSPI6 = 2;
+        banSPI7 = 2;
+        banSPIA = 2;
+        banSPI8 = 1;                                                            //Activa la bandera para recuperar los datos de cabecera
         i = 0;
      }
-     if ((banSPI8==1)&&(bufferSPI!=0xA8)&&(bufferSPI!=0xF8)){
-        tramaSolicitudNodo[i] = bufferSPI;                                      //Recupera la trama de solicitud enviada por la RPi
+     //Recupera la cabecera de datos (cabecera, direccion, funcion, #datos):
+     if ((banSPI8==1)&&(i<4)){
+        tramaSolicitudNodo[i] = bufferSPI;                                      
         i++;
      }
-     if ((banSPI8==1)&&(bufferSPI==0xF8)){
+     //Extrae los datos de la cabecera:
+     if ((banSPI8==1)&&(i==4)){
+        direccionRS485 = tramaSolicitudNodo[1];
+        funcionRS485 = tramaSolicitudNodo[2];
+        numDatosRS485 = tramaSolicitudNodo[3]; 
+        i = 0;
+        banSPI8 = 2;
+     }
+     //Recupera los datos del pyload:
+     if ((banSPI8==2)&&(i<=numDatosRS485)){
+        tramaSolicitudNodo[i] = bufferSPI;                                      
+        i++;
+     }
+     //Procesa la solicitud:
+     if ((banSPI8==2)&&(bufferSPI==0xF8)&&(i>numDatosRS485)){
+        banSPI0 = 0;
+        banSPI1 = 0;
+        banSPI2 = 0;
+        banSPI4 = 0;
+        banSPI5 = 0;
+        banSPI6 = 0;
+        banSPI7 = 0;
+        banSPIA = 0;
         banSPI8 = 0;
-        direccionRS485 = tramaSolicitudNodo[0];
-        funcionRS485 = tramaSolicitudNodo[1];
-        numDatosRS485 = tramaSolicitudNodo[2];
         //Llena la trama outputPyloadRS485 con los datos de solicitud:
         if (numDatosRS485>1){
             for (x=0;x<numDatosRS485;x++){
-                outputPyloadRS485[x] = tramaSolicitudNodo[x+3];  
+                outputPyloadRS485[x] = tramaSolicitudNodo[x+1];  
             }
         } else {
-            outputPyloadRS485[0] = tramaSolicitudNodo[3];
+            outputPyloadRS485[0] = tramaSolicitudNodo[1];
         }
-        
         //Reenvia la solicitud al nodo por RS485:
         EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
      }
-     
-     //
-         
+
      //(C:0xAA   F:0xFA)
      //Rutina para enviar el contenido del pyload de la trama RS485 a la RPi:
      if ((banSPIA==0)&&(bufferSPI==0xAA)){

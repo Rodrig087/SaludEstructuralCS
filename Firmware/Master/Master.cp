@@ -761,21 +761,6 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
 
 
- if ((banLec==1)&&(bufferSPI==0xA3)){
- banLec = 2;
- i = 0;
- SPI1BUF = tramaCompleta[i];
- }
- if ((banLec==2)&&(bufferSPI!=0xF3)){
- SPI1BUF = tramaCompleta[i];
- i++;
- }
- if ((banLec==2)&&(bufferSPI==0xF3)){
- banLec = 0;
- SPI1BUF = 0xFF;
- }
-
-
 
 
 
@@ -864,32 +849,58 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  if ((banSPI8==0)&&(bufferSPI==0xA8)){
+
+ banSPI0 = 2;
+ banSPI1 = 2;
+ banSPI2 = 2;
+ banSPI4 = 2;
+ banSPI5 = 2;
+ banSPI6 = 2;
+ banSPI7 = 2;
+ banSPIA = 2;
  banSPI8 = 1;
  i = 0;
  }
- if ((banSPI8==1)&&(bufferSPI!=0xA8)&&(bufferSPI!=0xF8)){
+
+ if ((banSPI8==1)&&(i<4)){
  tramaSolicitudNodo[i] = bufferSPI;
  i++;
  }
- if ((banSPI8==1)&&(bufferSPI==0xF8)){
+
+ if ((banSPI8==1)&&(i==4)){
+ direccionRS485 = tramaSolicitudNodo[1];
+ funcionRS485 = tramaSolicitudNodo[2];
+ numDatosRS485 = tramaSolicitudNodo[3];
+ i = 0;
+ banSPI8 = 2;
+ }
+
+ if ((banSPI8==2)&&(i<=numDatosRS485)){
+ tramaSolicitudNodo[i] = bufferSPI;
+ i++;
+ }
+
+ if ((banSPI8==2)&&(bufferSPI==0xF8)&&(i>numDatosRS485)){
+ banSPI0 = 0;
+ banSPI1 = 0;
+ banSPI2 = 0;
+ banSPI4 = 0;
+ banSPI5 = 0;
+ banSPI6 = 0;
+ banSPI7 = 0;
+ banSPIA = 0;
  banSPI8 = 0;
- direccionRS485 = tramaSolicitudNodo[0];
- funcionRS485 = tramaSolicitudNodo[1];
- numDatosRS485 = tramaSolicitudNodo[2];
 
  if (numDatosRS485>1){
  for (x=0;x<numDatosRS485;x++){
- outputPyloadRS485[x] = tramaSolicitudNodo[x+3];
+ outputPyloadRS485[x] = tramaSolicitudNodo[x+1];
  }
  } else {
- outputPyloadRS485[0] = tramaSolicitudNodo[3];
+ outputPyloadRS485[0] = tramaSolicitudNodo[1];
  }
-
 
  EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
  }
-
-
 
 
 
@@ -905,7 +916,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banSPIA==1)&&(bufferSPI==0xFA)){
  banSPIA = 0;
  }
-#line 536 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 547 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
 }
 
 
@@ -940,7 +951,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  }
 
 }
-#line 656 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 667 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
 void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
 
