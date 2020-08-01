@@ -33,9 +33,9 @@ unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
 
-
 int direccionNodo,sectorReq;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
+unsigned short banSolicitud, contSolicitud;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
 
@@ -54,6 +54,8 @@ int main(int argc, char *argv[]) {
 	//Inicializa las variables:
 	i = 0;
 	x = 0;
+	banSolicitud = 0;
+	contSolicitud = 0;
 	
 	direccionNodo = (short)(atoi(argv[1]));
 	sectorReq = atoi(argv[2]);
@@ -71,15 +73,26 @@ int main(int argc, char *argv[]) {
 	pyloadNodo[3] = *(ptrSectorReq+2);
 	pyloadNodo[4] = *(ptrSectorReq+3);
 	
-	//prueba
-	for (i=0;i<numDatosNodo;i++){
-		printf("%X ", pyloadNodo[i]);
-	}
-	printf("\n");
-	//fin prueba
-	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
+	
+	while(contSolicitud<6){
+		
+		if (banSolicitud==0){
+			banSolicitud = 1;
+			//Envia la solicitud al nodo:
+			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
+			contSolicitud++;
+		}
+		
+	}
+	
+	
+	
+	
+	
+	
+	
 	
 	if (direccionNodo>0&&direccionNodo<=5){
 		EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);	
@@ -167,9 +180,9 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	printf("Funcion: %X\n", funcionSPI);
-	printf("Subfuncion: %X\n", subFuncionSPI);
-	printf("Numero de bytes: %d\n", numBytesSPI);
+	//printf("Funcion: %X\n", funcionSPI);
+	//printf("Subfuncion: %X\n", subFuncionSPI);
+	//printf("Numero de bytes: %d\n", numBytesSPI);
 	
 	switch (funcionSPI){                                                                     
           //Funciones de tiempo:
@@ -189,16 +202,12 @@ void ObtenerOperacion(){
                break;
     }
 	
-	digitalWrite (TEST, LOW);	
-	delay (500);
-	digitalWrite (TEST, HIGH);
-	
 }
 
 //C:0xA8	F:0xF8
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
-	printf("Enviando solicitud al nodo: %d\n", direccion);
+	//printf("Enviando solicitud al nodo: %d\n", direccion);
 		
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
@@ -246,26 +255,38 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 	//Verifica los datos de cabecera:
 	
 	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
+		printf("Sector: %d\n", sectorReq); 
+		printf("Tiempo: ");
 		printf("%0.2d/", pyloadRS485[7]);
 		printf("%0.2d/", pyloadRS485[8]);
 		printf("%0.2d ", pyloadRS485[9]);
 		printf("%0.2d:", pyloadRS485[10]);
 		printf("%0.2d:", pyloadRS485[11]);
 		printf("%0.2d\n", pyloadRS485[12]);
+		exit(-1);
 	} else {
-		if (pyloadRS485[1]==0xE1){
-			printf("Error E1: No se pudo leer la SD\n");
-		} else {
-			printf("Error E2: El sector no contiene los datos requeridos\n");
-			for (i=0;i<13;i++){
-				printf("%X ", pyloadRS485[i]);
+		if (contSolicitud==5){
+			if (pyloadRS485[1]==0xE1){
+				printf("Error E1: No se pudo leer la SD\n");
+			} else {
+				printf("Error E2: El sector no contiene los datos requeridos\n");
+				for (i=0;i<13;i++){
+					printf("%X ", pyloadRS485[i]);
+				}
+				printf("\n");
 			}
-			printf("\n");
+			exit(-1);
 		}
+		//Incrementa el sector:
+		sectorReq++;
+		pyloadNodo[0] = subFuncionNodo;
+		pyloadNodo[1] = *ptrSectorReq;
+		pyloadNodo[2] = *(ptrSectorReq+1);
+		pyloadNodo[3] = *(ptrSectorReq+2);
+		pyloadNodo[4] = *(ptrSectorReq+3);
+		banSolicitud = 0;
 	}
-	
-	exit (-1);
-	
+		
 }
 
 //**************************************************************************************************************************************
