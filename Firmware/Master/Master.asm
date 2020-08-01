@@ -276,18 +276,16 @@ _RecuperarHoraRTC:
 ; minuto start address is: 16 (W8)
 	ZE	W0, W8
 	CLR	W9
-;tiempo_rtc.c,144 :: 		valueRead = 0x1F & DS3234_read_byte(Horas_Lec);
+;tiempo_rtc.c,145 :: 		valueRead = DS3234_read_byte(Horas_Lec);
 	MOV.B	#2, W10
 	CALL	_DS3234_read_byte
-	ZE	W0, W0
-	AND	W0, #31, W0
-;tiempo_rtc.c,145 :: 		valueRead = Bcd2Dec(valueRead);
+;tiempo_rtc.c,146 :: 		valueRead = Bcd2Dec(valueRead);
 	MOV.B	W0, W10
 	CALL	_Bcd2Dec
-;tiempo_rtc.c,146 :: 		hora = (long)valueRead;
+;tiempo_rtc.c,147 :: 		hora = (long)valueRead;
 	ZE	W0, W0
 	CLR	W1
-;tiempo_rtc.c,148 :: 		horaRTC = (hora*3600)+(minuto*60)+(segundo);                               //Calcula el segundo actual = hh*3600 + mm*60 + ss
+;tiempo_rtc.c,149 :: 		horaRTC = (hora*3600)+(minuto*60)+(segundo);                               //Calcula el segundo actual = hh*3600 + mm*60 + ss
 	MOV	#3600, W2
 	MOV	#0, W3
 	CALL	__Multiply_32x32
@@ -306,14 +304,14 @@ _RecuperarHoraRTC:
 	ADD	W0, W6, W2
 	ADDC	W1, W7, W3
 ; segundo end address is: 12 (W6)
-;tiempo_rtc.c,150 :: 		SPI2_Init();
+;tiempo_rtc.c,151 :: 		SPI2_Init();
 	CALL	_SPI2_Init
-;tiempo_rtc.c,152 :: 		return horaRTC;
+;tiempo_rtc.c,153 :: 		return horaRTC;
 	MOV.D	W2, W0
 ; horaRTC end address is: 4 (W2)
-;tiempo_rtc.c,154 :: 		}
-;tiempo_rtc.c,152 :: 		return horaRTC;
-;tiempo_rtc.c,154 :: 		}
+;tiempo_rtc.c,155 :: 		}
+;tiempo_rtc.c,153 :: 		return horaRTC;
+;tiempo_rtc.c,155 :: 		}
 L_end_RecuperarHoraRTC:
 	POP	W13
 	POP	W12
@@ -326,8 +324,8 @@ L_end_RecuperarHoraRTC:
 _RecuperarFechaRTC:
 	LNK	#4
 
-;tiempo_rtc.c,157 :: 		unsigned long RecuperarFechaRTC(){
-;tiempo_rtc.c,165 :: 		SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
+;tiempo_rtc.c,158 :: 		unsigned long RecuperarFechaRTC(){
+;tiempo_rtc.c,166 :: 		SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 	PUSH	W10
 	PUSH	W11
 	PUSH	W12
@@ -346,38 +344,38 @@ _RecuperarFechaRTC:
 	PUSH	W0
 	CALL	_SPI2_Init_Advanced
 	SUB	#8, W15
-;tiempo_rtc.c,167 :: 		valueRead = DS3234_read_byte(DiaMes_Lec);
+;tiempo_rtc.c,168 :: 		valueRead = DS3234_read_byte(DiaMes_Lec);
 	MOV.B	#4, W10
 	CALL	_DS3234_read_byte
-;tiempo_rtc.c,168 :: 		valueRead = Bcd2Dec(valueRead);
+;tiempo_rtc.c,169 :: 		valueRead = Bcd2Dec(valueRead);
 	MOV.B	W0, W10
 	CALL	_Bcd2Dec
-;tiempo_rtc.c,169 :: 		dia = (long)valueRead;
+;tiempo_rtc.c,170 :: 		dia = (long)valueRead;
 ; dia start address is: 12 (W6)
 	ZE	W0, W6
 	CLR	W7
-;tiempo_rtc.c,170 :: 		valueRead = 0x1F & DS3234_read_byte(Mes_Lec);
+;tiempo_rtc.c,171 :: 		valueRead = 0x1F & DS3234_read_byte(Mes_Lec);
 	MOV.B	#5, W10
 	CALL	_DS3234_read_byte
 	ZE	W0, W0
 	AND	W0, #31, W0
-;tiempo_rtc.c,171 :: 		valueRead = Bcd2Dec(valueRead);
+;tiempo_rtc.c,172 :: 		valueRead = Bcd2Dec(valueRead);
 	MOV.B	W0, W10
 	CALL	_Bcd2Dec
-;tiempo_rtc.c,172 :: 		mes = (long)valueRead;
+;tiempo_rtc.c,173 :: 		mes = (long)valueRead;
 ; mes start address is: 16 (W8)
 	ZE	W0, W8
 	CLR	W9
-;tiempo_rtc.c,173 :: 		valueRead = DS3234_read_byte(Anio_Lec);
+;tiempo_rtc.c,174 :: 		valueRead = DS3234_read_byte(Anio_Lec);
 	MOV.B	#6, W10
 	CALL	_DS3234_read_byte
-;tiempo_rtc.c,174 :: 		valueRead = Bcd2Dec(valueRead);
+;tiempo_rtc.c,175 :: 		valueRead = Bcd2Dec(valueRead);
 	MOV.B	W0, W10
 	CALL	_Bcd2Dec
-;tiempo_rtc.c,175 :: 		anio = (long)valueRead;
+;tiempo_rtc.c,176 :: 		anio = (long)valueRead;
 	ZE	W0, W0
 	CLR	W1
-;tiempo_rtc.c,177 :: 		fechaRTC = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
+;tiempo_rtc.c,178 :: 		fechaRTC = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
 	MOV	#10000, W2
 	MOV	#0, W3
 	CALL	__Multiply_32x32
@@ -396,14 +394,14 @@ _RecuperarFechaRTC:
 	ADD	W0, W6, W2
 	ADDC	W1, W7, W3
 ; dia end address is: 12 (W6)
-;tiempo_rtc.c,179 :: 		SPI2_Init();
+;tiempo_rtc.c,180 :: 		SPI2_Init();
 	CALL	_SPI2_Init
-;tiempo_rtc.c,181 :: 		return fechaRTC;
+;tiempo_rtc.c,182 :: 		return fechaRTC;
 	MOV.D	W2, W0
 ; fechaRTC end address is: 4 (W2)
-;tiempo_rtc.c,183 :: 		}
-;tiempo_rtc.c,181 :: 		return fechaRTC;
-;tiempo_rtc.c,183 :: 		}
+;tiempo_rtc.c,184 :: 		}
+;tiempo_rtc.c,182 :: 		return fechaRTC;
+;tiempo_rtc.c,184 :: 		}
 L_end_RecuperarFechaRTC:
 	POP	W13
 	POP	W12
@@ -416,8 +414,8 @@ L_end_RecuperarFechaRTC:
 _IncrementarFecha:
 	LNK	#4
 
-;tiempo_rtc.c,186 :: 		unsigned long IncrementarFecha(unsigned long longFecha){
-;tiempo_rtc.c,193 :: 		anio = longFecha / 10000;
+;tiempo_rtc.c,187 :: 		unsigned long IncrementarFecha(unsigned long longFecha){
+;tiempo_rtc.c,194 :: 		anio = longFecha / 10000;
 	PUSH.D	W10
 	MOV	#10000, W2
 	MOV	#0, W3
@@ -427,7 +425,7 @@ _IncrementarFecha:
 	POP.D	W10
 ; anio start address is: 4 (W2)
 	MOV.D	W0, W2
-;tiempo_rtc.c,194 :: 		mes = (longFecha%10000) / 100;
+;tiempo_rtc.c,195 :: 		mes = (longFecha%10000) / 100;
 	PUSH.D	W2
 	MOV	#10000, W2
 	MOV	#0, W3
@@ -443,7 +441,7 @@ _IncrementarFecha:
 	POP.D	W2
 ; mes start address is: 8 (W4)
 	MOV.D	W0, W4
-;tiempo_rtc.c,195 :: 		dia = (longFecha%10000) % 100;
+;tiempo_rtc.c,196 :: 		dia = (longFecha%10000) % 100;
 	MOV	[W14+0], W0
 	MOV	[W14+2], W1
 	PUSH.D	W4
@@ -456,30 +454,30 @@ _IncrementarFecha:
 	POP.D	W4
 ; dia start address is: 12 (W6)
 	MOV.D	W0, W6
-;tiempo_rtc.c,197 :: 		if (dia<28){
+;tiempo_rtc.c,198 :: 		if (dia<28){
 	CP	W0, #28
 	CPB	W1, #0
 	BRA LTU	L__IncrementarFecha312
 	GOTO	L_IncrementarFecha0
 L__IncrementarFecha312:
-;tiempo_rtc.c,198 :: 		dia++;
+;tiempo_rtc.c,199 :: 		dia++;
 ; dia start address is: 16 (W8)
 	ADD	W6, #1, W8
 	ADDC	W7, #0, W9
 ; dia end address is: 12 (W6)
-;tiempo_rtc.c,199 :: 		} else {
+;tiempo_rtc.c,200 :: 		} else {
 ; dia end address is: 16 (W8)
 	MOV.D	W4, W6
 	GOTO	L_IncrementarFecha1
 L_IncrementarFecha0:
-;tiempo_rtc.c,200 :: 		if (mes==2){
+;tiempo_rtc.c,201 :: 		if (mes==2){
 ; dia start address is: 12 (W6)
 	CP	W4, #2
 	CPB	W5, #0
 	BRA Z	L__IncrementarFecha313
 	GOTO	L_IncrementarFecha2
 L__IncrementarFecha313:
-;tiempo_rtc.c,202 :: 		if (((anio-16)%4)==0){
+;tiempo_rtc.c,203 :: 		if (((anio-16)%4)==0){
 	SUB	W2, #16, W0
 	SUBB	W3, #0, W1
 	AND	W0, #3, W0
@@ -489,25 +487,25 @@ L__IncrementarFecha313:
 	BRA Z	L__IncrementarFecha314
 	GOTO	L_IncrementarFecha3
 L__IncrementarFecha314:
-;tiempo_rtc.c,203 :: 		if (dia==29){
+;tiempo_rtc.c,204 :: 		if (dia==29){
 	CP	W6, #29
 	CPB	W7, #0
 	BRA Z	L__IncrementarFecha315
 	GOTO	L_IncrementarFecha4
 L__IncrementarFecha315:
 ; dia end address is: 12 (W6)
-;tiempo_rtc.c,204 :: 		dia = 1;
+;tiempo_rtc.c,205 :: 		dia = 1;
 ; dia start address is: 0 (W0)
 	MOV	#1, W0
 	MOV	#0, W1
-;tiempo_rtc.c,205 :: 		mes++;
+;tiempo_rtc.c,206 :: 		mes++;
 	ADD	W4, #1, W4
 	ADDC	W5, #0, W5
-;tiempo_rtc.c,206 :: 		} else {
+;tiempo_rtc.c,207 :: 		} else {
 ; dia end address is: 0 (W0)
 	GOTO	L_IncrementarFecha5
 L_IncrementarFecha4:
-;tiempo_rtc.c,207 :: 		dia++;
+;tiempo_rtc.c,208 :: 		dia++;
 ; dia start address is: 0 (W0)
 ; dia start address is: 12 (W6)
 	ADD	W6, #1, W0
@@ -515,9 +513,9 @@ L_IncrementarFecha4:
 ; dia end address is: 12 (W6)
 ; mes end address is: 8 (W4)
 ; dia end address is: 0 (W0)
-;tiempo_rtc.c,208 :: 		}
+;tiempo_rtc.c,209 :: 		}
 L_IncrementarFecha5:
-;tiempo_rtc.c,209 :: 		} else {
+;tiempo_rtc.c,210 :: 		} else {
 ; dia start address is: 0 (W0)
 ; mes start address is: 8 (W4)
 	MOV.D	W0, W8
@@ -525,27 +523,27 @@ L_IncrementarFecha5:
 	MOV.D	W4, W6
 	GOTO	L_IncrementarFecha6
 L_IncrementarFecha3:
-;tiempo_rtc.c,210 :: 		dia = 1;
+;tiempo_rtc.c,211 :: 		dia = 1;
 ; dia start address is: 0 (W0)
 	MOV	#1, W0
 	MOV	#0, W1
-;tiempo_rtc.c,211 :: 		mes++;
+;tiempo_rtc.c,212 :: 		mes++;
 	ADD	W4, #1, W4
 	ADDC	W5, #0, W5
 	MOV.D	W0, W8
 ; mes end address is: 8 (W4)
 ; dia end address is: 0 (W0)
 	MOV.D	W4, W6
-;tiempo_rtc.c,212 :: 		}
+;tiempo_rtc.c,213 :: 		}
 L_IncrementarFecha6:
-;tiempo_rtc.c,213 :: 		} else {
+;tiempo_rtc.c,214 :: 		} else {
 ; mes start address is: 12 (W6)
 ; dia start address is: 16 (W8)
 ; mes end address is: 12 (W6)
 ; dia end address is: 16 (W8)
 	GOTO	L_IncrementarFecha7
 L_IncrementarFecha2:
-;tiempo_rtc.c,214 :: 		if (dia<30){
+;tiempo_rtc.c,215 :: 		if (dia<30){
 ; mes start address is: 8 (W4)
 ; dia start address is: 12 (W6)
 	CP	W6, #30
@@ -553,12 +551,12 @@ L_IncrementarFecha2:
 	BRA LTU	L__IncrementarFecha316
 	GOTO	L_IncrementarFecha8
 L__IncrementarFecha316:
-;tiempo_rtc.c,215 :: 		dia++;
+;tiempo_rtc.c,216 :: 		dia++;
 ; dia start address is: 0 (W0)
 	ADD	W6, #1, W0
 	ADDC	W7, #0, W1
 ; dia end address is: 12 (W6)
-;tiempo_rtc.c,216 :: 		} else {
+;tiempo_rtc.c,217 :: 		} else {
 	PUSH.D	W4
 ; dia end address is: 0 (W0)
 	MOV.D	W2, W4
@@ -566,7 +564,7 @@ L__IncrementarFecha316:
 	POP.D	W0
 	GOTO	L_IncrementarFecha9
 L_IncrementarFecha8:
-;tiempo_rtc.c,217 :: 		if (mes==4||mes==6||mes==9||mes==11){
+;tiempo_rtc.c,218 :: 		if (mes==4||mes==6||mes==9||mes==11){
 ; dia start address is: 12 (W6)
 	CP	W4, #4
 	CPB	W5, #0
@@ -595,28 +593,28 @@ L__IncrementarFecha183:
 L__IncrementarFecha182:
 L__IncrementarFecha181:
 L__IncrementarFecha180:
-;tiempo_rtc.c,218 :: 		if (dia==30){
+;tiempo_rtc.c,219 :: 		if (dia==30){
 	CP	W6, #30
 	CPB	W7, #0
 	BRA Z	L__IncrementarFecha321
 	GOTO	L_IncrementarFecha13
 L__IncrementarFecha321:
 ; dia end address is: 12 (W6)
-;tiempo_rtc.c,219 :: 		dia = 1;
+;tiempo_rtc.c,220 :: 		dia = 1;
 ; dia start address is: 0 (W0)
 	MOV	#1, W0
 	MOV	#0, W1
-;tiempo_rtc.c,220 :: 		mes++;
+;tiempo_rtc.c,221 :: 		mes++;
 	ADD	W4, #1, W4
 	ADDC	W5, #0, W5
-;tiempo_rtc.c,221 :: 		} else {
+;tiempo_rtc.c,222 :: 		} else {
 	PUSH.D	W0
 ; dia end address is: 0 (W0)
 	MOV.D	W4, W0
 	POP.D	W4
 	GOTO	L_IncrementarFecha14
 L_IncrementarFecha13:
-;tiempo_rtc.c,222 :: 		dia++;
+;tiempo_rtc.c,223 :: 		dia++;
 ; dia start address is: 0 (W0)
 ; dia start address is: 12 (W6)
 	ADD	W6, #1, W0
@@ -627,15 +625,15 @@ L_IncrementarFecha13:
 ; dia end address is: 0 (W0)
 	MOV.D	W4, W0
 	POP.D	W4
-;tiempo_rtc.c,223 :: 		}
-L_IncrementarFecha14:
 ;tiempo_rtc.c,224 :: 		}
+L_IncrementarFecha14:
+;tiempo_rtc.c,225 :: 		}
 ; dia start address is: 8 (W4)
 ; mes start address is: 0 (W0)
 ; dia end address is: 8 (W4)
 ; mes end address is: 0 (W0)
 L_IncrementarFecha12:
-;tiempo_rtc.c,225 :: 		if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
+;tiempo_rtc.c,226 :: 		if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
 ; mes start address is: 0 (W0)
 ; dia start address is: 8 (W4)
 	CP	W4, #1
@@ -681,35 +679,35 @@ L__IncrementarFecha186:
 L__IncrementarFecha185:
 L__IncrementarFecha184:
 L__IncrementarFecha177:
-;tiempo_rtc.c,226 :: 		if (dia==31){
+;tiempo_rtc.c,227 :: 		if (dia==31){
 	CP	W4, #31
 	CPB	W5, #0
 	BRA Z	L__IncrementarFecha329
 	GOTO	L_IncrementarFecha20
 L__IncrementarFecha329:
-;tiempo_rtc.c,227 :: 		dia = 1;
+;tiempo_rtc.c,228 :: 		dia = 1;
 	MOV	#1, W4
 	MOV	#0, W5
-;tiempo_rtc.c,228 :: 		mes++;
+;tiempo_rtc.c,229 :: 		mes++;
 	ADD	W0, #1, W0
 	ADDC	W1, #0, W1
-;tiempo_rtc.c,229 :: 		} else {
+;tiempo_rtc.c,230 :: 		} else {
 	GOTO	L_IncrementarFecha21
 L_IncrementarFecha20:
-;tiempo_rtc.c,230 :: 		dia++;
+;tiempo_rtc.c,231 :: 		dia++;
 	ADD	W4, #1, W4
 	ADDC	W5, #0, W5
 ; dia end address is: 8 (W4)
 ; mes end address is: 0 (W0)
-;tiempo_rtc.c,231 :: 		}
-L_IncrementarFecha21:
 ;tiempo_rtc.c,232 :: 		}
+L_IncrementarFecha21:
+;tiempo_rtc.c,233 :: 		}
 ; dia start address is: 8 (W4)
 ; mes start address is: 0 (W0)
 ; dia end address is: 8 (W4)
 ; mes end address is: 0 (W0)
 L_IncrementarFecha19:
-;tiempo_rtc.c,225 :: 		if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
+;tiempo_rtc.c,226 :: 		if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
 ; mes start address is: 0 (W0)
 ; dia start address is: 8 (W4)
 ; dia end address is: 8 (W4)
@@ -717,7 +715,7 @@ L_IncrementarFecha19:
 	GOTO	L__IncrementarFecha190
 L__IncrementarFecha193:
 L__IncrementarFecha190:
-;tiempo_rtc.c,233 :: 		if ((dia!=1)&&(mes==12)){
+;tiempo_rtc.c,234 :: 		if ((dia!=1)&&(mes==12)){
 ; dia start address is: 8 (W4)
 ; mes start address is: 0 (W0)
 	CP	W4, #1
@@ -731,35 +729,35 @@ L__IncrementarFecha330:
 	GOTO	L__IncrementarFecha195
 L__IncrementarFecha331:
 L__IncrementarFecha176:
-;tiempo_rtc.c,234 :: 		if (dia==31){
+;tiempo_rtc.c,235 :: 		if (dia==31){
 	CP	W4, #31
 	CPB	W5, #0
 	BRA Z	L__IncrementarFecha332
 	GOTO	L_IncrementarFecha25
 L__IncrementarFecha332:
 ; mes end address is: 0 (W0)
-;tiempo_rtc.c,235 :: 		dia = 1;
+;tiempo_rtc.c,236 :: 		dia = 1;
 	MOV	#1, W4
 	MOV	#0, W5
-;tiempo_rtc.c,236 :: 		mes = 1;
+;tiempo_rtc.c,237 :: 		mes = 1;
 ; mes start address is: 0 (W0)
 	MOV	#1, W0
 	MOV	#0, W1
-;tiempo_rtc.c,237 :: 		anio++;
+;tiempo_rtc.c,238 :: 		anio++;
 	ADD	W2, #1, W2
 	ADDC	W3, #0, W3
-;tiempo_rtc.c,238 :: 		} else {
+;tiempo_rtc.c,239 :: 		} else {
 	GOTO	L_IncrementarFecha26
 L_IncrementarFecha25:
-;tiempo_rtc.c,239 :: 		dia++;
+;tiempo_rtc.c,240 :: 		dia++;
 	ADD	W4, #1, W4
 	ADDC	W5, #0, W5
 ; dia end address is: 8 (W4)
 ; mes end address is: 0 (W0)
 ; anio end address is: 4 (W2)
-;tiempo_rtc.c,240 :: 		}
+;tiempo_rtc.c,241 :: 		}
 L_IncrementarFecha26:
-;tiempo_rtc.c,233 :: 		if ((dia!=1)&&(mes==12)){
+;tiempo_rtc.c,234 :: 		if ((dia!=1)&&(mes==12)){
 ; dia start address is: 8 (W4)
 ; anio start address is: 4 (W2)
 ; mes start address is: 0 (W0)
@@ -778,7 +776,7 @@ L__IncrementarFecha192:
 	GOTO	L__IncrementarFecha191
 L__IncrementarFecha195:
 L__IncrementarFecha191:
-;tiempo_rtc.c,242 :: 		}
+;tiempo_rtc.c,243 :: 		}
 ; dia start address is: 8 (W4)
 ; anio start address is: 4 (W2)
 ; mes start address is: 0 (W0)
@@ -789,7 +787,7 @@ L__IncrementarFecha191:
 	MOV.D	W4, W2
 	POP.D	W4
 L_IncrementarFecha9:
-;tiempo_rtc.c,243 :: 		}
+;tiempo_rtc.c,244 :: 		}
 ; mes start address is: 0 (W0)
 ; anio start address is: 8 (W4)
 ; dia start address is: 4 (W2)
@@ -800,7 +798,7 @@ L_IncrementarFecha9:
 	MOV.D	W2, W8
 	MOV.D	W4, W2
 L_IncrementarFecha7:
-;tiempo_rtc.c,245 :: 		}
+;tiempo_rtc.c,246 :: 		}
 ; dia start address is: 16 (W8)
 ; anio start address is: 4 (W2)
 ; mes start address is: 12 (W6)
@@ -808,7 +806,7 @@ L_IncrementarFecha7:
 ; anio end address is: 4 (W2)
 ; dia end address is: 16 (W8)
 L_IncrementarFecha1:
-;tiempo_rtc.c,247 :: 		fechaInc = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
+;tiempo_rtc.c,248 :: 		fechaInc = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
 ; mes start address is: 12 (W6)
 ; anio start address is: 4 (W2)
 ; dia start address is: 16 (W8)
@@ -830,8 +828,8 @@ L_IncrementarFecha1:
 	ADD	W0, W8, W0
 	ADDC	W1, W9, W1
 ; dia end address is: 16 (W8)
-;tiempo_rtc.c,248 :: 		return fechaInc;
-;tiempo_rtc.c,250 :: 		}
+;tiempo_rtc.c,249 :: 		return fechaInc;
+;tiempo_rtc.c,251 :: 		}
 L_end_IncrementarFecha:
 	ULNK
 	RETURN
@@ -840,10 +838,10 @@ L_end_IncrementarFecha:
 _AjustarTiempoSistema:
 	LNK	#14
 
-;tiempo_rtc.c,253 :: 		void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned short *tramaTiempoSistema){
+;tiempo_rtc.c,254 :: 		void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsigned short *tramaTiempoSistema){
 	MOV	[W14-8], W0
 	MOV	W0, [W14-8]
-;tiempo_rtc.c,262 :: 		hora = (short)(longHora / 3600);
+;tiempo_rtc.c,263 :: 		hora = (short)(longHora / 3600);
 	PUSH.D	W12
 	PUSH.D	W10
 	MOV	#3600, W2
@@ -853,7 +851,7 @@ _AjustarTiempoSistema:
 	CALL	__Divide_32x32
 	POP.D	W10
 	MOV.B	W0, [W14+0]
-;tiempo_rtc.c,263 :: 		minuto = (short)((longHora%3600) / 60);
+;tiempo_rtc.c,264 :: 		minuto = (short)((longHora%3600) / 60);
 	MOV	#3600, W2
 	MOV	#0, W3
 	MOV.D	W10, W0
@@ -866,7 +864,7 @@ _AjustarTiempoSistema:
 	CLR	W4
 	CALL	__Divide_32x32
 	MOV.B	W0, [W14+1]
-;tiempo_rtc.c,264 :: 		segundo = (short)((longHora%3600) % 60);
+;tiempo_rtc.c,265 :: 		segundo = (short)((longHora%3600) % 60);
 	MOV	[W14+10], W0
 	MOV	[W14+12], W1
 	MOV	#60, W2
@@ -875,7 +873,7 @@ _AjustarTiempoSistema:
 	CALL	__Modulus_32x32
 	POP.D	W12
 	MOV.B	W0, [W14+2]
-;tiempo_rtc.c,266 :: 		anio = (short)(longFecha / 10000);
+;tiempo_rtc.c,267 :: 		anio = (short)(longFecha / 10000);
 	PUSH.D	W12
 	MOV	#10000, W2
 	MOV	#0, W3
@@ -884,7 +882,7 @@ _AjustarTiempoSistema:
 	CALL	__Divide_32x32
 	POP.D	W12
 	MOV.B	W0, [W14+4]
-;tiempo_rtc.c,267 :: 		mes = (short)((longFecha%10000) / 100);
+;tiempo_rtc.c,268 :: 		mes = (short)((longFecha%10000) / 100);
 	MOV	#10000, W2
 	MOV	#0, W3
 	MOV.D	W12, W0
@@ -897,7 +895,7 @@ _AjustarTiempoSistema:
 	CLR	W4
 	CALL	__Divide_32x32
 	MOV.B	W0, [W14+3]
-;tiempo_rtc.c,268 :: 		dia = (short)((longFecha%10000) % 100);
+;tiempo_rtc.c,269 :: 		dia = (short)((longFecha%10000) % 100);
 	MOV	[W14+10], W0
 	MOV	[W14+12], W1
 	MOV	#100, W2
@@ -906,36 +904,36 @@ _AjustarTiempoSistema:
 	CALL	__Modulus_32x32
 ; dia start address is: 4 (W2)
 	MOV.B	W0, W2
-;tiempo_rtc.c,270 :: 		tramaTiempoSistema[0] = anio;
+;tiempo_rtc.c,271 :: 		tramaTiempoSistema[0] = anio;
 	MOV	[W14-8], W1
 	MOV.B	[W14+4], W0
 	MOV.B	W0, [W1]
-;tiempo_rtc.c,271 :: 		tramaTiempoSistema[1] = mes;
+;tiempo_rtc.c,272 :: 		tramaTiempoSistema[1] = mes;
 	MOV	[W14-8], W0
 	ADD	W0, #1, W1
 	MOV.B	[W14+3], W0
 	MOV.B	W0, [W1]
-;tiempo_rtc.c,272 :: 		tramaTiempoSistema[2] = dia;
+;tiempo_rtc.c,273 :: 		tramaTiempoSistema[2] = dia;
 	MOV	[W14-8], W0
 	INC2	W0
 	MOV.B	W2, [W0]
 ; dia end address is: 4 (W2)
-;tiempo_rtc.c,273 :: 		tramaTiempoSistema[3] = hora;
+;tiempo_rtc.c,274 :: 		tramaTiempoSistema[3] = hora;
 	MOV	[W14-8], W0
 	ADD	W0, #3, W1
 	MOV.B	[W14+0], W0
 	MOV.B	W0, [W1]
-;tiempo_rtc.c,274 :: 		tramaTiempoSistema[4] = minuto;
+;tiempo_rtc.c,275 :: 		tramaTiempoSistema[4] = minuto;
 	MOV	[W14-8], W0
 	ADD	W0, #4, W1
 	MOV.B	[W14+1], W0
 	MOV.B	W0, [W1]
-;tiempo_rtc.c,275 :: 		tramaTiempoSistema[5] = segundo;
+;tiempo_rtc.c,276 :: 		tramaTiempoSistema[5] = segundo;
 	MOV	[W14-8], W0
 	ADD	W0, #5, W1
 	MOV.B	[W14+2], W0
 	MOV.B	W0, [W1]
-;tiempo_rtc.c,277 :: 		}
+;tiempo_rtc.c,278 :: 		}
 L_end_AjustarTiempoSistema:
 	ULNK
 	RETURN

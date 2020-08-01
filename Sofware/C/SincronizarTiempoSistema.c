@@ -189,11 +189,14 @@ void EnviarTiempoLocal(){
 	tiempoLocal[3] = tm->tm_hour;												//Hora
 	tiempoLocal[4] = tm->tm_min;												//Minuto
 	tiempoLocal[5] = tm->tm_sec;												//Segundo 
-	for (i=0;i<6;i++){
-		printf("%0.2d ",tiempoLocal[i]);	
-	}
-	printf("\n");	
-
+		
+	printf("%0.2d:",tiempoLocal[3]);		//hh
+	printf("%0.2d:",tiempoLocal[4]);		//mm
+	printf("%0.2d ",tiempoLocal[5]);		//ss
+	printf("%0.2d/",tiempoLocal[2]);		//dd
+	printf("%0.2d/",tiempoLocal[1]);		//MM
+	printf("%0.2d\n",tiempoLocal[0]);		//aa
+	
 	bcm2835_spi_transfer(0xA4);                                                 //Envia el delimitador de inicio de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI); 
 	for (i=0;i<6;i++){

@@ -141,8 +141,9 @@ unsigned long RecuperarHoraRTC(){
      valueRead = DS3234_read_byte(Minutos_Lec);
      valueRead = Bcd2Dec(valueRead);
      minuto = (long)valueRead;
-     valueRead = 0x1F & DS3234_read_byte(Horas_Lec);
-     valueRead = Bcd2Dec(valueRead);
+     //valueRead = 0x1F & DS3234_read_byte(Horas_Lec);
+     valueRead = DS3234_read_byte(Horas_Lec);
+	 valueRead = Bcd2Dec(valueRead);
      hora = (long)valueRead;
 
      horaRTC = (hora*3600)+(minuto*60)+(segundo);                               //Calcula el segundo actual = hh*3600 + mm*60 + ss

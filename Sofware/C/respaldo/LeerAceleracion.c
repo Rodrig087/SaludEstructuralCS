@@ -42,8 +42,6 @@ unsigned char *ptrSectorReq;
 unsigned char pyloadNodo[10];
 unsigned short banNewFile;
 
-FILE *fp;
-
 struct timeval  tv1, tv2;
 
 //Declaracion de funciones
@@ -87,20 +85,17 @@ int main(int argc, char *argv[]) {
 	
 	gettimeofday(&tv1, NULL);
 	
-	//EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-	
-	
 	while(contSolicitud<duracionSeg){
 		
+		if (contSolicitud==1){
+			banNewFile = 1;
+		}
+		
+		if (contSolicitud==duracionSeg-1){
+			banNewFile = 2;
+		}
+		
 		if (banSolicitud==0){
-			
-			if (contSolicitud==1){
-				banNewFile = 1;
-			}
-			if (contSolicitud==duracionSeg-1){
-				banNewFile = 2;
-			}
-			
 			banSolicitud = 1;
 			printf("\nLectura: %d\n", contSolicitud);
 			//Envia la solicitud al nodo:
@@ -114,11 +109,9 @@ int main(int argc, char *argv[]) {
 			pyloadNodo[4] = *(ptrSectorReq+3);
 			//Incrementa el contador de solicitudes:
 			contSolicitud++;
-		
 		}
 		
 	}
-	
 	
 	gettimeofday(&tv2, NULL);
 	printf ("Tiempo total = %f ms\n",(double) (tv2.tv_usec - tv1.tv_usec) / 1000);
@@ -216,7 +209,7 @@ void ObtenerOperacion(){
 		       //Tiempo del nodo:
 			   if (subFuncionSPI==0xD3){
 				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
-				   ImprimirDatosSector(tramaPyloadRS485);
+				   //ImprimirDatosSector(tramaPyloadRS485);
 				   GuardarTrama(banNewFile, IDConcentrador, direccionNodo, duracionSeg, tramaPyloadRS485);
 			   }		   
                break;
@@ -351,24 +344,22 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 
 //Funcion para crear el archivo binario que almacenara los datos:
 void GuardarTrama(unsigned short banNewFile, unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485){
-		
+	
 	unsigned int outFwrite;
 	unsigned char tramaAceleracion[2506];
-	
-	//banNewFile = 0;
+	FILE *fp;
 	
 	//Crea el archivo binario:
 	if (banNewFile==0){
 		
 		//Variables para manejo del archivo binario:
+		FILE *fp;
 		char tiempoNodo[6];
 		char nombreArchivo[50];
 		char idArchivo[8];
 		char tiempoNodoStr[13];
 		char duracionEventoStr[4];
 		char ext[5];
-	
-				
 		//Extrae el tiempo de la trama pyload:	
 		tiempoNodo[0] = pyloadRS485[2501];                                    //aa
 		tiempoNodo[1] = pyloadRS485[2502];                                    //mm
@@ -396,7 +387,6 @@ void GuardarTrama(unsigned short banNewFile, unsigned short idConc, unsigned sho
 	for (x=0;x<2506;x++){
 		tramaAceleracion[x] = pyloadRS485[x+1];
 	}
-	
 	//Guarda la trama en el archivo binario:
 	if (fp!=NULL){
 		do{
@@ -404,7 +394,7 @@ void GuardarTrama(unsigned short banNewFile, unsigned short idConc, unsigned sho
 		} while (outFwrite!=2506);
 		fflush(fp);
 	}
-
+	
 	//Cierra el archivo binario:
 	if (banNewFile==2){
 		

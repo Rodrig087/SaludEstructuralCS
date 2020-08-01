@@ -15,19 +15,19 @@ warning: 171	1519	Logical expression is always: 'False'	Master.c
 hint: 77	1164	Variable 'value' has been eliminated by optimizer	Master.c
 hint: 130	1164	Variable 'valueRead' has been eliminated by optimizer	Master.c
 hint: 131	1164	Variable 'hora' has been eliminated by optimizer	Master.c
-hint: 159	1164	Variable 'valueRead' has been eliminated by optimizer	Master.c
-hint: 162	1164	Variable 'anio' has been eliminated by optimizer	Master.c
-hint: 191	1164	Variable 'fechaInc' has been eliminated by optimizer	Master.c
+hint: 160	1164	Variable 'valueRead' has been eliminated by optimizer	Master.c
+hint: 163	1164	Variable 'anio' has been eliminated by optimizer	Master.c
+hint: 192	1164	Variable 'fechaInc' has been eliminated by optimizer	Master.c
 hint: 64	1164	Variable 'fechaGPS' has been eliminated by optimizer	Master.c
 hint: 95	1164	Variable 'horaGPS' has been eliminated by optimizer	Master.c
 hint: 12	1164	Variable 'fechaRPi' has been eliminated by optimizer	Master.c
 hint: 23	1164	Variable 'horaRPi' has been eliminated by optimizer	Master.c
 hint: 22	1164	Variable 'ptrnumDatos' has been eliminated by optimizer	Master.c
-diagnostics: 0	127	All files Compiled in 187 ms	 
+diagnostics: 0	127	All files Compiled in 172 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
 hint: 0	1144	Static RAM (bytes): 2718   Dynamic RAM (bytes): 25954	Static RAM (bytes): 2718   Dynamic RAM (bytes): 25954
-hint: 0	1144	Used ROM (bytes): 5332 (3%)  Free ROM (bytes): 170776 (97%)	Used ROM (bytes): 5332 (3%)  Free ROM (bytes): 170776 (97%)
+hint: 0	1144	Used ROM (bytes): 5328 (3%)  Free ROM (bytes): 170780 (97%)	Used ROM (bytes): 5328 (3%)  Free ROM (bytes): 170780 (97%)
 diagnostics: 0	125	Project Linked Successfully	Master.mcpds
 diagnostics: 0	128	Linked in 250 ms	 
-diagnostics: 0	129	Project 'Master.mcpds' completed: 640 ms	 
-diagnostics: 0	103	Finished successfully: 29 jul. 2020, 22:18:12	Master.mcpds
+diagnostics: 0	129	Project 'Master.mcpds' completed: 625 ms	 
+diagnostics: 0	103	Finished successfully: 31 jul. 2020, 20:44:14	Master.mcpds
