@@ -1,4 +1,4 @@
-#line 1 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 1 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC202/NodoAcelerometro.c"
 #line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
 #line 96 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
 sbit CS_ADXL355 at LATA3_bit;
@@ -202,7 +202,8 @@ unsigned long RecuperarHoraRTC(){
  valueRead = DS3234_read_byte( 0x01 );
  valueRead = Bcd2Dec(valueRead);
  minuto = (long)valueRead;
- valueRead = 0x1F & DS3234_read_byte( 0x02 );
+
+ valueRead = DS3234_read_byte( 0x02 );
  valueRead = Bcd2Dec(valueRead);
  hora = (long)valueRead;
 
@@ -462,7 +463,7 @@ void Release_SD(void);
 unsigned char SD_Detect(void);
 void SD_Check(void);
 #line 1 "c:/users/public/documents/mikroelektronika/mikroc pro for dspic/include/stdbool.h"
-#line 30 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 29 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC202/NodoAcelerometro.c"
 unsigned int i, j, x, y;
 
 
@@ -517,12 +518,13 @@ unsigned char *ptrsectorReq;
 unsigned long sectorReq;
 
 
-const unsigned int clusterSizeSD = 512;
-unsigned long sectorSave =  2048 +99;
 unsigned long PSE =  2048 +100;
+unsigned long USF;
 unsigned long PSEC;
 unsigned long sectorSD;
 unsigned long sectorLec;
+const unsigned int clusterSizeSD = 512;
+unsigned long sectorSave =  2048 +99;
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
 unsigned char checkEscSD;
@@ -602,7 +604,19 @@ void main() {
  checkEscSD = 0;
  checkLecSD = 0;
  MSRS485 = 0;
-#line 192 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+
+ switch ( 8 ){
+ case 4:
+ USF = 7772160;
+ break;
+ case 8:
+ USF = 15265792;
+ break;
+ case 16:
+ USF = 30228479;
+ break;
+ }
+#line 203 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC202/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
@@ -963,7 +977,7 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, un
  }
 
 
- if ((sectorReq>=PSE)&&(sectorReq< 15265792 )){
+ if ((sectorReq>=PSE)&&(sectorReq< 8 )){
 
  checkLecSD = 1;
 
@@ -976,7 +990,7 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, un
  for (y=0;y<numDatosSec;y++){
  tramaDatosSec[y+1] = bufferSectorReq[y];
  }
-#line 580 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/NodoAcelerometro.c"
+#line 591 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC202/NodoAcelerometro.c"
  numDatosSec = numDatosSec + 1;
  break;
  } else {

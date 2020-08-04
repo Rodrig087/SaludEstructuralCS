@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------------------------------------------------------
 Autor: Milton Munoz, email: miltonrodrigomunoz@gmail.com
 Fecha de creacion: 16/01/2020
-Configuracion: dsPIC33EP256MC202, XT=80MHz
+Configuracion: dsPIC33EP256MC502, XT=80MHz
 ---------------------------------------------------------------------------------------------------------------------------*/
 
 ////////////////////////////////////////////////////         Librerias         /////////////////////////////////////////////////////////////
@@ -17,14 +17,13 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 5
+#define IDNODO 3                                                                //Direccion del nodo
+#define SIZESD 8                                                                //Capacidad de la SD
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
 #define FP 80000000                                                             //Frecuencia del reloj
 #define PSF 2048                                                                //Primer Sector Fisico de la SD. Este dato se obtiene con el programa EaseUS Partition.
-//#define SIZESD  7772160                                                         //Numero total de sectores de la SD (visto con el software HxD)
-#define SIZESD 15265792
 
 //Subindices:
 unsigned int i, j, x, y;
@@ -81,12 +80,13 @@ unsigned char *ptrsectorReq;                                                    
 unsigned long sectorReq;                                                        //Variable para recuperar el sector requerido
 
 //Variables para manejo del SD:
-const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
-unsigned long sectorSave = PSF+99;                                              //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
 unsigned long PSE = PSF+100;                                                    //Primer Sector de Escritura de la SD 
+unsigned long USF;                                                              //Ultimo Sector Fisico 
 unsigned long PSEC;                                                                                                                                //Primer sector escrito en el ciclo actual de muestreo
 unsigned long sectorSD;                                                         //Variable para almacenar el numero del sector de la SD que se va a escribir
 unsigned long sectorLec;                                                        //Variable para recuperar la informacion del sector de la SD que se solicita leer
+const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
+unsigned long sectorSave = PSF+99;                                              //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      //Cabecera del bufferSD: | Cte1 | Cte2 | Ct3 | #Bytes/Muestra | MSB_fSample | LSB_fSample |
 unsigned char bufferSD [clusterSizeSD];                                         //Buffer del tamaño del cluster, siempre se guarda este numero de datos en la SD
 unsigned char checkEscSD;                                                       //Esta variable indica si la escritura en la SD se completo correctamente
@@ -166,7 +166,18 @@ void main() {
      checkEscSD = 0;
      checkLecSD = 0;
      MSRS485 = 0;                                                               //Estabkece el Max485 en modo lectura
-     
+     //Determina el ultimo sector fisico en funcion de la capacidad de la SD: 
+     switch (SIZESD){
+             case 4:
+                    USF = 7772160;
+                    break;
+             case 8:
+                    USF = 15265792;
+                    break;
+             case 16:
+                    USF = 30228479;
+                    break;
+     }
      
      //datos de tiempo de prueba
      //horaSistema = 86100;        //23:55:00
@@ -549,7 +560,7 @@ unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, un
      }
            
      //Comprueba que el sector a leer este dentro del rango de sectores permitidos:
-     if ((sectorReq>=PSE)&&(sectorReq<SIZESD)){
+     if ((sectorReq>=PSE)&&(sectorReq<USF)){
 
          checkLecSD = 1;
          // Intenta leer los datos del sector como maximo 5 veces:
