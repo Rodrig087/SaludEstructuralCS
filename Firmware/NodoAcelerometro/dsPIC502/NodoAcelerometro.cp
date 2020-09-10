@@ -157,20 +157,20 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
 
  SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 
+ anio = (short)(longFecha / 10000);
+ mes = (short)((longFecha%10000) / 100);
+ dia = (short)((longFecha%10000) % 100);
+
  hora = (short)(longHora / 3600);
  minuto = (short)((longHora%3600) / 60);
  segundo = (short)((longHora%3600) % 60);
 
- dia = (short)(longFecha / 10000);
- mes = (short)((longFecha%10000) / 100);
- anio = (short)((longFecha%10000) % 100);
-
+ anio = Dec2Bcd(anio);
+ dia = Dec2Bcd(dia);
+ mes = Dec2Bcd(mes);
  segundo = Dec2Bcd(segundo);
  minuto = Dec2Bcd(minuto);
  hora = Dec2Bcd(hora);
- dia = Dec2Bcd(dia);
- mes = Dec2Bcd(mes);
- anio = Dec2Bcd(anio);
 
  DS3234_write_byte( 0x80 , segundo);
  DS3234_write_byte( 0x81 , minuto);
@@ -321,13 +321,13 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
  unsigned short mes;
  unsigned short anio;
 
- hora = (short)(longHora / 3600);
- minuto = (short)((longHora%3600) / 60);
- segundo = (short)((longHora%3600) % 60);
-
  anio = (short)(longFecha / 10000);
  mes = (short)((longFecha%10000) / 100);
  dia = (short)((longFecha%10000) % 100);
+
+ hora = (short)(longHora / 3600);
+ minuto = (short)((longHora%3600) / 60);
+ segundo = (short)((longHora%3600) % 60);
 
  tramaTiempoSistema[0] = anio;
  tramaTiempoSistema[1] = mes;
@@ -1369,15 +1369,9 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  i_rs485++;
  } else {
  T2CON.TON = 0;
-
- if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;
- } else {
- banRSI = 0;
- banRSC = 0;
- i_rs485 = 0;
- }
+#line 968 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
  }
  }
 

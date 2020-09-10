@@ -849,7 +849,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banSPI7==1)&&(bufferSPI==0xF7)){
  banSPI7 = 0;
  outputPyloadRS485[0] = 0xD2;
-
+ banRespuestaPi = 1;
  EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);
  }
 
@@ -905,6 +905,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  } else {
  outputPyloadRS485[0] = tramaSolicitudNodo[1];
  }
+ banRespuestaPi = 1;
 
  EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
  }
@@ -1101,20 +1102,14 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  if (banRSI==2){
 
- if (i_rs485<(numDatosRS485+2)){
+ if (i_rs485<(numDatosRS485)){
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
  T2CON.TON = 0;
-
- if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;
- } else {
- banRSI = 0;
- banRSC = 0;
- i_rs485 = 0;
- }
+#line 713 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
  }
  }
 

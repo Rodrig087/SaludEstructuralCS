@@ -952,6 +952,9 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            i_rs485++;
         } else {
            T2CON.TON = 0;                                                       //Apaga el Timer2
+           banRSI = 0;                                                          //Limpia la bandera de inicio de trama
+           banRSC = 1;                                                          //Activa la bandera de trama completa
+           /*
            //Verifica los bytes de final de trama:
            if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
               banRSI = 0;                                                       //Limpia la bandera de inicio de trama
@@ -961,6 +964,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
               banRSC = 0;
               i_rs485 = 0;
            }
+           */
         }
      }
 
