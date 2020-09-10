@@ -55,7 +55,7 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
 void DS3234_init(){
         
      SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
-     DS3234_write_byte(Control,0x20);
+	 DS3234_write_byte(Control,0x20);
      DS3234_write_byte(ControlStatus,0x08);
      SPI2_Init();
          
@@ -96,21 +96,21 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
      
      SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 
-     hora = (short)(longHora / 3600);
+	 anio = (short)(longFecha / 10000);
+     mes = (short)((longFecha%10000) / 100);
+     dia = (short)((longFecha%10000) % 100);
+     
+	 hora = (short)(longHora / 3600);
      minuto = (short)((longHora%3600) / 60);
      segundo = (short)((longHora%3600) % 60);
 
-     dia = (short)(longFecha / 10000);
-     mes = (short)((longFecha%10000) / 100);
-     anio = (short)((longFecha%10000) % 100);
-
-     segundo = Dec2Bcd(segundo);
+     anio = Dec2Bcd(anio);
+	 dia = Dec2Bcd(dia);
+     mes = Dec2Bcd(mes);
+	 segundo = Dec2Bcd(segundo);
      minuto = Dec2Bcd(minuto);
      hora = Dec2Bcd(hora);
-     dia = Dec2Bcd(dia);
-     mes = Dec2Bcd(mes);
-     anio = Dec2Bcd(anio);
-
+     
      DS3234_write_byte(Segundos_Esc, segundo);
      DS3234_write_byte(Minutos_Esc, minuto);
      DS3234_write_byte(Horas_Esc, hora);
@@ -186,67 +186,67 @@ unsigned long RecuperarFechaRTC(){
 //Funcion para incrementar la fecha
 unsigned long IncrementarFecha(unsigned long longFecha){
          
-         unsigned long dia;
+     unsigned long dia;
      unsigned long mes;
      unsigned long anio; 
-         unsigned long fechaInc;
+     unsigned long fechaInc;
          
-         anio = longFecha / 10000;
+     anio = longFecha / 10000;
      mes = (longFecha%10000) / 100;
      dia = (longFecha%10000) % 100;
          
-         if (dia<28){
-                dia++;                 
-         } else {
-                if (mes==2){
-                        //Comprueba si es año biciesto:
-                        if (((anio-16)%4)==0){
-                                if (dia==29){
-                                        dia = 1;
-                                        mes++;        
-                                } else {
-                                        dia++;
-                                }
-                        } else {
-                                dia = 1;
-                                mes++;
-                        }
-                } else {
-                        if (dia<30){
-                                dia++;
-                        } else {
-                                if (mes==4||mes==6||mes==9||mes==11){
-                                        if (dia==30){
-                                                dia = 1;
-                                                mes++;
-                                        } else {
-                                                dia++;
-                                        }
-                                }
-                                if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
-                                        if (dia==31){
-                                                dia = 1;
-                                                mes++;
-                                        } else {
-                                                dia++;
-                                        }
-                                }
-                                if ((dia!=1)&&(mes==12)){
-                                        if (dia==31){
-                                                dia = 1;
-                                                mes = 1;
-                                                anio++;
-                                        } else {
-                                                dia++;
-                                        }
-                                }
-                        }
-        }
-                
-         }
-         
-         fechaInc = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
-         return fechaInc;         
+	 if (dia<28){
+		dia++;                 
+	 } else {
+		if (mes==2){
+			//Comprueba si es año biciesto:
+			if (((anio-16)%4)==0){
+				if (dia==29){
+					dia = 1;
+					mes++;        
+				} else {
+					dia++;
+				}
+			} else {
+				dia = 1;
+				mes++;
+			}
+		} else {
+			if (dia<30){
+				dia++;
+			} else {
+				if (mes==4||mes==6||mes==9||mes==11){
+					if (dia==30){
+						dia = 1;
+						mes++;
+					} else {
+						dia++;
+					}
+				}
+				if ((dia!=1)&&(mes==1||mes==3||mes==5||mes==7||mes==8||mes==10)){
+					if (dia==31){
+						dia = 1;
+						mes++;
+					} else {
+						dia++;
+					}
+				}
+				if ((dia!=1)&&(mes==12)){
+					if (dia==31){
+						dia = 1;
+						mes = 1;
+						anio++;
+					} else {
+						dia++;
+					}
+				}
+			}
+		}
+			
+	 }
+	 
+	 fechaInc = (anio*10000)+(mes*100)+(dia);                                   //10000*aa + 100*mm + dd
+	 return fechaInc;         
         
 }
 
@@ -259,14 +259,14 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
      unsigned short dia;
      unsigned short mes;
      unsigned short anio;
+	 
+	 anio = (short)(longFecha / 10000);
+     mes = (short)((longFecha%10000) / 100);
+     dia = (short)((longFecha%10000) % 100);
 
      hora = (short)(longHora / 3600);
      minuto = (short)((longHora%3600) / 60);
      segundo = (short)((longHora%3600) % 60);
-
-     anio = (short)(longFecha / 10000);
-     mes = (short)((longFecha%10000) / 100);
-     dia = (short)((longFecha%10000) % 100);
      
      tramaTiempoSistema[0] = anio;
      tramaTiempoSistema[1] = mes;

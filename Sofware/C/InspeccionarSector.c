@@ -88,19 +88,6 @@ int main(int argc, char *argv[]) {
 	}
 	
 	
-	
-	
-	
-	
-	
-	
-	if (direccionNodo>0&&direccionNodo<=5){
-		EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);	
-	} 
-	if (direccionNodo>5){
-		EnviarSolicitudNodo(5, funcionNodo, numDatosNodo, pyloadNodo);
-	}
-	
 	sleep(5);
 	bcm2835_spi_end();
 	bcm2835_close();
@@ -266,14 +253,16 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 		exit(-1);
 	} else {
 		if (contSolicitud==5){
-			if (pyloadRS485[1]==0xE1){
-				printf("Error E1: No se pudo leer la SD\n");
-			} else {
-				printf("Error E2: El sector no contiene los datos requeridos\n");
-				for (i=0;i<13;i++){
-					printf("%X ", pyloadRS485[i]);
+			if (pyloadRS485[1]==0xEE){
+				if (pyloadRS485[2]==0xE1){ 
+					printf("Error %X: Sector fuera de rango\n", pyloadRS485[2]);
+				} 
+				if (pyloadRS485[2]==0xE2){
+					printf("Error %X: Sector sin datos\n", pyloadRS485[2]);
 				}
-				printf("\n");
+				if (pyloadRS485[2]==0xE3){
+					printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
+				}
 			}
 			exit(-1);
 		}

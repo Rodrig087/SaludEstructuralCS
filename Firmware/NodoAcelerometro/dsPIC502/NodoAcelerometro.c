@@ -1,7 +1,7 @@
-/*-------------------------------------------------------------------------------------------------------------------------
+                                                                 /*-------------------------------------------------------------------------------------------------------------------------
 Autor: Milton Munoz, email: miltonrodrigomunoz@gmail.com
 Fecha de creacion: 16/01/2020
-Configuracion: dsPIC33EP256MC502, XT=80MHz
+Configuracion: dsPIC33EP256MC202, XT=80MHz
 ---------------------------------------------------------------------------------------------------------------------------*/
 
 ////////////////////////////////////////////////////         Librerias         /////////////////////////////////////////////////////////////
@@ -17,13 +17,13 @@ Configuracion: dsPIC33EP256MC502, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 3                                                                //Direccion del nodo
-#define SIZESD 8                                                                //Capacidad de la SD
+#define IDNODO 1                                                                //Direccion del nodo
+#define SIZESD 8                                                                //Capacidad de la SD (GB)
+#define DELTASECTOR 1000                                                        //Desface donde empiezan los datos del sector a partir del PSF
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
 #define FP 80000000                                                             //Frecuencia del reloj
-#define PSF 2048                                                                //Primer Sector Fisico de la SD. Este dato se obtiene con el programa EaseUS Partition.
 
 //Subindices:
 unsigned int i, j, x, y;
@@ -46,7 +46,7 @@ unsigned short inicioSistema;
 
 //Variables para manejo del tiempo:
 unsigned short tiempo[6];                                                       //Vector de datos de tiempo del sistema
-unsigned short banSetReloj;                                                      
+unsigned short banSetReloj;
 unsigned long horaSistema, fechaSistema;
 
 //Variables para manejo del acelerometro:
@@ -80,17 +80,19 @@ unsigned char *ptrsectorReq;                                                    
 unsigned long sectorReq;                                                        //Variable para recuperar el sector requerido
 
 //Variables para manejo del SD:
-unsigned long PSE = PSF+100;                                                    //Primer Sector de Escritura de la SD 
-unsigned long USF;                                                              //Ultimo Sector Fisico 
-unsigned long PSEC;                                                                                                                                //Primer sector escrito en el ciclo actual de muestreo
+unsigned long PSF;                                                              //Primer Sector Fisico
+unsigned long PSE;                                                              //Primer Sector de Escritura de la SD
+unsigned long USF;                                                              //Ultimo Sector Fisico
+unsigned long PSEC;                                                             //Primer sector escrito en el ciclo de muestreo                                                                   //Primer sector escrito en el ciclo actual de muestreo
 unsigned long sectorSD;                                                         //Variable para almacenar el numero del sector de la SD que se va a escribir
 unsigned long sectorLec;                                                        //Variable para recuperar la informacion del sector de la SD que se solicita leer
 const unsigned int clusterSizeSD = 512;                                         //Tamaño del cluster de la SD de 512 bytes
-unsigned long sectorSave = PSF+99;                                              //Sector de la SD donde se graba el ultimo sector que se escribio antes de apagar
+unsigned long infoPrimerSector;                                                 //Sector de la SD donde se graba el primer sector escrito el ciclo de muestreo
+unsigned long infoUltimoSector;                                                 //Sector de la SD donde se graba el ultimo sector escrito
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      //Cabecera del bufferSD: | Cte1 | Cte2 | Ct3 | #Bytes/Muestra | MSB_fSample | LSB_fSample |
 unsigned char bufferSD [clusterSizeSD];                                         //Buffer del tamaño del cluster, siempre se guarda este numero de datos en la SD
 unsigned char checkEscSD;                                                       //Esta variable indica si la escritura en la SD se completo correctamente
-unsigned char checkLecSD;                                                       //Esta variable indica si la lectura fue exitosa
+unsigned char checkLecSD;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,10 +104,11 @@ void ConfiguracionPrincipal();
 void Muestrear();
 void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
-void GuardarSectorSD(unsigned long sector);
-unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
+void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
+unsigned long UbicarPrimerSectorEscrito();
+unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,21 +126,21 @@ void main() {
      numTMR1 = (tasaMuestreo*10)-1;                                             //Calcula el numero de veces que tienen que desbordarse el TMR1 para cada tasa de muestreo
 
      //Inicializacion de variables:
-         
+
      //Subindices:
      i = 0;
      j = 0;
      x = 0;
      y = 0;
-         
+
      //Control sistema:
      inicioSistema = 0;
-     
+
      //Tiempo:
      banSetReloj = 0;
      horaSistema = 0;
      fechaSistema = 0;
-         
+
      //Acelerometro:
      banCiclo = 0;
      banInicioMuestreo = 0;
@@ -147,7 +150,7 @@ void main() {
      contMuestras = 0;
      contCiclos = 0;
      contFIFO = 0;
-         
+
      //RS485:
      banRSI = 0;
      banRSC = 0;
@@ -157,28 +160,40 @@ void main() {
      subFuncionRS485 = 0;
      numDatosRS485 = 0;
      ptrnumDatosRS485 = (unsigned char *) & numDatosRS485;
-     ptrsectorReq = (unsigned char *) & sectorReq;         
-      
+     ptrsectorReq = (unsigned char *) & sectorReq;
+
      //SD:
      PSEC = 0;
      sectorSD = 0;
      sectorLec = 0;
      checkEscSD = 0;
      checkLecSD = 0;
-     MSRS485 = 0;                                                               //Estabkece el Max485 en modo lectura
-     //Determina el ultimo sector fisico en funcion de la capacidad de la SD: 
+     MSRS485 = 0;                                                               //Establece el Max485 en modo lectura
+
+    //Determina el ultimo sector fisico en funcion de la capacidad de la SD:
      switch (SIZESD){
-             case 4:
+            case 2:
+                    PSF = 2048;
+                    USF = 3911679;
+                    break;
+            case 4:
+                    PSF = 2048;
                     USF = 7772160;
                     break;
-             case 8:
-                    USF = 15265792;
+            case 8:
+                    PSF = 2048;
+                    //USF = 15265792;
+                    USF = 16779263;
                     break;
-             case 16:
-                    USF = 30228479;
+            case 16:
+                    PSF = 2048;
+                    USF = 31115263;
                     break;
      }
-     
+     infoPrimerSector = PSF+DELTASECTOR-2;                                      //Calcula el sector donde se alamcena la informacion del primer sector escrito
+     infoUltimoSector = PSF+DELTASECTOR-1;                                      //Calcula el sector donde se alamcena la informacion del ultimo sector escrito
+     PSE = PSF+DELTASECTOR;                                                     //Calcula el primer sector de escritura
+
      //datos de tiempo de prueba
      //horaSistema = 86100;        //23:55:00
      //fechaSistema = 200228;      //AA/mm/dd
@@ -220,8 +235,7 @@ void main() {
 
      //Entra al bucle princial del programa:
      while(1){
-              //EnviarTramaRS485(1, 255, 0xF3, 10, tramaPruebaRS485);
-              //Delay_ms(100);
+
      }
 
 }
@@ -284,6 +298,14 @@ void ConfiguracionPrincipal(){
      PR1 = 62500;                                                               //Car ga el preload para un tiempo de 100ms
      IPC0bits.T1IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR1
 
+     //Configuracion del TMR2 con un tiempo de 100ms
+     T2CON = 0x0020;
+     T2CON.TON = 0;                                                             //Apaga el Timer2
+     T2IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR2
+     T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR2
+     PR2 = 62500;                                                               //Carga el preload para un tiempo de 100ms
+     IPC1bits.T2IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR2
+
      //Configuracion del acelerometro:
      ADXL355_write_byte(POWER_CTL, DRDY_OFF|STANDBY);                           //Coloco el ADXL en modo STANDBY para pausar las conversiones y limpiar el FIFO
 
@@ -334,11 +356,11 @@ void Muestrear(){
          }
 
          //AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
-         
+
          contMuestras = 0;                                                      //Limpia el contador de muestras
          contFIFO = 0;                                                          //Limpia el contador de FIFOs
          T1CON.TON = 1;                                                         //Enciende el Timer1
-         
+
          GuardarTramaSD(tiempo, tramaAceleracion);
          //TEST = 0;
 
@@ -368,10 +390,10 @@ void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
 //Funcion para guardar los datos de la trama de aceleracion en la SD
 void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
 
-        
+
         //**Informacion: [Cabecera + tiempo + datos aceleracion] = 2512 bytes = 5 sectores
         //Por lo tanto se graban 4 buffers completos y 1 un buffer con 464 bytes de aceleracion y 48 ceros
-        
+
         //Agrega los datos de cabecera al buffer:
         for (x=0;x<6;x++){
             bufferSD[x] = cabeceraSD[x];
@@ -395,21 +417,21 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
         }
         GuardarBufferSD(bufferSD, sectorSD);
         sectorSD++;
-        
+
         //Guarda en la SD los bytes de la trama de datos desde la posicion 1012 - 1523:
         for (x=0;x<512;x++){
             bufferSD[x] = aceleracionSD[x+1012];
         }
         GuardarBufferSD(bufferSD, sectorSD);
         sectorSD++;
-        
+
         //Guarda en la SD los bytes de la trama de datos desde la posicion 1524 - 2035:
         for (x=0;x<512;x++){
             bufferSD[x] = aceleracionSD[x+1524];
         }
         GuardarBufferSD(bufferSD, sectorSD);
         sectorSD++;
-        
+
         //Guarda en la SD los bytes de la trama de datos desde la posicion 2036 - 2499:
         for (x=0;x<512;x++){
             if (x<464){
@@ -422,31 +444,31 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
         sectorSD++;
 
         //Guarda en la SD el ultimo sector donde se guardo la trama:
-        GuardarSectorSD(sectorSD);
-        
+        GuardarInfoSector(sectorSD, infoUltimoSector);
+
         TEST = 0;                                                               //Apaga el TEST cuando termina de gurdar la trama
-        
+
 }
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
 //Funcion para guardar el ultimo sector que se escribio
-void GuardarSectorSD(unsigned long sector){
+void GuardarInfoSector(unsigned long datoSector, unsigned long localizacionSector){
 
      //Crea un buffer para pasarle a la funcion que graba la informacion en la SD por sectores
      //Es muy ineficiente pero no quiero manipular la libreria
      unsigned char bufferSectores[512];
-     bufferSectores[0] = (sector>>24)&0xFF;                                     //MSB variable sector
-     bufferSectores[1] = (sector>>16)&0xFF;
-     bufferSectores[2] = (sector>>8)&0xFF;
-     bufferSectores[3] = (sector)&0xFF;                                         //LSD variable sector
+     bufferSectores[0] = (datoSector>>24)&0xFF;                                     //MSB variable sector
+     bufferSectores[1] = (datoSector>>16)&0xFF;
+     bufferSectores[2] = (datoSector>>8)&0xFF;
+     bufferSectores[3] = (datoSector)&0xFF;                                         //LSD variable sector
      for (x=4;x<512;x++){
          bufferSectores[x] = 0;                                                 //Rellena de ceros el resto del buffer
      }
 
      // Intenta escribir los datos en la SD como maximo 5 veces:
      for (x=0;x<5;x++){
-         checkEscSD = SD_Write_Block(bufferSectores,sectorSave);
+         checkEscSD = SD_Write_Block(bufferSectores,localizacionSector);
          if (checkEscSD == DATA_ACCEPTED){
              //TEST = ~TEST;
              break;
@@ -458,15 +480,50 @@ void GuardarSectorSD(unsigned long sector){
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
+//Funcion para leer el primer sector que se escribio
+unsigned long UbicarPrimerSectorEscrito(){
+
+     unsigned char bufferSectorInicio[512];                                     //Trama para guardar los datos del sector leido
+     unsigned long primerSectorSD;                                              //Variable donde se almacena el valor del sector inicial
+     unsigned char *ptrPrimerSectorSD;
+
+     ptrPrimerSectorSD = (unsigned char *) & primerSectorSD;
+
+         checkLecSD = 1;
+         // Intenta leer los datos del sector como maximo 5 veces:
+         for (x=0;x<5;x++){
+                 //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
+                 checkLecSD = SD_Read_Block(bufferSectorInicio, infoPrimerSector);
+                 //checkLecSD = 0, significa que la lectura fue exitosa:
+                 if (checkLecSD==0) {
+                        //Almacena el datos en la variable sectorInicioSD:
+                        *ptrPrimerSectorSD = bufferSectorInicio[3];                      //LSB
+                        *(ptrPrimerSectorSD+1) = bufferSectorInicio[2];
+                        *(ptrPrimerSectorSD+2) = bufferSectorInicio[1];
+                        *(ptrPrimerSectorSD+3) = bufferSectorInicio[0];                  //MSB
+                        break;
+                        Delay_ms(5);
+                 } else {
+                        primerSectorSD = PSE;                                           //Si no pudo realizar la lectura devuelve el Primer Sector de Escritura
+                 }
+         }
+
+
+     return primerSectorSD;
+
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
 //Funcion para leer el ultimo sector que se escribio
-unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
-     
+unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD){
+
      unsigned char bufferSectorFinal[512];                                      //Trama para guardar los datos del sector leido
      unsigned long sectorInicioSD;                                              //Variable donde se almacena el valor del sector inicial
      unsigned char *ptrSectorInicioSD;
-     
+
      ptrSectorInicioSD = (unsigned char *) & sectorInicioSD;
-     
+
      //Si sobrescribirSD = True sobrescribe la SD:
      if (sobrescribirSD==1){
          sectorInicioSD = PSE;                                                  //Se escoje el PSE para sobrescribir la SD
@@ -475,7 +532,7 @@ unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
          // Intenta leer los datos del sector como maximo 5 veces:
          for (x=0;x<5;x++){
              //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
-             checkLecSD = SD_Read_Block(bufferSectorFinal, sectorSave);
+             checkLecSD = SD_Read_Block(bufferSectorFinal, infoUltimoSector);
              //checkLecSD = 0, significa que la lectura fue exitosa:
              if (checkLecSD==0) {
                 //Almacena el datos en la variable sectorInicioSD:
@@ -490,35 +547,43 @@ unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
              }
          }
      }
-     
+
      return sectorInicioSD;
-     
+
 }
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
 //Funcion para recuperar informacion de los sectores
 void InformacionSectores(unsigned char* tramaInfoSec){
-        
+
+     unsigned long infoPSF;
+     unsigned long infoPSE;
+     unsigned long infoPSEC;
+     unsigned long infoSA;
+
      unsigned char *ptrPSF;                                                     //Puntero primer sector fisico
      unsigned char *ptrPSE;                                                     //Puntero primer sector de escritura
      unsigned char *ptrPSEC;                                                    //Puntero primer sector escrito en el ciclo actual
      unsigned char *ptrSA;                                                      //Puntero sector actual
-     unsigned long PSFv = PSF;                                                  //**No se puede asociar el puntero a esta contante
-        
+
+     infoPSF = PSF;
+     infoPSE = PSE;
+
      //Asociacion de los punteros a las variables:
-     ptrPSF = (unsigned char *) & PSFv;
-     ptrPSE = (unsigned char *) & PSE;
-     ptrPSEC = (unsigned char *) & PSEC;
-     ptrSA = (unsigned char *) & sectorSD;
-        
+     ptrPSF = (unsigned char *) & infoPSF;
+     ptrPSE = (unsigned char *) & infoPSE;
+     ptrPSEC = (unsigned char *) & infoPSEC;
+     ptrSA = (unsigned char *) & infoSA;
+
+     infoPSEC = UbicarPrimerSectorEscrito();                                    //Ubica el primer sector escrito
+
      if (banInicioMuestreo==0){
-        PSEC = 0;
-        sectorSD = UbicarUltimoSectorSD(0);                                     //Calcula el ultimo sector escrito
+        infoSA = UbicarUltimoSectorEscrito(0);                                  //Calcula el ultimo sector escrito
      } else {
-        sectorSD = sectorSD - 1;                                                //Calcula el sector actual
+        infoSA = sectorSD - 1;                                                  //Calcula el sector actual
      }
-                        
+
      tramaInfoSec[0] = 0xD1;                                                    //Subfuncion
      tramaInfoSec[1] = *ptrPSF;                                                 //LSB PSF
      tramaInfoSec[2] = *(ptrPSF+1);
@@ -536,93 +601,88 @@ void InformacionSectores(unsigned char* tramaInfoSec){
      tramaInfoSec[14] = *(ptrSA+1);
      tramaInfoSec[15] = *(ptrSA+2);
      tramaInfoSec[16] = *(ptrSA+3);                                             //MSB SA
-        
+
 }
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
-//Funcion para leer los datos de un sector
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
-             
+//Funcion para inspeccionar los datos de un sector
+unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+
      unsigned char bufferSectorReq[512];                                        //Trama para recuperar el buffer leido
      unsigned int numDatosSec;
-     
      unsigned int contadorSector;
-         
+     unsigned long USE;
+
+     //Calcula el ultimo sector escrito:
+     if (banInicioMuestreo==0){
+        USE = UbicarUltimoSectorEscrito(0);
+     } else {
+        USE = sectorSD - 1;
+     }
+
      tramaDatosSec[0] = modoLec;                                                //Subfuncion
-         if (modoLec==0xD2){
-         //Recupera solo los datos de cabecera y tiempo:
-         numDatosSec = 12;
-     }
-         if (modoLec==0xD3){
-         //Recupera todos los datos del sector:
-         numDatosSec = 512;
-     }
-           
-     //Comprueba que el sector a leer este dentro del rango de sectores permitidos:
+
+     //Comprueba que el sector requerido este dentro del rango de sectores permitidos:
      if ((sectorReq>=PSE)&&(sectorReq<USF)){
 
-         checkLecSD = 1;
-         // Intenta leer los datos del sector como maximo 5 veces:
-         for (x=0;x<5;x++){
-             //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
-             checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
-             //checkLecSD = 0, significa que la lectura fue exitosa:
-             if (checkLecSD==0) {
-                //Almacena el datos en la variable sectorInicioSD:
-                for (y=0;y<numDatosSec;y++){
-                    tramaDatosSec[y+1] = bufferSectorReq[y];
-                }
-
-                /*
-                //prueba
-                contadorSector = 0;
-                for (y=0;y<numDatosSec;y++){
-                    tramaDatosSec[y+1] =  contadorSector;
-                    contadorSector++;
-                    if (contadorSector==255){
-                       contadorSector = 0;
+         //Comprueba que sector requerido sea menor al ultimo sector escrito:
+         if (sectorReq<USE){
+             checkLecSD = 1;
+             // Intenta leer los datos del sector como maximo 5 veces:
+             //for (x=0;x<5;x++){
+                 //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
+                 checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
+                 Delay_ms(5);
+                 //checkLecSD = 0, significa que la lectura fue exitosa:
+                 if (checkLecSD==0) {
+                    //Almacena el datos en la variable sectorInicioSD:
+                    for (y=0;y<numDatosSec;y++){
+                        tramaDatosSec[y+1] = bufferSectorReq[y];
                     }
-                    if ((y>170)&&(y<340)){
-                       tramaDatosSec[y+1] = 0;
-                    }
+                    numDatosSec = 13;
+                    Delay_ms(5);
+                    //break;
+                } else {
+                    //Indica el error E3: Error al leer la SD
+                    tramaDatosSec[1] = 0xEE;
+                    tramaDatosSec[2] = 0xE3;
+                    numDatosSec = 3;
+                    //break;
                 }
-                */
-                numDatosSec = numDatosSec + 1;
-                break;
-            } else {
-                //Indica el error E1: Error al leer la SD
-                tramaDatosSec[0] = 0xEE;
-                tramaDatosSec[1] = 0xE2;
-                numDatosSec = 2;
-            }
+            //}
+        } else {
+            //Indica el error E2: Sector vacio
+            tramaDatosSec[1] = 0xEE;
+            tramaDatosSec[2] = 0xE2;
+            numDatosSec = 3;
         }
-     
+
     } else {
-    
-        //Indica el error E2: Sector fuera de rango
-        tramaDatosSec[0] = 0xEE;
-        tramaDatosSec[1] = 0xE1;
-        numDatosSec = 2;
-    
+
+        //Indica el error E1: Sector fuera de rango
+        tramaDatosSec[1] = 0xEE;
+        tramaDatosSec[2] = 0xE1;
+        numDatosSec = 3;
+
     }
-    
+
     return numDatosSec;
-        
+
 }
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
-//Funcion para recuperar un segundo de datos de aceleracion 
+//Funcion para recuperar un segundo de datos de aceleracion
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg){
-        
+
     unsigned char bufferSectorReq[512];                                         //Trama para recuperar el buffer leido
     unsigned short tiempoAcel[6];                                               //Trama de tiempo del vector de aceleracion
     unsigned long contSector;
-        
+
     tramaAcelSeg[0] = 0xD3;                                                     //Subfuncion
     contSector = 0;
-        
+
     //Lee el primer sector:
     checkLecSD = 1;
     // Intenta leer los datos del sector como maximo 5 veces:
@@ -639,9 +699,9 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
             }
             contSector++;
             break;
-        } 
+        }
     }
-        
+
     //Lee el segundo sector:
     checkLecSD = 1;
     // Intenta leer los datos del sector como maximo 5 veces:
@@ -654,9 +714,9 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
             }
             contSector++;
             break;
-        } 
+        }
     }
-        
+
     //Lee el tercer sector:
     checkLecSD = 1;
     // Intenta leer los datos del sector como maximo 5 veces:
@@ -669,9 +729,9 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
             }
             contSector++;
             break;
-        } 
+        }
     }
-        
+
     //Lee el cuarto sector:
     checkLecSD = 1;
     // Intenta leer los datos del sector como maximo 5 veces:
@@ -684,9 +744,9 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
             }
             contSector++;
             break;
-        } 
+        }
     }
-        
+
     //Lee el quinto sector:
     checkLecSD = 1;
     // Intenta leer los datos del sector como maximo 5 veces:
@@ -699,14 +759,14 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
             }
             contSector++;
             break;
-        } 
+        }
     }
-        
+
     //Agrega la trama de tiempo al final de la trama de aceleracion (Para conincidir con el formato de datos anterior):
     for (x=0;x<6;x++){
     tramaAcelSeg[2501+x] = tiempoAcel[x];
     }
-        
+
 }
 //*****************************************************************************************************************************************
 
@@ -729,7 +789,7 @@ void GuardarPruebaSD(unsigned char* tiempoSD){
                 contadorEjemploSD = 0;
             }
         }
-        
+
         //Agrega los datos de cabecera al buffer:
         for (x=0;x<6;x++){
             bufferSD[x] = cabeceraSD[x];
@@ -780,7 +840,7 @@ void GuardarPruebaSD(unsigned char* tiempoSD){
         sectorSD++;
 
         //Guarda en la SD el ultimo sector donde se guardo la trama:
-        GuardarSectorSD(sectorSD);
+        GuardarInfoSector(sectorSD, infoUltimoSector);
 
         TEST = 0;                                                               //Apaga el TEST cuando termina de gurdar la trama
 
@@ -862,6 +922,20 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
+//Interrupcion por desbordamiento del Timer2
+void Timer2Int() org IVT_ADDR_T2INTERRUPT{
+
+     T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
+
+     //Limpia estas banderas para restablecer la comunicacion por RS485:
+     banRSI = 0;
+     banRSC = 0;
+     i_rs485 = 0;
+
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
 //Interrupcion UART1
 void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
@@ -872,20 +946,28 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
      //Recupera el pyload de la trama RS485:                                    //Aqui deberia entrar despues de recuperar la cabecera de trama
      if (banRSI==2){
-        if (i_rs485<numDatosRS485){
+        //Recupera el pyload mas 2 bytes de final de trama:
+        if (i_rs485<(numDatosRS485)){
            inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
-           //TEST = ~TEST;
-           banRSI = 0;                                                          //Limpia la bandera de inicio de trama
-           banRSC = 1;                                                          //Activa la bandera de trama completa
+           T2CON.TON = 0;                                                       //Apaga el Timer2
+           //Verifica los bytes de final de trama:
+           if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
+              banRSI = 0;                                                       //Limpia la bandera de inicio de trama
+              banRSC = 1;                                                       //Activa la bandera de trama completa
+           } else {
+              banRSI = 0;
+              banRSC = 0;
+              i_rs485 = 0;
+           }
         }
      }
 
      //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           //TEST = ~TEST;
+           T2CON.TON = 1;                                                       //Enciende el Timer2
            banRSI = 1;
            i_rs485 = 0;
         }
@@ -911,7 +993,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
      //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
      if (banRSC==1){
-        subFuncionRS485 = inputPyloadRS485[0];                                    
+        subFuncionRS485 = inputPyloadRS485[0];
         switch (funcionRS485){
                case 0xF1:
                     //Recupera el tiempo de la trama RS485:
@@ -933,28 +1015,29 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                         EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);//Envia la hora local al Master
                     }
                     break;
-               
+
                case 0xF2:
                     //Inicia el muestreo:
                     if (subFuncionRS485==0xD1){
-                        sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);   //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
-                        PSEC = sectorSD;                                        //Guarda el numero del primer sector escrito en este ciclo de muestreo
-                        banInicioMuestreo = 1;                                  //Activa la bandera para iniciar el muestreo
+                        sectorSD = UbicarUltimoSectorEscrito(inputPyloadRS485[1]);   //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
+                        PSEC = sectorSD;                                             //Guarda el numero del primer sector escrito en este ciclo de muestreo
+                        GuardarInfoSector(PSEC, infoPrimerSector);
+                        banInicioMuestreo = 1;                                       //Activa la bandera para iniciar el muestreo
                     }
                     //Detiene el muestreo:
                     if (subFuncionRS485==0xD2){
-                       banInicioMuestreo = 0;                                   //Limpia la bandera para detener el muestreo
-                    } 
+                       banInicioMuestreo = 0;                                        //Limpia la bandera para detener el muestreo
+                    }
                     break;
-               
+
                case 0xF3:
-                    
+
                     //Extrae el dato del sector requerido (subfunciones D2 y D3):
                     *ptrsectorReq = inputPyloadRS485[1];                        //LSB sectorReq
                     *(ptrsectorReq+1) = inputPyloadRS485[2];
                     *(ptrsectorReq+2) = inputPyloadRS485[3];
                     *(ptrsectorReq+3) = inputPyloadRS485[4];                    //MSB sectorReq
-                                        
+
                     //Envia informacion de sectores clave:
                     if (subFuncionRS485==0xD1){
                        //Llena el pyload de salida y envia la trama de respuesta al Master:
@@ -964,7 +1047,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     //Inspecciona el contenido del sector solicitado:
                     if (subFuncionRS485==0xD2){
                        //Recupera los datos de cabecera y tiempo y envia la trama de respuesta al Master:
-                        numDatosRS485 = LeerDatosSector(0xD2, sectorReq, outputPyloadRS485);
+                        numDatosRS485 = InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
                         EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
                     }
                     //Recupera los datos de aceleracion de un segundo:
@@ -974,12 +1057,12 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                         EnviarTramaRS485(1, IDNODO, 0xF3, 2507, outputPyloadRS485);
                     }
                     break;
-                    
+
         }
 
         banRSC = 0;
         banRSI = 0;
-         
+
      }
 
 }

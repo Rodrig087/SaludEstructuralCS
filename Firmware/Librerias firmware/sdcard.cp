@@ -32,7 +32,7 @@ void Release_SD(void);
 unsigned char SD_Detect(void);
 void SD_Check(void);
 #line 1 "c:/users/public/documents/mikroelektronika/mikroc pro for dspic/include/stdbool.h"
-#line 67 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Librerias firmware/sdcard.c"
+#line 68 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Librerias firmware/sdcard.c"
 extern sfr sbit sd_CS_lat;
 extern sfr sbit sd_CS_tris;
 
@@ -59,10 +59,11 @@ unsigned char ccs;
 unsigned char SD_Read(unsigned char *Buffer, unsigned int nbytes){
  unsigned int i;
  unsigned char temp;
- for(i = 0; i <  2000 ; i++){
+ for(i = 0; i <  100 ; i++){
  temp = SPISD_Write(0xFF);
  if(temp == 0xFE) break;
- if(i ==  2000 -1) return  21 ;
+
+ if(i ==  100 -1) return 0xEE;
  }
  for(i = 0; i < nbytes; i++){
  Buffer[i] = SPISD_Write(0xFF);
@@ -134,7 +135,7 @@ unsigned char SD_Write_Block(unsigned char *Buffer, unsigned long Address){
  else if(temp == 0x06) return  24 ;
  else return  10 ;
 }
-#line 179 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Librerias firmware/sdcard.c"
+#line 181 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Librerias firmware/sdcard.c"
 unsigned char SD_Init_Try(unsigned char try_value){
  unsigned char i,init_status;
  if(try_value == 0) try_value = 1;
@@ -176,11 +177,11 @@ unsigned char SD_Init(void){
 
 
  Select_SD();
- for(i = 0; i <  2000 ; i++){
+ for(i = 0; i <  100 ; i++){
  SD_Send_Command( 0x00 ,0x00000000,0x4A);
  temp = R1_Response();
  if(temp == (1<< 0 )) break;
- if(i==( 2000 -1)) return  16 ;
+ if(i==( 100 -1)) return  16 ;
  }
 
 
@@ -189,12 +190,12 @@ unsigned char SD_Init(void){
  temp = R1_Response();
  if(temp != (1<< 0 )){
 
- for(i = 0; i <  2000 ; i++){
+ for(i = 0; i <  100 ; i++){
  if(SD_Ready() == 0) return  17 ;
  SD_Send_Command( 0x01 ,0x00000000,0x7C);
  temp = R1_Response();
  if(temp == 0x00) break;
- if(i==( 2000 -1)) return  18 ;
+ if(i==( 100 -1)) return  18 ;
  }
  } else if (temp == (1<< 0 )) {
  temp_long = Response_32b();
@@ -219,7 +220,7 @@ unsigned char SD_Init(void){
  if(temp != (1<< 0 )) return temp;
 
 
- for(i = 0; i <  2000 ; i++){
+ for(i = 0; i <  100 ; i++){
  if(SD_Ready() == 0) return  17 ;
  SD_Send_Command( 0x37 ,0x00000000,0x32);
  temp = R1_Response();
@@ -227,7 +228,7 @@ unsigned char SD_Init(void){
  SD_Send_Command( 0x29 ,0x40000000,0x3B);
  temp = R1_Response();
  if(temp == 0x00) break;
- if(i==( 2000 -1)) return  18 ;
+ if(i==( 100 -1)) return  18 ;
  }
  }
  else return temp;
@@ -343,10 +344,10 @@ void SD_Send_Command(unsigned char command,unsigned long argument, unsigned char
 unsigned char SD_Ready(void){
  unsigned int i;
  unsigned char temp;
- for(i = 0; i <  2000 ; i++){
+ for(i = 0; i <  100 ; i++){
  temp = SPISD_Write(0xFF);
  if(temp == 0xFF) break;
- if(i == ( 2000 -1)) return 0x00;
+ if(i == ( 100 -1)) return 0x00;
  }
  return temp;
 }
@@ -380,7 +381,7 @@ void Select_SD(void){
  sd_CS_lat = 0;
  asm nop;
 }
-#line 435 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Librerias firmware/sdcard.c"
+#line 437 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Librerias firmware/sdcard.c"
 unsigned char SD_Detect(void) {
 
  if (sd_detect_port == 0) {

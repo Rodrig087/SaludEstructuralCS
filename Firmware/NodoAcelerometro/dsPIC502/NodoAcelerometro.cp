@@ -518,13 +518,15 @@ unsigned char *ptrsectorReq;
 unsigned long sectorReq;
 
 
-unsigned long PSE =  2048 +100;
+unsigned long PSF;
+unsigned long PSE;
 unsigned long USF;
 unsigned long PSEC;
 unsigned long sectorSD;
 unsigned long sectorLec;
 const unsigned int clusterSizeSD = 512;
-unsigned long sectorSave =  2048 +99;
+unsigned long infoPrimerSector;
+unsigned long infoUltimoSector;
 unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
 unsigned char checkEscSD;
@@ -540,10 +542,11 @@ void ConfiguracionPrincipal();
 void Muestrear();
 void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector);
 void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
-void GuardarSectorSD(unsigned long sector);
-unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD);
+void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
+unsigned long UbicarPrimerSectorEscrito();
+unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 
@@ -605,18 +608,30 @@ void main() {
  checkLecSD = 0;
  MSRS485 = 0;
 
+
  switch ( 8 ){
+ case 2:
+ PSF = 2048;
+ USF = 3911679;
+ break;
  case 4:
+ PSF = 2048;
  USF = 7772160;
  break;
  case 8:
- USF = 15265792;
+ PSF = 2048;
+
+ USF = 16779263;
  break;
  case 16:
- USF = 30228479;
+ PSF = 2048;
+ USF = 31115263;
  break;
  }
-#line 203 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+ infoPrimerSector = PSF+ 1000 -2;
+ infoUltimoSector = PSF+ 1000 -1;
+ PSE = PSF+ 1000 ;
+#line 218 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
@@ -637,7 +652,6 @@ void main() {
 
 
  while(1){
-
 
  }
 
@@ -700,6 +714,14 @@ void ConfiguracionPrincipal(){
  T1IF_bit = 0;
  PR1 = 62500;
  IPC0bits.T1IP = 0x02;
+
+
+ T2CON = 0x0020;
+ T2CON.TON = 0;
+ T2IE_bit = 1;
+ T2IF_bit = 0;
+ PR2 = 62500;
+ IPC1bits.T2IP = 0x02;
 
 
  ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
@@ -839,7 +861,7 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
  sectorSD++;
 
 
- GuardarSectorSD(sectorSD);
+ GuardarInfoSector(sectorSD, infoUltimoSector);
 
  TEST = 0;
 
@@ -848,22 +870,22 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
 
 
 
-void GuardarSectorSD(unsigned long sector){
+void GuardarInfoSector(unsigned long datoSector, unsigned long localizacionSector){
 
 
 
  unsigned char bufferSectores[512];
- bufferSectores[0] = (sector>>24)&0xFF;
- bufferSectores[1] = (sector>>16)&0xFF;
- bufferSectores[2] = (sector>>8)&0xFF;
- bufferSectores[3] = (sector)&0xFF;
+ bufferSectores[0] = (datoSector>>24)&0xFF;
+ bufferSectores[1] = (datoSector>>16)&0xFF;
+ bufferSectores[2] = (datoSector>>8)&0xFF;
+ bufferSectores[3] = (datoSector)&0xFF;
  for (x=4;x<512;x++){
  bufferSectores[x] = 0;
  }
 
 
  for (x=0;x<5;x++){
- checkEscSD = SD_Write_Block(bufferSectores,sectorSave);
+ checkEscSD = SD_Write_Block(bufferSectores,localizacionSector);
  if (checkEscSD ==  22 ){
 
  break;
@@ -876,7 +898,42 @@ void GuardarSectorSD(unsigned long sector){
 
 
 
-unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
+unsigned long UbicarPrimerSectorEscrito(){
+
+ unsigned char bufferSectorInicio[512];
+ unsigned long primerSectorSD;
+ unsigned char *ptrPrimerSectorSD;
+
+ ptrPrimerSectorSD = (unsigned char *) & primerSectorSD;
+
+ checkLecSD = 1;
+
+ for (x=0;x<5;x++){
+
+ checkLecSD = SD_Read_Block(bufferSectorInicio, infoPrimerSector);
+
+ if (checkLecSD==0) {
+
+ *ptrPrimerSectorSD = bufferSectorInicio[3];
+ *(ptrPrimerSectorSD+1) = bufferSectorInicio[2];
+ *(ptrPrimerSectorSD+2) = bufferSectorInicio[1];
+ *(ptrPrimerSectorSD+3) = bufferSectorInicio[0];
+ break;
+ Delay_ms(5);
+ } else {
+ primerSectorSD = PSE;
+ }
+ }
+
+
+ return primerSectorSD;
+
+}
+
+
+
+
+unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD){
 
  unsigned char bufferSectorFinal[512];
  unsigned long sectorInicioSD;
@@ -892,7 +949,7 @@ unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
 
  for (x=0;x<5;x++){
 
- checkLecSD = SD_Read_Block(bufferSectorFinal, sectorSave);
+ checkLecSD = SD_Read_Block(bufferSectorFinal, infoUltimoSector);
 
  if (checkLecSD==0) {
 
@@ -917,23 +974,31 @@ unsigned long UbicarUltimoSectorSD(unsigned short sobrescribirSD){
 
 void InformacionSectores(unsigned char* tramaInfoSec){
 
+ unsigned long infoPSF;
+ unsigned long infoPSE;
+ unsigned long infoPSEC;
+ unsigned long infoSA;
+
  unsigned char *ptrPSF;
  unsigned char *ptrPSE;
  unsigned char *ptrPSEC;
  unsigned char *ptrSA;
- unsigned long PSFv =  2048 ;
+
+ infoPSF = PSF;
+ infoPSE = PSE;
 
 
- ptrPSF = (unsigned char *) & PSFv;
- ptrPSE = (unsigned char *) & PSE;
- ptrPSEC = (unsigned char *) & PSEC;
- ptrSA = (unsigned char *) & sectorSD;
+ ptrPSF = (unsigned char *) & infoPSF;
+ ptrPSE = (unsigned char *) & infoPSE;
+ ptrPSEC = (unsigned char *) & infoPSEC;
+ ptrSA = (unsigned char *) & infoSA;
+
+ infoPSEC = UbicarPrimerSectorEscrito();
 
  if (banInicioMuestreo==0){
- PSEC = 0;
- sectorSD = UbicarUltimoSectorSD(0);
+ infoSA = UbicarUltimoSectorEscrito(0);
  } else {
- sectorSD = sectorSD - 1;
+ infoSA = sectorSD - 1;
  }
 
  tramaInfoSec[0] = 0xD1;
@@ -959,54 +1024,63 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 
 
-unsigned int LeerDatosSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
  unsigned char bufferSectorReq[512];
  unsigned int numDatosSec;
-
  unsigned int contadorSector;
+ unsigned long USE;
+
+
+ if (banInicioMuestreo==0){
+ USE = UbicarUltimoSectorEscrito(0);
+ } else {
+ USE = sectorSD - 1;
+ }
 
  tramaDatosSec[0] = modoLec;
- if (modoLec==0xD2){
-
- numDatosSec = 12;
- }
- if (modoLec==0xD3){
-
- numDatosSec = 512;
- }
 
 
  if ((sectorReq>=PSE)&&(sectorReq<USF)){
 
+
+ if (sectorReq<USE){
  checkLecSD = 1;
 
- for (x=0;x<5;x++){
+
 
  checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
+ Delay_ms(5);
 
  if (checkLecSD==0) {
 
  for (y=0;y<numDatosSec;y++){
  tramaDatosSec[y+1] = bufferSectorReq[y];
  }
-#line 591 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
- numDatosSec = numDatosSec + 1;
- break;
- } else {
-
- tramaDatosSec[0] = 0xEE;
- tramaDatosSec[1] = 0xE2;
- numDatosSec = 2;
- }
- }
+ numDatosSec = 13;
+ Delay_ms(5);
 
  } else {
 
+ tramaDatosSec[1] = 0xEE;
+ tramaDatosSec[2] = 0xE3;
+ numDatosSec = 3;
 
- tramaDatosSec[0] = 0xEE;
- tramaDatosSec[1] = 0xE1;
- numDatosSec = 2;
+ }
+
+ } else {
+
+ tramaDatosSec[1] = 0xEE;
+ tramaDatosSec[2] = 0xE2;
+ numDatosSec = 3;
+ }
+
+ } else {
+
+
+ tramaDatosSec[1] = 0xEE;
+ tramaDatosSec[2] = 0xE1;
+ numDatosSec = 3;
 
  }
 
@@ -1183,7 +1257,7 @@ void GuardarPruebaSD(unsigned char* tiempoSD){
  sectorSD++;
 
 
- GuardarSectorSD(sectorSD);
+ GuardarInfoSector(sectorSD, infoUltimoSector);
 
  TEST = 0;
 
@@ -1266,6 +1340,20 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 
 
 
+void Timer2Int() org IVT_ADDR_T2INTERRUPT{
+
+ T2IF_bit = 0;
+
+
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+
+}
+
+
+
+
 void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
@@ -1275,20 +1363,28 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
  if (banRSI==2){
- if (i_rs485<numDatosRS485){
+
+ if (i_rs485<(numDatosRS485)){
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
+ T2CON.TON = 0;
 
+ if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;
+ } else {
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+ }
  }
  }
 
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
-
+ T2CON.TON = 1;
  banRSI = 1;
  i_rs485 = 0;
  }
@@ -1299,7 +1395,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==5)){
 
- if ((tramaCabeceraRS485[1]== 3 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 1 )||(tramaCabeceraRS485[1]==255)){
  funcionRS485 = tramaCabeceraRS485[2];
  *(ptrnumDatosRS485) = tramaCabeceraRS485[3];
  *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];
@@ -1333,15 +1429,16 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  for (x=0;x<6;x++){
  outputPyloadRS485[x+1] = tiempo[x];
  }
- EnviarTramaRS485(1,  3 , 0xF1, 7, outputPyloadRS485);
+ EnviarTramaRS485(1,  1 , 0xF1, 7, outputPyloadRS485);
  }
  break;
 
  case 0xF2:
 
  if (subFuncionRS485==0xD1){
- sectorSD = UbicarUltimoSectorSD(inputPyloadRS485[1]);
+ sectorSD = UbicarUltimoSectorEscrito(inputPyloadRS485[1]);
  PSEC = sectorSD;
+ GuardarInfoSector(PSEC, infoPrimerSector);
  banInicioMuestreo = 1;
  }
 
@@ -1362,19 +1459,19 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  if (subFuncionRS485==0xD1){
 
  InformacionSectores(outputPyloadRS485);
- EnviarTramaRS485(1,  3 , 0xF3, 17, outputPyloadRS485);
+ EnviarTramaRS485(1,  1 , 0xF3, 17, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD2){
 
- numDatosRS485 = LeerDatosSector(0xD2, sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  3 , 0xF3, numDatosRS485, outputPyloadRS485);
+ numDatosRS485 = InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
+ EnviarTramaRS485(1,  1 , 0xF3, numDatosRS485, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD3){
 
  RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  3 , 0xF3, 2507, outputPyloadRS485);
+ EnviarTramaRS485(1,  1 , 0xF3, 2507, outputPyloadRS485);
  }
  break;
 

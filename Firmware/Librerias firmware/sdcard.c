@@ -58,6 +58,7 @@
 #include "sdcard.h"
 // Y la libreria para utilizar variables tipo bool, true and false
 #include <stdbool.h>
+#define SD_TIME_OUT 100
 
 // *****************************************************************************
 // Declaracion de variables
@@ -93,7 +94,8 @@ unsigned char SD_Read(unsigned char *Buffer, unsigned int nbytes){
     for(i = 0; i < SD_TIME_OUT; i++){
         temp = SPISD_Write(0xFF);
         if(temp == 0xFE) break;
-        if(i == SD_TIME_OUT-1) return TOKEN_NOT_RECEIVED;
+        //if(i == SD_TIME_OUT-1) return TOKEN_NOT_RECEIVED;
+		if(i == SD_TIME_OUT-1) return 0xEE;
     }
     for(i = 0; i < nbytes; i++){
         Buffer[i] = SPISD_Write(0xFF);

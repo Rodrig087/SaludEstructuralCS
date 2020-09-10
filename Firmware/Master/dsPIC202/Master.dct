@@ -1285,6 +1285,8 @@ b8
 b9
 bancheckrs485
 banesc
+bangpsc
+bangpsi
 baninicio
 baniniciomuestreo
 banlec
@@ -1304,9 +1306,6 @@ banspi7
 banspi8
 banspi9
 banspia
-bantcgps
-bantfgps
-bantigps
 bcd2dec
 bcd2dec16
 bch
@@ -12051,6 +12050,7 @@ uen1
 uldiv
 unused
 unused
+urx_1
 urx_2
 urxda
 urxda

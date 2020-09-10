@@ -56,13 +56,12 @@ int main(int argc, char *argv[]) {
 	ConfiguracionPrincipal();
 	
 	//Obtencion de fuente de reloj:
-	if (fuenteTiempo==0){
+	if (fuenteTiempo!=0){
+		ObtenerReferenciaTiempo(fuenteTiempo);
+	} else {
 		EnviarTiempoLocal();
-	} 
-	if (fuenteTiempo==1){
-		ObtenerReferenciaTiempo(1);	
-	} 
-	
+	}
+		
 	sleep(5);
 	bcm2835_spi_end();
 	bcm2835_close();
@@ -190,13 +189,13 @@ void EnviarTiempoLocal(){
 	tiempoLocal[4] = tm->tm_min;												//Minuto
 	tiempoLocal[5] = tm->tm_sec;												//Segundo 
 		
+	printf("%0.2d/",tiempoLocal[0]);		//aa
+	printf("%0.2d/",tiempoLocal[1]);		//MM
+	printf("%0.2d ",tiempoLocal[2]);		//dd
 	printf("%0.2d:",tiempoLocal[3]);		//hh
 	printf("%0.2d:",tiempoLocal[4]);		//mm
-	printf("%0.2d ",tiempoLocal[5]);		//ss
-	printf("%0.2d/",tiempoLocal[2]);		//dd
-	printf("%0.2d/",tiempoLocal[1]);		//MM
-	printf("%0.2d\n",tiempoLocal[0]);		//aa
-	
+	printf("%0.2d\n",tiempoLocal[5]);		//ss
+		
 	bcm2835_spi_transfer(0xA4);                                                 //Envia el delimitador de inicio de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI); 
 	for (i=0;i<6;i++){
@@ -230,22 +229,30 @@ void ObtenerTiempoMaster(){
 	bcm2835_spi_transfer(0xF5);                                                 //Envia el delimitador de final de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
-	if (fuenteTiempoPic==0){
-		printf("RTC ");
-	} 
-	if (fuenteTiempoPic==1){
-		printf("GPS ");
+	switch (fuenteTiempoPic){
+			case 0: 
+					printf("RPi ");
+					break;
+			case 1:
+					printf("GPS ");
+					break;
+			case 2:
+					printf("RTC ");
+					break;
+			default:
+					printf("%d ",fuenteTiempoPic);
+					break;
 	}
-	
+		
+	printf("%0.2d/",tiempoPIC[0]);		//aa
+	printf("%0.2d/",tiempoPIC[1]);		//MM
+	printf("%0.2d ",tiempoPIC[2]);		//dd
 	printf("%0.2d:",tiempoPIC[3]);		//hh
 	printf("%0.2d:",tiempoPIC[4]);		//mm
-	printf("%0.2d ",tiempoPIC[5]);		//ss
-	printf("%0.2d/",tiempoPIC[0]);		//dd
-	printf("%0.2d/",tiempoPIC[1]);		//MM
-	printf("%0.2d\n",tiempoPIC[2]);		//aa
-	
+	printf("%0.2d\n",tiempoPIC[5]);		//ss
+		
 	//Configura el tiempo local si se escogio la opcion GPS:
-	if (fuenteTiempo==1){
+	if (fuenteTiempoPic==1){
 		SetRelojLocal(tiempoPIC);		
 	}
 
@@ -257,7 +264,12 @@ void ObtenerTiempoMaster(){
 void ObtenerReferenciaTiempo(unsigned short referencia){ 
 	//referencia = 1 -> GPS
 	//referencia = 2 -> RTC
-	printf("Obteniendo hora del GPS...\n");
+	if (referencia==1){
+		printf("Obteniendo hora del GPS...\n");	
+	} else {
+		printf("Obteniendo hora del RTC...\n");	
+	}
+	
 	bcm2835_spi_transfer(0xA6);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	bcm2835_spi_transfer(referencia);								
@@ -280,14 +292,14 @@ void SetRelojLocal(unsigned char* tramaTiempo){
 	datePIC[0] = 0x27;						//'
 	datePIC[1] = '2';
 	datePIC[2] = '0';
-	datePIC[3] = (tramaTiempo[2]/10)+48;		//aa: (19/10)+48 = 49 = '1'
-	datePIC[4] = (tramaTiempo[2]%10)+48;		//    (19%10)+48 = 57 = '9'
+	datePIC[3] = (tramaTiempo[0]/10)+48;		//aa: (19/10)+48 = 49 = '1'
+	datePIC[4] = (tramaTiempo[0]%10)+48;		//    (19%10)+48 = 57 = '9'
 	datePIC[5] = '-';	
 	datePIC[6] = (tramaTiempo[1]/10)+48;		//MM
 	datePIC[7] = (tramaTiempo[1]%10)+48;
 	datePIC[8] = '-';
-	datePIC[9] = (tramaTiempo[0]/10)+48;		//dd
-	datePIC[10] = (tramaTiempo[0]%10)+48;
+	datePIC[9] = (tramaTiempo[2]/10)+48;		//dd
+	datePIC[10] = (tramaTiempo[2]%10)+48;
 	datePIC[11] = ' ';
 	datePIC[12] = (tramaTiempo[3]/10)+48;		//hh
 	datePIC[13] = (tramaTiempo[3]%10)+48;
@@ -309,8 +321,9 @@ void SetRelojLocal(unsigned char* tramaTiempo){
 
 //**************************************************************************************************************************************
 
-
-
+//Fuenrtes de reloj: 
+//0->Red, 1->GPS, 2->RTC
+//Configurar reloj: sudo date --set '2020-09-08 16:10:00'
 
 
 

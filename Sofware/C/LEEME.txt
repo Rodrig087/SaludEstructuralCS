@@ -1,0 +1,14 @@
+Compilar:
+gcc LeerTiempoNodo.c -o /home/pi/Ejecutables/leertiemponodo -lbcm2835 -lwiringPi 
+gcc InformacionSectores.c -o /home/pi/Ejecutables/informacionsectores -lbcm2835 -lwiringPi
+gcc InspeccionarSector.c -o /home/pi/Ejecutables/inspeccionarsector -lbcm2835 -lwiringPi
+
+Informacion:
+>> leertiemponodo: Devuelve el tiempo actual de un nodo
+>> informacionsectores: Devuelve informacion relevante de los sectores (Primer sector fisico, primer sector de escritura, primer sector escrito en el ciclo de muestreo, ultimo sector escrito)
+>> inspeccionarsector: Devuelve la hora y fecha del sector seleccionado. Si el sector no es de inicio de trama, devuelve el siguiente sector inmediato que si lo es.
+
+Parametros y ejecucion:
+>> sudo ./leertiemponodo idNodo (Ejm: sudo ./leertiemponodo 2)
+>> sudo ./informacionsectores idNodo (Ejm: sudo ./informacionsectores 2)
+>> sudo ./inspeccionarsector idNodo Sector (Ejm: sudo ./inspeccionarsector 1 3312)

@@ -1,4 +1,4 @@
-#line 1 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 1 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
 #line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/tiempo_rtc.c"
 #line 37 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/tiempo_rtc.c"
 sbit CS_DS3234 at LATA2_bit;
@@ -63,20 +63,20 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
 
  SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 
+ anio = (short)(longFecha / 10000);
+ mes = (short)((longFecha%10000) / 100);
+ dia = (short)((longFecha%10000) % 100);
+
  hora = (short)(longHora / 3600);
  minuto = (short)((longHora%3600) / 60);
  segundo = (short)((longHora%3600) % 60);
 
- dia = (short)(longFecha / 10000);
- mes = (short)((longFecha%10000) / 100);
- anio = (short)((longFecha%10000) % 100);
-
+ anio = Dec2Bcd(anio);
+ dia = Dec2Bcd(dia);
+ mes = Dec2Bcd(mes);
  segundo = Dec2Bcd(segundo);
  minuto = Dec2Bcd(minuto);
  hora = Dec2Bcd(hora);
- dia = Dec2Bcd(dia);
- mes = Dec2Bcd(mes);
- anio = Dec2Bcd(anio);
 
  DS3234_write_byte( 0x80 , segundo);
  DS3234_write_byte( 0x81 , minuto);
@@ -227,13 +227,13 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
  unsigned short mes;
  unsigned short anio;
 
- hora = (short)(longHora / 3600);
- minuto = (short)((longHora%3600) / 60);
- segundo = (short)((longHora%3600) % 60);
-
  anio = (short)(longFecha / 10000);
  mes = (short)((longFecha%10000) / 100);
  dia = (short)((longFecha%10000) % 100);
+
+ hora = (short)(longHora / 3600);
+ minuto = (short)((longHora%3600) / 60);
+ segundo = (short)((longHora%3600) % 60);
 
  tramaTiempoSistema[0] = anio;
  tramaTiempoSistema[1] = mes;
@@ -269,6 +269,7 @@ void GPS_init(short conf,short NMA){
  UART1_Write_Text("$PMTK413*34\r\n");
  UART1_Write_Text("$PMTK513,1*28\r\n");
  Delay_ms(1000);
+ U1MODE.UARTEN = 0;
 }
 
 
@@ -284,8 +285,8 @@ unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS){
  tramaFecha[3] = '\0';
 
 
- datoStringF[0] = tramaDatosGPS[6];
- datoStringF[1] = tramaDatosGPS[7];
+ datoStringF[0] = tramaDatosGPS[10];
+ datoStringF[1] = tramaDatosGPS[11];
  tramaFecha[0] = atoi(ptrDatoStringF);
 
 
@@ -294,8 +295,8 @@ unsigned long RecuperarFechaGPS(unsigned char *tramaDatosGPS){
  tramaFecha[1] = atoi(ptrDatoStringF);
 
 
- datoStringF[0] = tramaDatosGPS[10];
- datoStringF[1] = tramaDatosGPS[11];
+ datoStringF[0] = tramaDatosGPS[6];
+ datoStringF[1] = tramaDatosGPS[7];
  tramaFecha[2] = atoi(ptrDatoStringF);
 
  fechaGPS = (tramaFecha[0]*10000)+(tramaFecha[1]*100)+(tramaFecha[2]);
@@ -426,7 +427,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
 
 }
-#line 21 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+#line 21 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
 unsigned int i, j, x, y;
 
 
@@ -453,7 +454,7 @@ sbit INT_SINC4_Direction at TRISB12_bit;
 
 
 unsigned int i_gps;
-unsigned char byteGPS, banTIGPS, banTFGPS, banTCGPS;
+unsigned char byteGPS, banGPSI, banGPSC;
 unsigned short banSetGPS;
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
@@ -461,7 +462,7 @@ unsigned char datosGPS[13];
 
 unsigned short tiempo[6];
 unsigned short tiempoRPI[6];
-unsigned short banSetReloj;
+unsigned short banSetReloj, banSyncReloj, banRespuestaPi;
 unsigned short fuenteReloj;
 unsigned long horaSistema, fechaSistema;
 unsigned short referenciaTiempo;
@@ -513,8 +514,8 @@ void InterrupcionP1(unsigned short funcionSPI, unsigned short subFuncionSPI, uns
 void main() {
 
  ConfiguracionPrincipal();
+ GPS_init(1,1);
  DS3234_init();
-
 
 
 
@@ -540,13 +541,14 @@ void main() {
 
  i_gps = 0;
  byteGPS = 0;
- banTIGPS = 0;
- banTFGPS = 0;
- banTCGPS = 0;
+ banGPSI = 0;
+ banGPSC = 0;
  banSetGPS = 0;
 
 
  banSetReloj = 0;
+ banSyncReloj = 0;
+ banRespuestaPi = 0;
  horaSistema = 0;
  fechaSistema = 0;
  fuenteReloj = 0;
@@ -611,7 +613,6 @@ void ConfiguracionPrincipal(){
  INT_SINC4_Direction = 0;
  RP1_Direction = 0;
  MSRS485_Direction = 0;
-
  TRISB13_bit = 1;
  TRISB14_bit = 1;
 
@@ -620,8 +621,7 @@ void ConfiguracionPrincipal(){
 
  RPINR18bits.U1RXR = 0x22;
  RPOR0bits.RP35R = 0x01;
- U1RXIE_bit = 0;
- U1RXIF_bit = 0;
+ U1RXIE_bit = 1;
  IPC2bits.U1RXIP = 0x04;
  U1STAbits.URXISEL = 0x00;
  UART1_Init(9600);
@@ -630,7 +630,6 @@ void ConfiguracionPrincipal(){
  RPINR19bits.U2RXR = 0x2F;
  RPOR1bits.RP36R = 0x03;
  U2RXIE_bit = 1;
- U2STAbits.URXISEL = 0x00;
  IPC7bits.U2RXIP = 0x04;
  U2STAbits.URXISEL = 0x00;
  UART2_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
@@ -651,13 +650,24 @@ void ConfiguracionPrincipal(){
 
 
  RPINR0 = 0x2D00;
-
+ RPINR1 = 0x002E;
  INT1IF_bit = 0;
- IPC5bits.INT1IP = 0x01;
+ INT2IF_bit = 0;
+ IPC5bits.INT1IP = 0x02;
+ IPC7bits.INT2IP = 0x01;
+
+
+ T2CON = 0x0020;
+ T2CON.TON = 0;
+ T2IE_bit = 1;
+ T2IF_bit = 0;
+ PR2 = 62500;
+ IPC1bits.T2IP = 0x02;
 
 
  SPI1IE_bit = 1;
- INT1IE_bit = 0;
+ INT1IE_bit = 1;
+ INT2IE_bit = 1;
 
  Delay_ms(200);
 
@@ -670,9 +680,6 @@ void ConfiguracionPrincipal(){
 
 
  if ((funcionSPI==0xB1)&&(subFuncionSPI==0xD1)){
- if (INT1IE_bit==0){
- INT1IE_bit = 1;
- }
 
  outputPyloadRS485[0] = 0xD1;
  for (x=1;x<7;x++){
@@ -681,20 +688,20 @@ void ConfiguracionPrincipal(){
  EnviarTramaRS485(2, 255, 0xF1, 7, outputPyloadRS485);
  }
 
+ if (banRespuestaPi==1){
 
  ptrnumBytesSPI = (unsigned char *) & numBytesSPI;
-
 
  tramaSolicitudSPI[0] = funcionSPI;
  tramaSolicitudSPI[1] = subFuncionSPI;
  tramaSolicitudSPI[2] = *(ptrnumBytesSPI);
  tramaSolicitudSPI[3] = *(ptrnumBytesSPI+1);
 
-
  RP1 = 1;
  Delay_us(20);
  RP1 = 0;
-
+ banRespuestaPi = 0;
+ }
 }
 
 
@@ -767,7 +774,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
 
- if ((banSetReloj==0)&&(bufferSPI==0xA4)){
+ if ((banSPI4==0)&&(bufferSPI==0xA4)){
  banSPI4 = 1;
  j = 0;
  }
@@ -776,20 +783,22 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  j++;
  }
  if ((banSPI4==1)&&(bufferSPI==0xF4)){
+ banSPI4 = 0;
  horaSistema = RecuperarHoraRPI(tiempoRPI);
  fechaSistema = RecuperarFechaRPI(tiempoRPI);
  DS3234_setDate(horaSistema, fechaSistema);
  horaSistema = RecuperarHoraRTC();
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- banSPI4 = 0;
+ fuenteReloj = 0;
  banSetReloj = 1;
+ banRespuestaPi = 1;
  InterrupcionP1(0xB1,0xD1,6);
  }
 
 
 
- if ((banSetReloj==1)&&(bufferSPI==0xA5)){
+ if ((banSPI5==0)&&(bufferSPI==0xA5)){
  banSPI5 = 1;
  j = 0;
  SPI1BUF = fuenteReloj;
@@ -800,12 +809,11 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
  if ((banSPI5==1)&&(bufferSPI==0xF5)){
  banSPI5 = 0;
- banSetReloj = 0;
  }
 
 
 
- if ((banSetReloj==0)&&(bufferSPI==0xA6)){
+ if ((banSPI6==0)&&(bufferSPI==0xA6)){
  banSPI6 = 1;
  }
  if ((banSPI6==1)&&(bufferSPI!=0xA6)&&(bufferSPI!=0xF6)){
@@ -813,22 +821,19 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
  if ((banSPI6==1)&&(bufferSPI==0xF6)){
  banSPI6 = 0;
+ banSetReloj = 1;
+ banRespuestaPi = 1;
  if (referenciaTiempo==1){
 
- banTIGPS = 0;
- banTCGPS = 0;
- i_gps = 0;
-
- if (U1RXIE_bit==0){
- U1RXIE_bit = 1;
- }
+ banGPSI = 1;
+ banGPSC = 0;
+ U1MODE.UARTEN = 1;
  } else {
 
  horaSistema = RecuperarHoraRTC();
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- fuenteReloj = 0;
- banSetReloj = 1;
+ fuenteReloj = 2;
  InterrupcionP1(0xB1,0xD1,6);
  }
  }
@@ -844,6 +849,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banSPI7==1)&&(bufferSPI==0xF7)){
  banSPI7 = 0;
  outputPyloadRS485[0] = 0xD2;
+
  EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);
  }
 
@@ -917,7 +923,9 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  if ((banSPIA==1)&&(bufferSPI==0xFA)){
  banSPIA = 0;
  }
-#line 547 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+
+
+
 }
 
 
@@ -927,32 +935,162 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  INT1IF_bit = 0;
 
+ if (banSetReloj==1){
  horaSistema++;
  INT_SINC = ~INT_SINC;
-
 
 
  INT_SINC1 = 1;
  INT_SINC2 = 1;
  INT_SINC3 = 1;
  INT_SINC4 = 1;
- Delay_us(20);
+ Delay_ms(1);
 
  INT_SINC1 = 0;
  INT_SINC2 = 0;
  INT_SINC3 = 0;
  INT_SINC4 = 0;
-
- if (horaSistema==86400){
- horaSistema = 0;
  }
- if (banInicio==1){
 
+
+ if ((horaSistema!=0)&&(horaSistema%3600==0)){
+ banRespuestaPi = 1;
+
+ banGPSI = 1;
+ banGPSC = 0;
+ U1MODE.UARTEN = 1;
+ }
+
+}
+
+
+
+
+void int_2() org IVT_ADDR_INT2INTERRUPT {
+
+ INT2IF_bit = 0;
+
+ if (banSyncReloj==1){
+ Delay_ms(500);
+ DS3234_setDate(horaSistema, fechaSistema);
+ banSyncReloj = 0;
+
+ if ((banRespuestaPi==1)||(horaSistema<5)){
+ InterrupcionP1(0xB1,0xD1,6);
+ }
+ }
+
+}
+
+
+
+
+void Timer2Int() org IVT_ADDR_T2INTERRUPT{
+
+ T2IF_bit = 0;
+
+
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+
+}
+
+
+
+
+void urx_1() org IVT_ADDR_U1RXINTERRUPT {
+
+
+ U1RXIF_bit = 0;
+ byteGPS = U1RXREG;
+ U1STA.OERR = 0;
+
+
+ if (banGPSI==3){
+ if (byteGPS!=0x2A){
+ tramaGPS[i_gps] = byteGPS;
+ i_gps++;
+ } else {
+ banGPSI = 0;
+ banGPSC = 1;
+ }
+ }
+
+
+ if ((banGPSI==1)){
+ if (byteGPS==0x24){
+ banGPSI = 2;
+ i_gps = 0;
+ }
+ }
+ if ((banGPSI==2)&&(i_gps<6)){
+ tramaGPS[i_gps] = byteGPS;
+ i_gps++;
+ }
+ if ((banGPSI==2)&&(i_gps==6)){
+
+ if (tramaGPS[1]=='G'&&tramaGPS[2]=='P'&&tramaGPS[3]=='R'&&tramaGPS[4]=='M'&&tramaGPS[5]=='C'){
+ banGPSI = 3;
+ i_gps = 0;
+ } else {
+ banGPSI = 0;
+ banGPSC = 0;
+ i_gps = 0;
+
+ horaSistema = RecuperarHoraRTC();
+ fechaSistema = RecuperarFechaRTC();
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ fuenteReloj = 5;
+ InterrupcionP1(0xB1,0xD1,6);
+ banGPSI = 0;
+ banGPSC = 0;
+ i_gps = 0;
+ U1MODE.UARTEN = 0;
+ }
+ }
+
+
+ if (banGPSC==1){
+
+ if (tramaGPS[12]==0x41) {
+ for (x=0;x<6;x++){
+ datosGPS[x] = tramaGPS[x+1];
+ }
+
+ for (x=44;x<54;x++){
+ if (tramaGPS[x]==0x2C){
+ for (y=0;y<6;y++){
+ datosGPS[6+y] = tramaGPS[x+y+1];
+ }
+ }
+ }
+ horaSistema = RecuperarHoraGPS(datosGPS);
+ fechaSistema = RecuperarFechaGPS(datosGPS);
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ fuenteReloj = 1;
+ banSyncReloj = 1;
+ } else {
+
+ horaSistema = RecuperarHoraRTC();
+ fechaSistema = RecuperarFechaRTC();
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ fuenteReloj = 6;
+ InterrupcionP1(0xB1,0xD1,6);
+ }
+
+ banGPSI = 0;
+ banGPSC = 0;
+ i_gps = 0;
+ U1MODE.UARTEN = 0;
 
  }
 
 }
-#line 667 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/Master.c"
+
+
+
+
 void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
 
@@ -962,18 +1100,28 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
 
  if (banRSI==2){
- if (i_rs485<numDatosRS485){
+
+ if (i_rs485<(numDatosRS485+2)){
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
+ T2CON.TON = 0;
+
+ if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;
+ } else {
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+ }
  }
  }
 
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
+ T2CON.TON = 1;
  banRSI = 1;
  i_rs485 = 0;
  }
@@ -985,7 +1133,6 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  if ((banRSI==1)&&(i_rs485==5)){
 
  if (tramaCabeceraRS485[1]==direccionRS485){
-
  funcionRS485 = tramaCabeceraRS485[2];
  *(ptrnumDatosRS485) = tramaCabeceraRS485[3];
  *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];

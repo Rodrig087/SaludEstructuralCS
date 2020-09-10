@@ -36,7 +36,7 @@ Count=0
 Count=0
 [SEARCH_PATH]
 Count=4
-Path0=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for dsPIC\Defs\
+Path0=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for dsPIC\defs\
 Path1=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for dsPIC\uses\
 Path2=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\NodoAcelerometro\dsPIC202\
 Path3=C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Librerias firmware\

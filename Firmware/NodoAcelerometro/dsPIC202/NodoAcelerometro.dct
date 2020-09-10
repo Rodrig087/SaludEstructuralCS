@@ -3998,8 +3998,8 @@ gie
 gie
 gie_bit
 guardarbuffersd
+guardarinfosector
 guardarpruebasd
-guardarsectorsd
 guardartramasd
 half
 half
@@ -5065,10 +5065,13 @@ indxhld_8
 indxhld_8_bit
 indxhld_9
 indxhld_9_bit
+infoprimersector
 informacionsectores
+infoultimosector
 iniciosistema
 init_ok
 inputpyloadrs485
+inspeccionarsector
 int_1
 int0ep
 int0ep
@@ -5945,7 +5948,6 @@ lebdly2
 lebdly2bits
 lebdly3
 lebdly3bits
-leerdatossector
 lendian
 lendian
 lendian_bit
@@ -8093,6 +8095,7 @@ psemip_2_bit
 psemip0
 psemip1
 psemip2
+psf
 psidl
 psidl
 psidl_bit
@@ -9497,7 +9500,6 @@ sdi2r5
 sdi2r6
 sectorlec
 sectorreq
-sectorsave
 sectorsd
 seien
 seien
@@ -12075,7 +12077,8 @@ uarten
 uarten_bit
 uarten_u1mode_bit
 uarten_u2mode_bit
-ubicarultimosectorsd
+ubicarprimersectorescrito
+ubicarultimosectorescrito
 uen
 uen
 uen_0
