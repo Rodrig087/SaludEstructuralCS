@@ -76,7 +76,7 @@ unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
 unsigned char tramaCabeceraRS485[10];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
 unsigned char inputPyloadRS485[2600];                                            //Vector para almacenar el pyload de la trama RS485 recibida
-unsigned char outputPyloadRS485[10];                                            //Vector para almacenar el pyload de la trama RS485 a enviar
+unsigned char outputPyloadRS485[15];                                            //Vector para almacenar el pyload de la trama RS485 a enviar
 unsigned short direccionRS485;                                                  //Varaible para la direccion del nodo. Broadcast = 255
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
 unsigned short subFuncionRS485;                                                 //Sub funcion requerida: 0xD1, 0xD2, 0xD3  (Depende de la funcion)
@@ -692,14 +692,15 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      //Recupera el pyload de la trama RS485:                                    //Aqui deberia entrar despues de recuperar la cabecera de trama
      if (banRSI==2){
         //Recupera el pyload mas 2 bytes de final de trama:
-        if (i_rs485<(numDatosRS485)){
+        if (i_rs485<(numDatosRS485+2)){
            inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
            T2CON.TON = 0;                                                       //Detiene el TimeOut
+           /*
            banRSI = 0;                                                          //Limpia la bandera de inicio de trama
            banRSC = 1;                                                          //Activa la bandera de trama completa
-           /*
+           */
            //Verifica los bytes de final de trama:
            if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){ 
               banRSI = 0;                                                       //Limpia la bandera de inicio de trama
@@ -709,7 +710,7 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
               banRSC = 0;
               i_rs485 = 0;
            }
-           */
+
         }
      }
 

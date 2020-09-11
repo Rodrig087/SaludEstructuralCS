@@ -39,6 +39,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
         }
         UART1_Write(0x0D);                                                      //Envia el primer delimitador de final de la trama
         UART1_Write(0x0A);                                                      //Envia el segundo delimitador de final de la trama
+		UART1_Write(0x00);                                                      //Envia un byte adicional
         while(UART1_Tx_Idle()==0);                                              //Espera hasta que se haya terminado de enviar todo el dato por UART antes de continuar
         MSRS485 = 0;                                                            //Establece el Max485 en modo lectura
      }
@@ -55,7 +56,8 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
         }
         UART2_Write(0x0D);                                                      //Envia el primer delimitador de final de la trama
         UART2_Write(0x0A);                                                      //Envia el segundo delimitador de final de la trama
-        while(UART2_Tx_Idle()==0);                                              //Espera hasta que se haya terminado de enviar todo el dato por UART antes de continuar
+        UART2_Write(0x00);                                                      //Envia un byte adicional
+		while(UART2_Tx_Idle()==0);                                              //Espera hasta que se haya terminado de enviar todo el dato por UART antes de continuar
         MSRS485 = 0;                                                            //Establece el Max485 en modo lectura
      }
 

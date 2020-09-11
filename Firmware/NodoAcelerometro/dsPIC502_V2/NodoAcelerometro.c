@@ -17,7 +17,7 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 1                                                                //Direccion del nodo
+#define IDNODO 2                                                                //Direccion del nodo
 #define SIZESD 8                                                                //Capacidad de la SD (GB)
 #define DELTASECTOR 1000                                                        //Desface donde empiezan los datos del sector a partir del PSF
 
@@ -262,7 +262,7 @@ void ConfiguracionPrincipal(){
      sd_CS_tris = 0;                                                            //CS SD
      MSRS485_Direction = 0;                                                     //MAX485 MS
      sd_detect_tris = 1;                                                        //Pin detection SD
-     TRISB14_bit = 1;                                                           //Pin de interrupcion
+     TRISB13_bit = 1;                                                           //Pin de interrupcion
 
      //Habilita las interrupciones globales:
      INTCON2.GIE = 1;                                                           //Habilita las interrupciones globales
@@ -285,7 +285,7 @@ void ConfiguracionPrincipal(){
      SPI2_Init();                                                               //Inicializa el modulo SPI2
 
      //Configuracion de la interrupcion externa INT1
-     RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
+     RPINR0 = 0x2D00;                                                           //Asigna INT1 al RB14/RPI46
      INT1IE_bit = 1;                                                            //Interrupcion externa INT1
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
      IPC5bits.INT1IP = 0x01;                                                    //Prioridad en la interrupocion externa 1

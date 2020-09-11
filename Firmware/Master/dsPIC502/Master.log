@@ -10,7 +10,7 @@ hint: 0	1004	interrupt handler (int_2 at 0x004E)	Master.c
 hint: 0	1004	interrupt handler (Timer2Int at 0x0022)	Master.c
 hint: 0	1004	interrupt handler (urx_1 at 0x002A)	Master.c
 hint: 0	1004	interrupt handler (urx_2 at 0x0050)	Master.c
-diagnostics: 762	123	Compiled Successfully	Master.c
+diagnostics: 763	123	Compiled Successfully	Master.c
 warning: 172	1519	Logical expression is always: 'False'	Master.c
 hint: 77	1164	Variable 'value' has been eliminated by optimizer	Master.c
 hint: 130	1164	Variable 'valueRead' has been eliminated by optimizer	Master.c
@@ -23,11 +23,11 @@ hint: 96	1164	Variable 'horaGPS' has been eliminated by optimizer	Master.c
 hint: 12	1164	Variable 'fechaRPi' has been eliminated by optimizer	Master.c
 hint: 23	1164	Variable 'horaRPi' has been eliminated by optimizer	Master.c
 hint: 22	1164	Variable 'ptrnumDatos' has been eliminated by optimizer	Master.c
-diagnostics: 0	127	All files Compiled in 203 ms	 
+diagnostics: 0	127	All files Compiled in 219 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
-hint: 0	1144	Static RAM (bytes): 2965   Dynamic RAM (bytes): 25706	Static RAM (bytes): 2965   Dynamic RAM (bytes): 25706
-hint: 0	1144	Used ROM (bytes): 6928 (4%)  Free ROM (bytes): 169180 (96%)	Used ROM (bytes): 6928 (4%)  Free ROM (bytes): 169180 (96%)
+hint: 0	1144	Static RAM (bytes): 2970   Dynamic RAM (bytes): 25702	Static RAM (bytes): 2970   Dynamic RAM (bytes): 25702
+hint: 0	1144	Used ROM (bytes): 6982 (4%)  Free ROM (bytes): 169126 (96%)	Used ROM (bytes): 6982 (4%)  Free ROM (bytes): 169126 (96%)
 diagnostics: 0	125	Project Linked Successfully	Master.mcpds
-diagnostics: 0	128	Linked in 437 ms	 
-diagnostics: 0	129	Project 'Master.mcpds' completed: 984 ms	 
-diagnostics: 0	103	Finished successfully: 10 sep. 2020, 10:55:02	Master.mcpds
+diagnostics: 0	128	Linked in 438 ms	 
+diagnostics: 0	129	Project 'Master.mcpds' completed: 1032 ms	 
+diagnostics: 0	103	Finished successfully: 10 sep. 2020, 19:53:20	Master.mcpds

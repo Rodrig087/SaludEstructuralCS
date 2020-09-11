@@ -1849,8 +1849,8 @@ _ConfiguracionPrincipal:
 	BCLR	TRISB12_bit, BitPos(TRISB12_bit+0)
 ;NodoAcelerometro.c,264 :: 		sd_detect_tris = 1;                                                        //Pin detection SD
 	BSET	TRISA4_bit, BitPos(TRISA4_bit+0)
-;NodoAcelerometro.c,265 :: 		TRISB14_bit = 1;                                                           //Pin de interrupcion
-	BSET	TRISB14_bit, BitPos(TRISB14_bit+0)
+;NodoAcelerometro.c,265 :: 		TRISB13_bit = 1;                                                           //Pin de interrupcion
+	BSET	TRISB13_bit, BitPos(TRISB13_bit+0)
 ;NodoAcelerometro.c,268 :: 		INTCON2.GIE = 1;                                                           //Habilita las interrupciones globales
 	BSET	INTCON2, #15
 ;NodoAcelerometro.c,271 :: 		RPINR18bits.U1RXR = 0x2F;                                                  //Configura el pin RB15/RPI47 como Rx1
@@ -1941,8 +1941,8 @@ _ConfiguracionPrincipal:
 	BSET	SPI2STAT, #15
 ;NodoAcelerometro.c,285 :: 		SPI2_Init();                                                               //Inicializa el modulo SPI2
 	CALL	_SPI2_Init
-;NodoAcelerometro.c,288 :: 		RPINR0 = 0x2E00;                                                           //Asigna INT1 al RB14/RPI46
-	MOV	#11776, W0
+;NodoAcelerometro.c,288 :: 		RPINR0 = 0x2D00;                                                           //Asigna INT1 al RB14/RPI46
+	MOV	#11520, W0
 	MOV	WREG, RPINR0
 ;NodoAcelerometro.c,289 :: 		INT1IE_bit = 1;                                                            //Interrupcion externa INT1
 	BSET	INT1IE_bit, BitPos(INT1IE_bit+0)
@@ -4552,7 +4552,7 @@ L__urx_1328:
 ;NodoAcelerometro.c,981 :: 		if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
 	MOV	#lo_addr(_tramaCabeceraRS485+1), W0
 	MOV.B	[W0], W0
-	CP.B	W0, #1
+	CP.B	W0, #2
 	BRA NZ	L__urx_1489
 	GOTO	L__urx_1339
 L__urx_1489:
@@ -4709,7 +4709,7 @@ L_urx_1280:
 ;NodoAcelerometro.c,1015 :: 		EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);//Envia la hora local al Master
 	MOV	#7, W13
 	MOV.B	#241, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0
@@ -4800,7 +4800,7 @@ L__urx_1498:
 ;NodoAcelerometro.c,1045 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 17, outputPyloadRS485);
 	MOV	#17, W13
 	MOV.B	#243, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0
@@ -4826,7 +4826,7 @@ L__urx_1499:
 ;NodoAcelerometro.c,1051 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
 	MOV	W0, W13
 	MOV.B	#243, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0
@@ -4850,7 +4850,7 @@ L__urx_1500:
 ;NodoAcelerometro.c,1057 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 2507, outputPyloadRS485);
 	MOV	#2507, W13
 	MOV.B	#243, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0

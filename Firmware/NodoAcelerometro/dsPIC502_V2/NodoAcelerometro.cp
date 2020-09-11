@@ -1,4 +1,4 @@
-#line 1 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+#line 1 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
 #line 1 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
 #line 96 "c:/users/milto/milton/rsa/git/salud estructural/saludestructuralcs/firmware/librerias firmware/adxl355_spi.c"
 sbit CS_ADXL355 at LATA3_bit;
@@ -465,7 +465,7 @@ void Release_SD(void);
 unsigned char SD_Detect(void);
 void SD_Check(void);
 #line 1 "c:/users/public/documents/mikroelektronika/mikroc pro for dspic/include/stdbool.h"
-#line 29 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+#line 29 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
 unsigned int i, j, x, y;
 
 
@@ -633,7 +633,7 @@ void main() {
  infoPrimerSector = PSF+ 1000 -2;
  infoUltimoSector = PSF+ 1000 -1;
  PSE = PSF+ 1000 ;
-#line 218 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+#line 218 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
@@ -681,7 +681,7 @@ void ConfiguracionPrincipal(){
  sd_CS_tris = 0;
  MSRS485_Direction = 0;
  sd_detect_tris = 1;
- TRISB14_bit = 1;
+ TRISB13_bit = 1;
 
 
  INTCON2.GIE = 1;
@@ -704,7 +704,7 @@ void ConfiguracionPrincipal(){
  SPI2_Init();
 
 
- RPINR0 = 0x2E00;
+ RPINR0 = 0x2D00;
  INT1IE_bit = 1;
  INT1IF_bit = 0;
  IPC5bits.INT1IP = 0x01;
@@ -1397,7 +1397,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==5)){
 
- if ((tramaCabeceraRS485[1]== 1 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 2 )||(tramaCabeceraRS485[1]==255)){
  funcionRS485 = tramaCabeceraRS485[2];
  *(ptrnumDatosRS485) = tramaCabeceraRS485[3];
  *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];
@@ -1431,7 +1431,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  for (x=0;x<6;x++){
  outputPyloadRS485[x+1] = tiempo[x];
  }
- EnviarTramaRS485(1,  1 , 0xF1, 7, outputPyloadRS485);
+ EnviarTramaRS485(1,  2 , 0xF1, 7, outputPyloadRS485);
  }
  break;
 
@@ -1461,19 +1461,19 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  if (subFuncionRS485==0xD1){
 
  InformacionSectores(outputPyloadRS485);
- EnviarTramaRS485(1,  1 , 0xF3, 17, outputPyloadRS485);
+ EnviarTramaRS485(1,  2 , 0xF3, 17, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD2){
 
  numDatosRS485 = InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  1 , 0xF3, numDatosRS485, outputPyloadRS485);
+ EnviarTramaRS485(1,  2 , 0xF3, numDatosRS485, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD3){
 
  RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  1 , 0xF3, 2507, outputPyloadRS485);
+ EnviarTramaRS485(1,  2 , 0xF3, 2507, outputPyloadRS485);
  }
  break;
 

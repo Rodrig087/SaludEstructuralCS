@@ -406,6 +406,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
  UART1_Write(0x0D);
  UART1_Write(0x0A);
+ UART1_Write(0x00);
  while(UART1_Tx_Idle()==0);
  MSRS485 = 0;
  }
@@ -422,6 +423,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
  UART2_Write(0x0D);
  UART2_Write(0x0A);
+ UART2_Write(0x00);
  while(UART2_Tx_Idle()==0);
  MSRS485 = 0;
  }
@@ -486,7 +488,7 @@ unsigned char byteRS485;
 unsigned int i_rs485;
 unsigned char tramaCabeceraRS485[10];
 unsigned char inputPyloadRS485[2600];
-unsigned char outputPyloadRS485[10];
+unsigned char outputPyloadRS485[15];
 unsigned short direccionRS485;
 unsigned short funcionRS485;
 unsigned short subFuncionRS485;
@@ -1102,14 +1104,21 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  if (banRSI==2){
 
- if (i_rs485<(numDatosRS485)){
+ if (i_rs485<(numDatosRS485+2)){
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
  T2CON.TON = 0;
+#line 705 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
+ if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;
-#line 713 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
+ } else {
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+ }
+
  }
  }
 
