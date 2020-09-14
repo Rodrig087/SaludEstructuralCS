@@ -13,11 +13,15 @@
 void SPISD_Init(unsigned char speed) {
     SPI1STAT.SPIEN = 0;                                                         //Desabilita el SPI1
 
-// Configuring SPI speed considering a 80MHz crystal = 40MIPS
+// Configuracion velocidad SPI considerando cristal 80MHz = 40MIPS:
     if(speed == FAST) {
-        // SPI Clock Speed = 5MHz
+        // SPI Clock Speed = 2MHz:
+        //SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_3, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
+		// SPI Clock Speed = 5MHz:
         SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_2, _SPI_PRESCALE_PRI_16, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
-    } else {
+		// SPI Clock Speed = 10MHz:
+        //SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_4, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
+	} else {
         // SPI Clock Speed = 625KHz
         SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
     }

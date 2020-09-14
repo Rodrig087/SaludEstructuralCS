@@ -6,10 +6,12 @@ diagnostics: 0	122	Compilation Started	tiempo_rtc.c
 hint: 89	1163	Variable 'valueSet' has been declared, but not used	tiempo_rtc.c
 hint: 0	1004	interrupt handler (spi_1 at 0x0028)	Master.c
 hint: 0	1004	interrupt handler (int_1 at 0x003C)	Master.c
+hint: 0	1004	interrupt handler (int_2 at 0x004E)	Master.c
+hint: 0	1004	interrupt handler (Timer2Int at 0x0022)	Master.c
 hint: 0	1004	interrupt handler (urx_1 at 0x002A)	Master.c
 hint: 0	1004	interrupt handler (urx_2 at 0x0050)	Master.c
-diagnostics: 703	123	Compiled Successfully	Master.c
-warning: 170	1519	Logical expression is always: 'False'	Master.c
+diagnostics: 783	123	Compiled Successfully	Master.c
+warning: 172	1519	Logical expression is always: 'False'	Master.c
 hint: 77	1164	Variable 'value' has been eliminated by optimizer	Master.c
 hint: 130	1164	Variable 'valueRead' has been eliminated by optimizer	Master.c
 hint: 131	1164	Variable 'hora' has been eliminated by optimizer	Master.c
@@ -21,11 +23,11 @@ hint: 96	1164	Variable 'horaGPS' has been eliminated by optimizer	Master.c
 hint: 12	1164	Variable 'fechaRPi' has been eliminated by optimizer	Master.c
 hint: 23	1164	Variable 'horaRPi' has been eliminated by optimizer	Master.c
 hint: 22	1164	Variable 'ptrnumDatos' has been eliminated by optimizer	Master.c
-diagnostics: 0	127	All files Compiled in 235 ms	 
+diagnostics: 0	127	All files Compiled in 219 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
-hint: 0	1144	Static RAM (bytes): 2964   Dynamic RAM (bytes): 25708	Static RAM (bytes): 2964   Dynamic RAM (bytes): 25708
-hint: 0	1144	Used ROM (bytes): 6604 (4%)  Free ROM (bytes): 169504 (96%)	Used ROM (bytes): 6604 (4%)  Free ROM (bytes): 169504 (96%)
+hint: 0	1144	Static RAM (bytes): 2970   Dynamic RAM (bytes): 25702	Static RAM (bytes): 2970   Dynamic RAM (bytes): 25702
+hint: 0	1144	Used ROM (bytes): 7072 (4%)  Free ROM (bytes): 169036 (96%)	Used ROM (bytes): 7072 (4%)  Free ROM (bytes): 169036 (96%)
 diagnostics: 0	125	Project Linked Successfully	Master.mcpds
-diagnostics: 0	128	Linked in 250 ms	 
-diagnostics: 0	129	Project 'Master.mcpds' completed: 704 ms	 
-diagnostics: 0	103	Finished successfully: 25 ago. 2020, 12:01:46	Master.mcpds
+diagnostics: 0	128	Linked in 297 ms	 
+diagnostics: 0	129	Project 'Master.mcpds' completed: 734 ms	 
+diagnostics: 0	103	Finished successfully: 13 sep. 2020, 23:39:09	Master.mcpds

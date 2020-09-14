@@ -30,6 +30,14 @@ main
 				SPISD_Write
 		Release_SD
 int_1
+	GuardarInfoSector
+		SD_Write_Block
+			Select_SD
+			SD_Ready
+			SD_Send_Command
+			R1_Response
+			SPISD_Write
+			Release_SD
 	AjustarTiempoSistema
 		_Divide_32x32
 		_Modulus_32x32
@@ -48,14 +56,7 @@ int_1
 		GuardarTramaSD
 			GuardarBufferSD
 				SD_Write_Block
-					Select_SD
-					SD_Ready
-					SD_Send_Command
-					R1_Response
-					SPISD_Write
-					Release_SD
 			GuardarInfoSector
-				SD_Write_Block
 urx_1
 	RecuperarHoraRPI
 		_Multiply_32x32
@@ -83,6 +84,7 @@ urx_1
 	InspeccionarSector
 		UbicarUltimoSectorEscrito
 		SD_Read_Block
+		EnviarTramaRS485
 	RecuperarTramaAceleracion
 		SD_Read_Block
 Timer2Int

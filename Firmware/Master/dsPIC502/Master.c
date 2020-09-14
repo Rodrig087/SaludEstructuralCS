@@ -170,8 +170,7 @@ void main() {
      SPI1BUF = 0x00;
 
      while(1){
-              //EnviarTramaRS485(2, 255, 0xF3, 10, tramaPruebaRS485);
-              //Delay_ms(100);
+              asm CLRWDT;         //Clear the watchdog timer
      }
 
 }
@@ -528,6 +527,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
      
      if (banSetReloj==1){
          horaSistema++;                                                         //Incrementa el reloj del sistema
+         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
          INT_SINC = ~INT_SINC;                                                  //TEST
          //Genera los pulsos de interrupcion en los nodos:
          //INT_SINC = 1;
@@ -562,9 +562,28 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
      INT2IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT2
      
      if (banSyncReloj==1){
-         Delay_ms(500);                                                         //Retraso necesario para sincronizar el RTC con el PPS (Consultar Datasheet del DS3234)
+         //Cumple en este turno las tareas del pulso SQW:
+         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+         INT_SINC = ~INT_SINC;                                                  //TEST
+         //Genera los pulsos de interrupcion en los nodos:
+         //INT_SINC = 1;
+         INT_SINC1 = 1;
+         INT_SINC2 = 1;
+         INT_SINC3 = 1;
+         INT_SINC4 = 1;
+         Delay_ms(1);
+         //INT_SINC = 0;
+         INT_SINC1 = 0;
+         INT_SINC2 = 0;
+         INT_SINC3 = 0;
+         INT_SINC4 = 0;
+
+         //Realiza el retraso necesario para sincronizar el RTC con el PPS (Consultar Datasheet del DS3234)
+         Delay_ms(500);
          DS3234_setDate(horaSistema, fechaSistema);                             //Configura la hora en el RTC con la hora recuperada de la RPi
+         
          banSyncReloj = 0;
+         banSetReloj = 1;                                                       //Activa esta bandera para continuar trabajando con el pulso SQW
          //Sincroniza el tiempo de los nodos cuando se envia una solicitud desde la Rpi o a las 0 horas:
          if ((banRespuestaPi==1)||(horaSistema<5)){                             //**Puede que la hora del sistema se haya incrementado al llegar hasta aqui
             InterrupcionP1(0xB1,0xD1,6);                                        //Envia la hora local a la RPi y a los nodos
@@ -661,6 +680,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del gps
            fuenteReloj = 1;                                                     //Indica que se obtuvo la hora del GPS
            banSyncReloj = 1;
+           banSetReloj = 0;
         } else {
            //Recupera la hora del RTC:
            horaSistema = RecuperarHoraRTC();                                    //Recupera la hora del RTC

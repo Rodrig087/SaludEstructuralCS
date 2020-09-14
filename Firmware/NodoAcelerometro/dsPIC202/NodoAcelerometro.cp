@@ -157,20 +157,20 @@ void DS3234_setDate(unsigned long longHora, unsigned long longFecha){
 
  SPI2_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_LOW, _SPI_ACTIVE_2_IDLE);
 
+ anio = (short)(longFecha / 10000);
+ mes = (short)((longFecha%10000) / 100);
+ dia = (short)((longFecha%10000) % 100);
+
  hora = (short)(longHora / 3600);
  minuto = (short)((longHora%3600) / 60);
  segundo = (short)((longHora%3600) % 60);
 
- dia = (short)(longFecha / 10000);
- mes = (short)((longFecha%10000) / 100);
- anio = (short)((longFecha%10000) % 100);
-
+ anio = Dec2Bcd(anio);
+ dia = Dec2Bcd(dia);
+ mes = Dec2Bcd(mes);
  segundo = Dec2Bcd(segundo);
  minuto = Dec2Bcd(minuto);
  hora = Dec2Bcd(hora);
- dia = Dec2Bcd(dia);
- mes = Dec2Bcd(mes);
- anio = Dec2Bcd(anio);
 
  DS3234_write_byte( 0x80 , segundo);
  DS3234_write_byte( 0x81 , minuto);
@@ -321,13 +321,13 @@ void AjustarTiempoSistema(unsigned long longHora, unsigned long longFecha, unsig
  unsigned short mes;
  unsigned short anio;
 
- hora = (short)(longHora / 3600);
- minuto = (short)((longHora%3600) / 60);
- segundo = (short)((longHora%3600) % 60);
-
  anio = (short)(longFecha / 10000);
  mes = (short)((longFecha%10000) / 100);
  dia = (short)((longFecha%10000) % 100);
+
+ hora = (short)(longHora / 3600);
+ minuto = (short)((longHora%3600) / 60);
+ segundo = (short)((longHora%3600) % 60);
 
  tramaTiempoSistema[0] = anio;
  tramaTiempoSistema[1] = mes;
@@ -379,6 +379,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
  UART1_Write(0x0D);
  UART1_Write(0x0A);
+ UART1_Write(0x00);
  while(UART1_Tx_Idle()==0);
  MSRS485 = 0;
  }
@@ -395,6 +396,7 @@ void EnviarTramaRS485(unsigned short puertoUART, unsigned short direccion, unsig
  }
  UART2_Write(0x0D);
  UART2_Write(0x0A);
+ UART2_Write(0x00);
  while(UART2_Tx_Idle()==0);
  MSRS485 = 0;
  }
@@ -507,7 +509,7 @@ unsigned short banRSI, banRSC;
 unsigned char byteRS485;
 unsigned int i_rs485;
 unsigned char tramaCabeceraRS485[10];
-unsigned char inputPyloadRS485[10];
+unsigned char inputPyloadRS485[15];
 unsigned char outputPyloadRS485[2600];
 unsigned int numDatosRS485;
 unsigned char *ptrnumDatosRS485;
@@ -546,7 +548,7 @@ void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
 unsigned long UbicarPrimerSectorEscrito();
 unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 
@@ -652,7 +654,7 @@ void main() {
 
 
  while(1){
-
+ asm CLRWDT;
  }
 
 }
@@ -714,6 +716,14 @@ void ConfiguracionPrincipal(){
  T1IF_bit = 0;
  PR1 = 62500;
  IPC0bits.T1IP = 0x02;
+
+
+ T2CON = 0x0020;
+ T2CON.TON = 0;
+ T2IE_bit = 1;
+ T2IF_bit = 0;
+ PR2 = 62500;
+ IPC1bits.T2IP = 0x02;
 
 
  ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
@@ -1016,12 +1026,16 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 
 
-unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
  unsigned char bufferSectorReq[512];
  unsigned int numDatosSec;
  unsigned int contadorSector;
  unsigned long USE;
+
+ if (modoLec==0xD2){
+ TEST = ~TEST;
+ }
 
 
  if (banInicioMuestreo==0){
@@ -1035,14 +1049,12 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
 
  if ((sectorReq>=PSE)&&(sectorReq<USF)){
 
-
  if (sectorReq<USE){
  checkLecSD = 1;
 
-
+ for (x=0;x<5;x++){
 
  checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
- Delay_ms(5);
 
  if (checkLecSD==0) {
 
@@ -1050,16 +1062,14 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
  tramaDatosSec[y+1] = bufferSectorReq[y];
  }
  numDatosSec = 13;
- Delay_ms(5);
-
+ break;
  } else {
 
  tramaDatosSec[1] = 0xEE;
  tramaDatosSec[2] = 0xE3;
  numDatosSec = 3;
-
  }
-
+ }
  } else {
 
  tramaDatosSec[1] = 0xEE;
@@ -1076,7 +1086,7 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
 
  }
 
- return numDatosSec;
+ EnviarTramaRS485(1,  1 , 0xF3, numDatosSec, tramaDatosSec);
 
 }
 
@@ -1268,17 +1278,20 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  INT1IF_bit = 0;
 
+
+ if ((horaSistema==0)&&(banInicioMuestreo==1)){
+ PSEC = sectorSD;
+ GuardarInfoSector(PSEC, infoPrimerSector);
+ }
+
  if (banSetReloj==1){
  horaSistema++;
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  TEST = ~TEST;
- } else {
-
  }
 
  if (horaSistema==86400){
  horaSistema = 0;
-
  fechaSistema = IncrementarFecha(fechaSistema);
  }
 
@@ -1332,6 +1345,20 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 
 
 
+void Timer2Int() org IVT_ADDR_T2INTERRUPT{
+
+ T2IF_bit = 0;
+
+
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+
+}
+
+
+
+
 void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
@@ -1341,20 +1368,28 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
  if (banRSI==2){
- if (i_rs485<numDatosRS485){
+
+ if (i_rs485<(numDatosRS485+2)){
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
+ T2CON.TON = 0;
 
+ if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;
+ } else {
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+ }
  }
  }
 
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
-
+ T2CON.TON = 1;
  banRSI = 1;
  i_rs485 = 0;
  }
@@ -1365,7 +1400,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==5)){
 
- if ((tramaCabeceraRS485[1]== 2 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 1 )||(tramaCabeceraRS485[1]==255)){
  funcionRS485 = tramaCabeceraRS485[2];
  *(ptrnumDatosRS485) = tramaCabeceraRS485[3];
  *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];
@@ -1399,7 +1434,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  for (x=0;x<6;x++){
  outputPyloadRS485[x+1] = tiempo[x];
  }
- EnviarTramaRS485(1,  2 , 0xF1, 7, outputPyloadRS485);
+ EnviarTramaRS485(1,  1 , 0xF1, 7, outputPyloadRS485);
  }
  break;
 
@@ -1429,19 +1464,18 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  if (subFuncionRS485==0xD1){
 
  InformacionSectores(outputPyloadRS485);
- EnviarTramaRS485(1,  2 , 0xF3, 17, outputPyloadRS485);
+ EnviarTramaRS485(1,  1 , 0xF3, 17, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD2){
 
- numDatosRS485 = InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  2 , 0xF3, numDatosRS485, outputPyloadRS485);
+ InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD3){
 
  RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  2 , 0xF3, 2507, outputPyloadRS485);
+ EnviarTramaRS485(1,  1 , 0xF3, 2507, outputPyloadRS485);
  }
  break;
 

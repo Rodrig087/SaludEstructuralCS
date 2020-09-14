@@ -582,8 +582,7 @@ void main() {
  SPI1BUF = 0x00;
 
  while(1){
-
-
+ asm CLRWDT;
  }
 
 }
@@ -940,6 +939,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  if (banSetReloj==1){
  horaSistema++;
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  INT_SINC = ~INT_SINC;
 
 
@@ -974,9 +974,28 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
  INT2IF_bit = 0;
 
  if (banSyncReloj==1){
+
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ INT_SINC = ~INT_SINC;
+
+
+ INT_SINC1 = 1;
+ INT_SINC2 = 1;
+ INT_SINC3 = 1;
+ INT_SINC4 = 1;
+ Delay_ms(1);
+
+ INT_SINC1 = 0;
+ INT_SINC2 = 0;
+ INT_SINC3 = 0;
+ INT_SINC4 = 0;
+
+
  Delay_ms(500);
  DS3234_setDate(horaSistema, fechaSistema);
+
  banSyncReloj = 0;
+ banSetReloj = 1;
 
  if ((banRespuestaPi==1)||(horaSistema<5)){
  InterrupcionP1(0xB1,0xD1,6);
@@ -1073,6 +1092,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  fuenteReloj = 1;
  banSyncReloj = 1;
+ banSetReloj = 0;
  } else {
 
  horaSistema = RecuperarHoraRTC();
@@ -1109,7 +1129,7 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  i_rs485++;
  } else {
  T2CON.TON = 0;
-#line 705 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
+#line 725 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
  if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;

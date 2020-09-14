@@ -548,7 +548,7 @@ void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
 unsigned long UbicarPrimerSectorEscrito();
 unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 
@@ -654,6 +654,8 @@ void main() {
 
 
  while(1){
+
+ asm CLRWDT;
 
  }
 
@@ -1026,12 +1028,16 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 
 
-unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
  unsigned char bufferSectorReq[512];
  unsigned int numDatosSec;
  unsigned int contadorSector;
  unsigned long USE;
+
+ if (modoLec==0xD2){
+ TEST = ~TEST;
+ }
 
 
  if (banInicioMuestreo==0){
@@ -1045,14 +1051,12 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
 
  if ((sectorReq>=PSE)&&(sectorReq<USF)){
 
-
  if (sectorReq<USE){
  checkLecSD = 1;
 
-
+ for (x=0;x<5;x++){
 
  checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
- Delay_ms(5);
 
  if (checkLecSD==0) {
 
@@ -1060,16 +1064,14 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
  tramaDatosSec[y+1] = bufferSectorReq[y];
  }
  numDatosSec = 13;
- Delay_ms(5);
-
+ break;
  } else {
 
  tramaDatosSec[1] = 0xEE;
  tramaDatosSec[2] = 0xE3;
  numDatosSec = 3;
-
  }
-
+ }
  } else {
 
  tramaDatosSec[1] = 0xEE;
@@ -1086,7 +1088,7 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
 
  }
 
- return numDatosSec;
+ EnviarTramaRS485(1,  2 , 0xF3, numDatosSec, tramaDatosSec);
 
 }
 
@@ -1278,17 +1280,20 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  INT1IF_bit = 0;
 
+
+ if ((horaSistema==0)&&(banInicioMuestreo==1)){
+ PSEC = sectorSD;
+ GuardarInfoSector(PSEC, infoPrimerSector);
+ }
+
  if (banSetReloj==1){
  horaSistema++;
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  TEST = ~TEST;
- } else {
-
  }
 
  if (horaSistema==86400){
  horaSistema = 0;
-
  fechaSistema = IncrementarFecha(fechaSistema);
  }
 
@@ -1466,8 +1471,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD2){
 
- numDatosRS485 = InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  2 , 0xF3, numDatosRS485, outputPyloadRS485);
+ InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
  }
 
  if (subFuncionRS485==0xD3){

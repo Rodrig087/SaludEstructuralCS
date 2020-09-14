@@ -108,7 +108,7 @@ void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
 unsigned long UbicarPrimerSectorEscrito();
 unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -235,6 +235,8 @@ void main() {
 
      //Entra al bucle princial del programa:
      while(1){
+
+              asm CLRWDT;         //Clear the watchdog timer
 
      }
 
@@ -607,12 +609,16 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 //*****************************************************************************************************************************************
 //Funcion para inspeccionar los datos de un sector
-unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
      unsigned char bufferSectorReq[512];                                        //Trama para recuperar el buffer leido
      unsigned int numDatosSec;
      unsigned int contadorSector;
      unsigned long USE;
+
+     if (modoLec==0xD2){
+        TEST = ~TEST;
+     }
 
      //Calcula el ultimo sector escrito:
      if (banInicioMuestreo==0){
@@ -622,18 +628,16 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
      }
 
      tramaDatosSec[0] = modoLec;                                                //Subfuncion
-
+     
      //Comprueba que el sector requerido este dentro del rango de sectores permitidos:
      if ((sectorReq>=PSE)&&(sectorReq<USF)){
-
          //Comprueba que sector requerido sea menor al ultimo sector escrito:
          if (sectorReq<USE){
              checkLecSD = 1;
              // Intenta leer los datos del sector como maximo 5 veces:
-             //for (x=0;x<5;x++){
+             for (x=0;x<5;x++){
                  //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
                  checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
-                 Delay_ms(5);
                  //checkLecSD = 0, significa que la lectura fue exitosa:
                  if (checkLecSD==0) {
                     //Almacena el datos en la variable sectorInicioSD:
@@ -641,16 +645,14 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
                         tramaDatosSec[y+1] = bufferSectorReq[y];
                     }
                     numDatosSec = 13;
-                    Delay_ms(5);
-                    //break;
+                    break;
                 } else {
                     //Indica el error E3: Error al leer la SD
                     tramaDatosSec[1] = 0xEE;
                     tramaDatosSec[2] = 0xE3;
                     numDatosSec = 3;
-                    //break;
                 }
-            //}
+            }
         } else {
             //Indica el error E2: Sector vacio
             tramaDatosSec[1] = 0xEE;
@@ -666,8 +668,8 @@ unsigned int InspeccionarSector(unsigned short modoLec, unsigned long sectorReq,
         numDatosSec = 3;
 
     }
-
-    return numDatosSec;
+    
+    EnviarTramaRS485(1, IDNODO, 0xF3, numDatosSec, tramaDatosSec);
 
 }
 //*****************************************************************************************************************************************
@@ -859,17 +861,20 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
      INT1IF_bit = 0;                                                            //Limpia la bandera de interrupcion externa INT1
 
+     //Sobrescribe el PSEC al cambio de dia (0 horas):
+     if ((horaSistema==0)&&(banInicioMuestreo==1)){
+        PSEC = sectorSD;
+        GuardarInfoSector(PSEC, infoPrimerSector);
+     }
+     
      if (banSetReloj==1){
         horaSistema++;                                                          //Incrementa el reloj del sistema
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza la trama de tiempo
         TEST = ~TEST;
-     } else {
-        //EnviarTramaRS485(1, IDNODO, 0xF2, 6, tiempo);                           //Envia una solicitud de actualizacion de tiempo al Master
      }
 
      if (horaSistema==86400){                                                   //(24*3600)+(0*60)+(0) = 86400
         horaSistema = 0;                                                        //Reinicia el reloj al llegar a las 24:00:00 horas
-        //revisar:
         fechaSistema = IncrementarFecha(fechaSistema);                          //Incrementa la fecha del sistema
      }
 
@@ -1047,8 +1052,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     //Inspecciona el contenido del sector solicitado:
                     if (subFuncionRS485==0xD2){
                        //Recupera los datos de cabecera y tiempo y envia la trama de respuesta al Master:
-                        numDatosRS485 = InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
-                        EnviarTramaRS485(1, IDNODO, 0xF3, numDatosRS485, outputPyloadRS485);
+                        InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
                     }
                     //Recupera los datos de aceleracion de un segundo:
                     if (subFuncionRS485==0xD3){

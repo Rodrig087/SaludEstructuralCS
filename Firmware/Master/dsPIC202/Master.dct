@@ -1291,6 +1291,7 @@ baninicio
 baniniciomuestreo
 banlec
 banoperacion
+banrespuestapi
 banrsc
 banrsi
 bansetgps
@@ -1306,6 +1307,7 @@ banspi7
 banspi8
 banspi9
 banspia
+bansyncreloj
 bcd2dec
 bcd2dec16
 bch
@@ -5053,6 +5055,7 @@ indxhld_9
 indxhld_9_bit
 inputpyloadrs485
 int_1
+int_2
 int_sinc
 int_sinc_direction
 int_sinc1
@@ -11147,6 +11150,7 @@ tgen
 tgen_bit
 tiempo
 tiemporpi
+timer2int
 tmr1
 tmr1_0
 tmr1_0_bit
