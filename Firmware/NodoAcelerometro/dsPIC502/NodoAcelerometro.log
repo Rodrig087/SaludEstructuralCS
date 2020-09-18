@@ -11,7 +11,7 @@ hint: 0	1004	interrupt handler (int_1 at 0x003C)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (Timer1Int at 0x001A)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (Timer2Int at 0x0022)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (urx_1 at 0x002A)	NodoAcelerometro.c
-diagnostics: 1070	123	Compiled Successfully	NodoAcelerometro.c
+diagnostics: 1074	123	Compiled Successfully	NodoAcelerometro.c
 warning: 192	1519	Logical expression is always: 'True'	NodoAcelerometro.c
 warning: 237	1519	Logical expression is always: 'False'	NodoAcelerometro.c
 warning: 490	1512	variable 'primerSectorSD' might not have been initialized	NodoAcelerometro.c
@@ -30,7 +30,6 @@ hint: 192	1164	Variable 'fechaInc' has been eliminated by optimizer	NodoAcelerom
 hint: 22	1164	Variable 'ptrnumDatos' has been eliminated by optimizer	NodoAcelerometro.c
 hint: 12	1164	Variable 'fechaRPi' has been eliminated by optimizer	NodoAcelerometro.c
 hint: 23	1164	Variable 'horaRPi' has been eliminated by optimizer	NodoAcelerometro.c
-hint: 61	1354	 warning: The macro is redefined     #define SD_TIME_OUT 100     previously macro "SD_TIME_OUT" defined as: #define SD_TIME_OUT  2000 	C:\Users\milto\Milton\RSA\Git\Salud Estructural\SaludEstructuralCS\Firmware\Librerias firmware\sdcard.c
 diagnostics: 0	122	Compilation Started	spisd.h
 diagnostics: 445	123	Compiled Successfully	sdcard.c
 hint: 93	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
@@ -38,12 +37,12 @@ hint: 315	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 330	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 348	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 diagnostics: 0	122	Compilation Started	spisd.h
-diagnostics: 47	123	Compiled Successfully	spiSD.c
-diagnostics: 0	127	All files Compiled in 359 ms	 
+diagnostics: 49	123	Compiled Successfully	spiSD.c
+diagnostics: 0	127	All files Compiled in 328 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
 hint: 0	1144	Static RAM (bytes): 5995   Dynamic RAM (bytes): 22676	Static RAM (bytes): 5995   Dynamic RAM (bytes): 22676
-hint: 0	1144	Used ROM (bytes): 7913 (4%)  Free ROM (bytes): 168195 (96%)	Used ROM (bytes): 7913 (4%)  Free ROM (bytes): 168195 (96%)
+hint: 0	1144	Used ROM (bytes): 7867 (4%)  Free ROM (bytes): 168241 (96%)	Used ROM (bytes): 7867 (4%)  Free ROM (bytes): 168241 (96%)
 diagnostics: 0	125	Project Linked Successfully	NodoAcelerometro.mcpds
-diagnostics: 0	128	Linked in 407 ms	 
-diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 1125 ms	 
-diagnostics: 0	103	Finished successfully: 13 sep. 2020, 22:29:39	NodoAcelerometro.mcpds
+diagnostics: 0	128	Linked in 453 ms	 
+diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 1156 ms	 
+diagnostics: 0	103	Finished successfully: 17 sep. 2020, 12:29:59	NodoAcelerometro.mcpds

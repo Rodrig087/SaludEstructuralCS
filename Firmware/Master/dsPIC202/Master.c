@@ -712,15 +712,15 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      //Recupera el pyload de la trama RS485:                                    //Aqui deberia entrar despues de recuperar la cabecera de trama
      if (banRSI==2){
         //Recupera el pyload mas 2 bytes de final de trama:
-        if (i_rs485<(numDatosRS485+2)){
+        if (i_rs485<(numDatosRS485)){
            inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
            T2CON.TON = 0;                                                       //Detiene el TimeOut
-           /*
+
            banRSI = 0;                                                          //Limpia la bandera de inicio de trama
            banRSC = 1;                                                          //Activa la bandera de trama completa
-           */
+           /*
            //Verifica los bytes de final de trama:
            if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
               banRSI = 0;                                                       //Limpia la bandera de inicio de trama
@@ -730,7 +730,7 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
               banRSC = 0;
               i_rs485 = 0;
            }
-
+           */
         }
      }
 

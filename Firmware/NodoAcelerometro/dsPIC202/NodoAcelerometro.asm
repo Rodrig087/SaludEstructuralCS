@@ -65,21 +65,21 @@ L_ADXL355_init7:
 ;adxl355_spi.c,124 :: 		}
 L_ADXL355_init2:
 	CP.B	W10, #1
-	BRA NZ	L__ADXL355_init348
+	BRA NZ	L__ADXL355_init341
 	GOTO	L_ADXL355_init4
-L__ADXL355_init348:
+L__ADXL355_init341:
 	CP.B	W10, #2
-	BRA NZ	L__ADXL355_init349
+	BRA NZ	L__ADXL355_init342
 	GOTO	L_ADXL355_init5
-L__ADXL355_init349:
+L__ADXL355_init342:
 	CP.B	W10, #4
-	BRA NZ	L__ADXL355_init350
+	BRA NZ	L__ADXL355_init343
 	GOTO	L_ADXL355_init6
-L__ADXL355_init350:
+L__ADXL355_init343:
 	CP.B	W10, #8
-	BRA NZ	L__ADXL355_init351
+	BRA NZ	L__ADXL355_init344
 	GOTO	L_ADXL355_init7
-L__ADXL355_init351:
+L__ADXL355_init344:
 L_ADXL355_init3:
 ;adxl355_spi.c,125 :: 		}
 L_end_ADXL355_init:
@@ -154,9 +154,9 @@ _ADXL355_read_data:
 	ZE	W0, W0
 	AND	W0, #1, W0
 	CP	W0, #1
-	BRA Z	L__ADXL355_read_data355
+	BRA Z	L__ADXL355_read_data348
 	GOTO	L_ADXL355_read_data8
-L__ADXL355_read_data355:
+L__ADXL355_read_data348:
 ;adxl355_spi.c,152 :: 		CS_ADXL355=0;
 	BCLR	LATA3_bit, BitPos(LATA3_bit+0)
 ;adxl355_spi.c,153 :: 		for (j=0;j<9;j++){
@@ -166,9 +166,9 @@ L__ADXL355_read_data355:
 L_ADXL355_read_data9:
 ; j start address is: 4 (W2)
 	CP.B	W2, #9
-	BRA LTU	L__ADXL355_read_data356
+	BRA LTU	L__ADXL355_read_data349
 	GOTO	L_ADXL355_read_data10
-L__ADXL355_read_data356:
+L__ADXL355_read_data349:
 ;adxl355_spi.c,154 :: 		muestra = ADXL355_read_byte(axisAddresses[j]);
 	ZE	W2, W1
 	MOV	#lo_addr(_axisAddresses), W0
@@ -199,9 +199,9 @@ L_ADXL355_read_data8:
 L_ADXL355_read_data13:
 ; j start address is: 4 (W2)
 	CP.B	W2, #9
-	BRA LTU	L__ADXL355_read_data357
+	BRA LTU	L__ADXL355_read_data350
 	GOTO	L_ADXL355_read_data14
-L__ADXL355_read_data357:
+L__ADXL355_read_data350:
 ;adxl355_spi.c,160 :: 		vectorMuestra[j] = 0;
 	ZE	W2, W0
 	ADD	W10, W0, W1
@@ -792,9 +792,9 @@ _IncrementarFecha:
 ;tiempo_rtc.c,198 :: 		if (dia<28){
 	CP	W0, #28
 	CPB	W1, #0
-	BRA LTU	L__IncrementarFecha366
+	BRA LTU	L__IncrementarFecha359
 	GOTO	L_IncrementarFecha18
-L__IncrementarFecha366:
+L__IncrementarFecha359:
 ;tiempo_rtc.c,199 :: 		dia++;
 ; dia start address is: 16 (W8)
 	ADD	W6, #1, W8
@@ -809,9 +809,9 @@ L_IncrementarFecha18:
 ; dia start address is: 12 (W6)
 	CP	W4, #2
 	CPB	W5, #0
-	BRA Z	L__IncrementarFecha367
+	BRA Z	L__IncrementarFecha360
 	GOTO	L_IncrementarFecha20
-L__IncrementarFecha367:
+L__IncrementarFecha360:
 ;tiempo_rtc.c,203 :: 		if (((anio-16)%4)==0){
 	SUB	W2, #16, W0
 	SUBB	W3, #0, W1
@@ -819,15 +819,15 @@ L__IncrementarFecha367:
 	AND	W1, #0, W1
 	CP	W0, #0
 	CPB	W1, #0
-	BRA Z	L__IncrementarFecha368
+	BRA Z	L__IncrementarFecha361
 	GOTO	L_IncrementarFecha21
-L__IncrementarFecha368:
+L__IncrementarFecha361:
 ;tiempo_rtc.c,204 :: 		if (dia==29){
 	CP	W6, #29
 	CPB	W7, #0
-	BRA Z	L__IncrementarFecha369
+	BRA Z	L__IncrementarFecha362
 	GOTO	L_IncrementarFecha22
-L__IncrementarFecha369:
+L__IncrementarFecha362:
 ; dia end address is: 12 (W6)
 ;tiempo_rtc.c,205 :: 		dia = 1;
 ; dia start address is: 0 (W0)
@@ -883,9 +883,9 @@ L_IncrementarFecha20:
 ; dia start address is: 12 (W6)
 	CP	W6, #30
 	CPB	W7, #0
-	BRA LTU	L__IncrementarFecha370
+	BRA LTU	L__IncrementarFecha363
 	GOTO	L_IncrementarFecha26
-L__IncrementarFecha370:
+L__IncrementarFecha363:
 ;tiempo_rtc.c,216 :: 		dia++;
 ; dia start address is: 0 (W0)
 	ADD	W6, #1, W0
@@ -903,37 +903,37 @@ L_IncrementarFecha26:
 ; dia start address is: 12 (W6)
 	CP	W4, #4
 	CPB	W5, #0
-	BRA NZ	L__IncrementarFecha371
-	GOTO	L__IncrementarFecha298
-L__IncrementarFecha371:
+	BRA NZ	L__IncrementarFecha364
+	GOTO	L__IncrementarFecha294
+L__IncrementarFecha364:
 	CP	W4, #6
 	CPB	W5, #0
-	BRA NZ	L__IncrementarFecha372
-	GOTO	L__IncrementarFecha297
-L__IncrementarFecha372:
+	BRA NZ	L__IncrementarFecha365
+	GOTO	L__IncrementarFecha293
+L__IncrementarFecha365:
 	CP	W4, #9
 	CPB	W5, #0
-	BRA NZ	L__IncrementarFecha373
-	GOTO	L__IncrementarFecha296
-L__IncrementarFecha373:
+	BRA NZ	L__IncrementarFecha366
+	GOTO	L__IncrementarFecha292
+L__IncrementarFecha366:
 	CP	W4, #11
 	CPB	W5, #0
-	BRA NZ	L__IncrementarFecha374
-	GOTO	L__IncrementarFecha295
-L__IncrementarFecha374:
+	BRA NZ	L__IncrementarFecha367
+	GOTO	L__IncrementarFecha291
+L__IncrementarFecha367:
 	MOV.D	W4, W0
 	MOV.D	W6, W4
 	GOTO	L_IncrementarFecha30
-L__IncrementarFecha298:
-L__IncrementarFecha297:
-L__IncrementarFecha296:
-L__IncrementarFecha295:
+L__IncrementarFecha294:
+L__IncrementarFecha293:
+L__IncrementarFecha292:
+L__IncrementarFecha291:
 ;tiempo_rtc.c,219 :: 		if (dia==30){
 	CP	W6, #30
 	CPB	W7, #0
-	BRA Z	L__IncrementarFecha375
+	BRA Z	L__IncrementarFecha368
 	GOTO	L_IncrementarFecha31
-L__IncrementarFecha375:
+L__IncrementarFecha368:
 ; dia end address is: 12 (W6)
 ;tiempo_rtc.c,220 :: 		dia = 1;
 ; dia start address is: 0 (W0)
@@ -973,53 +973,53 @@ L_IncrementarFecha30:
 ; dia start address is: 8 (W4)
 	CP	W4, #1
 	CPB	W5, #0
-	BRA NZ	L__IncrementarFecha376
-	GOTO	L__IncrementarFecha308
-L__IncrementarFecha376:
+	BRA NZ	L__IncrementarFecha369
+	GOTO	L__IncrementarFecha304
+L__IncrementarFecha369:
 	CP	W0, #1
 	CPB	W1, #0
-	BRA NZ	L__IncrementarFecha377
-	GOTO	L__IncrementarFecha304
-L__IncrementarFecha377:
+	BRA NZ	L__IncrementarFecha370
+	GOTO	L__IncrementarFecha300
+L__IncrementarFecha370:
 	CP	W0, #3
 	CPB	W1, #0
-	BRA NZ	L__IncrementarFecha378
-	GOTO	L__IncrementarFecha303
-L__IncrementarFecha378:
+	BRA NZ	L__IncrementarFecha371
+	GOTO	L__IncrementarFecha299
+L__IncrementarFecha371:
 	CP	W0, #5
 	CPB	W1, #0
-	BRA NZ	L__IncrementarFecha379
-	GOTO	L__IncrementarFecha302
-L__IncrementarFecha379:
+	BRA NZ	L__IncrementarFecha372
+	GOTO	L__IncrementarFecha298
+L__IncrementarFecha372:
 	CP	W0, #7
 	CPB	W1, #0
-	BRA NZ	L__IncrementarFecha380
-	GOTO	L__IncrementarFecha301
-L__IncrementarFecha380:
+	BRA NZ	L__IncrementarFecha373
+	GOTO	L__IncrementarFecha297
+L__IncrementarFecha373:
 	CP	W0, #8
 	CPB	W1, #0
-	BRA NZ	L__IncrementarFecha381
-	GOTO	L__IncrementarFecha300
-L__IncrementarFecha381:
+	BRA NZ	L__IncrementarFecha374
+	GOTO	L__IncrementarFecha296
+L__IncrementarFecha374:
 	CP	W0, #10
 	CPB	W1, #0
-	BRA NZ	L__IncrementarFecha382
-	GOTO	L__IncrementarFecha299
-L__IncrementarFecha382:
+	BRA NZ	L__IncrementarFecha375
+	GOTO	L__IncrementarFecha295
+L__IncrementarFecha375:
 	GOTO	L_IncrementarFecha37
-L__IncrementarFecha304:
-L__IncrementarFecha303:
-L__IncrementarFecha302:
-L__IncrementarFecha301:
 L__IncrementarFecha300:
 L__IncrementarFecha299:
-L__IncrementarFecha292:
+L__IncrementarFecha298:
+L__IncrementarFecha297:
+L__IncrementarFecha296:
+L__IncrementarFecha295:
+L__IncrementarFecha288:
 ;tiempo_rtc.c,227 :: 		if (dia==31){
 	CP	W4, #31
 	CPB	W5, #0
-	BRA Z	L__IncrementarFecha383
+	BRA Z	L__IncrementarFecha376
 	GOTO	L_IncrementarFecha38
-L__IncrementarFecha383:
+L__IncrementarFecha376:
 ;tiempo_rtc.c,228 :: 		dia = 1;
 	MOV	#1, W4
 	MOV	#0, W5
@@ -1047,29 +1047,29 @@ L_IncrementarFecha37:
 ; dia start address is: 8 (W4)
 ; dia end address is: 8 (W4)
 ; mes end address is: 0 (W0)
-	GOTO	L__IncrementarFecha305
-L__IncrementarFecha308:
-L__IncrementarFecha305:
+	GOTO	L__IncrementarFecha301
+L__IncrementarFecha304:
+L__IncrementarFecha301:
 ;tiempo_rtc.c,234 :: 		if ((dia!=1)&&(mes==12)){
 ; dia start address is: 8 (W4)
 ; mes start address is: 0 (W0)
 	CP	W4, #1
 	CPB	W5, #0
-	BRA NZ	L__IncrementarFecha384
-	GOTO	L__IncrementarFecha309
-L__IncrementarFecha384:
+	BRA NZ	L__IncrementarFecha377
+	GOTO	L__IncrementarFecha305
+L__IncrementarFecha377:
 	CP	W0, #12
 	CPB	W1, #0
-	BRA Z	L__IncrementarFecha385
-	GOTO	L__IncrementarFecha310
-L__IncrementarFecha385:
-L__IncrementarFecha291:
+	BRA Z	L__IncrementarFecha378
+	GOTO	L__IncrementarFecha306
+L__IncrementarFecha378:
+L__IncrementarFecha287:
 ;tiempo_rtc.c,235 :: 		if (dia==31){
 	CP	W4, #31
 	CPB	W5, #0
-	BRA Z	L__IncrementarFecha386
+	BRA Z	L__IncrementarFecha379
 	GOTO	L_IncrementarFecha43
-L__IncrementarFecha386:
+L__IncrementarFecha379:
 ; mes end address is: 0 (W0)
 ;tiempo_rtc.c,236 :: 		dia = 1;
 	MOV	#1, W4
@@ -1099,18 +1099,18 @@ L_IncrementarFecha44:
 ; dia end address is: 8 (W4)
 ; mes end address is: 0 (W0)
 ; anio end address is: 4 (W2)
-	GOTO	L__IncrementarFecha307
-L__IncrementarFecha309:
-L__IncrementarFecha307:
+	GOTO	L__IncrementarFecha303
+L__IncrementarFecha305:
+L__IncrementarFecha303:
 ; mes start address is: 0 (W0)
 ; anio start address is: 4 (W2)
 ; dia start address is: 8 (W4)
 ; dia end address is: 8 (W4)
 ; mes end address is: 0 (W0)
 ; anio end address is: 4 (W2)
-	GOTO	L__IncrementarFecha306
-L__IncrementarFecha310:
+	GOTO	L__IncrementarFecha302
 L__IncrementarFecha306:
+L__IncrementarFecha302:
 ;tiempo_rtc.c,243 :: 		}
 ; dia start address is: 8 (W4)
 ; anio start address is: 4 (W2)
@@ -1293,9 +1293,9 @@ _EnviarTramaRS485:
 	MOV.B	[W0], W1
 ;rs485.c,30 :: 		if (puertoUART == 1){
 	CP.B	W10, #1
-	BRA Z	L__EnviarTramaRS485389
-	GOTO	L__EnviarTramaRS485311
-L__EnviarTramaRS485389:
+	BRA Z	L__EnviarTramaRS485382
+	GOTO	L__EnviarTramaRS485307
+L__EnviarTramaRS485382:
 ;rs485.c,31 :: 		MSRS485 = 1;                                                            //Establece el Max485 en modo escritura
 	BSET	MSRS485, BitPos(MSRS485+0)
 ;rs485.c,32 :: 		UART1_Write(0x3A);                                                      //Envia la cabecera de la trama
@@ -1328,9 +1328,9 @@ L_EnviarTramaRS48546:
 ; numDatosLSB start address is: 8 (W4)
 ; payload start address is: 4 (W2)
 	CP	W3, W13
-	BRA LTU	L__EnviarTramaRS485390
+	BRA LTU	L__EnviarTramaRS485383
 	GOTO	L_EnviarTramaRS48547
-L__EnviarTramaRS485390:
+L__EnviarTramaRS485383:
 ;rs485.c,38 :: 		UART1_Write(payload[iDatos]);
 	ADD	W2, W3, W0
 	PUSH	W10
@@ -1367,9 +1367,9 @@ L_EnviarTramaRS48549:
 ; numDatosMSB start address is: 6 (W3)
 	CALL	_UART1_Tx_Idle
 	CP	W0, #0
-	BRA Z	L__EnviarTramaRS485391
+	BRA Z	L__EnviarTramaRS485384
 	GOTO	L_EnviarTramaRS48550
-L__EnviarTramaRS485391:
+L__EnviarTramaRS485384:
 	GOTO	L_EnviarTramaRS48549
 L_EnviarTramaRS48550:
 ;rs485.c,44 :: 		MSRS485 = 0;                                                            //Establece el Max485 en modo lectura
@@ -1380,7 +1380,7 @@ L_EnviarTramaRS48550:
 	MOV.B	W3, W0
 ;rs485.c,45 :: 		}
 	GOTO	L_EnviarTramaRS48545
-L__EnviarTramaRS485311:
+L__EnviarTramaRS485307:
 ;rs485.c,30 :: 		if (puertoUART == 1){
 	MOV.B	W1, W0
 	MOV	W2, W1
@@ -1392,9 +1392,9 @@ L_EnviarTramaRS48545:
 ; numDatosLSB start address is: 4 (W2)
 ; payload start address is: 2 (W1)
 	CP.B	W10, #2
-	BRA Z	L__EnviarTramaRS485392
+	BRA Z	L__EnviarTramaRS485385
 	GOTO	L_EnviarTramaRS48551
-L__EnviarTramaRS485392:
+L__EnviarTramaRS485385:
 ;rs485.c,48 :: 		MSRS485 = 1;                                                            //Establece el Max485 en modo escritura
 	BSET	MSRS485, BitPos(MSRS485+0)
 ;rs485.c,49 :: 		UART2_Write(0x3A);                                                      //Envia la cabecera de la trama
@@ -1425,9 +1425,9 @@ L_EnviarTramaRS48552:
 ; payload start address is: 2 (W1)
 ; payload end address is: 2 (W1)
 	CP	W2, W13
-	BRA LTU	L__EnviarTramaRS485393
+	BRA LTU	L__EnviarTramaRS485386
 	GOTO	L_EnviarTramaRS48553
-L__EnviarTramaRS485393:
+L__EnviarTramaRS485386:
 ; payload end address is: 2 (W1)
 ;rs485.c,55 :: 		UART2_Write(payload[iDatos]);
 ; payload start address is: 2 (W1)
@@ -1458,9 +1458,9 @@ L_EnviarTramaRS48553:
 L_EnviarTramaRS48555:
 	CALL	_UART2_Tx_Idle
 	CP	W0, #0
-	BRA Z	L__EnviarTramaRS485394
+	BRA Z	L__EnviarTramaRS485387
 	GOTO	L_EnviarTramaRS48556
-L__EnviarTramaRS485394:
+L__EnviarTramaRS485387:
 	GOTO	L_EnviarTramaRS48555
 L_EnviarTramaRS48556:
 ;rs485.c,61 :: 		MSRS485 = 0;                                                            //Establece el Max485 en modo lectura
@@ -1732,20 +1732,20 @@ L_main58:
 	MOV	#lo_addr(_sdflags), W0
 	MOV.B	[W0], W0
 	BTSS.B	W0, #1
-	GOTO	L__main314
+	GOTO	L__main310
 	MOV	#lo_addr(_sdflags), W0
 	MOV.B	[W0], W0
 	BTSC.B	W0, #0
-	GOTO	L__main313
-L__main312:
+	GOTO	L__main309
+L__main308:
 ;NodoAcelerometro.c,222 :: 		if (SD_Init_Try(10) == SUCCESSFUL_INIT) {
 	MOV.B	#10, W10
 	CALL	_SD_Init_Try
 	MOV.B	#170, W1
 	CP.B	W0, W1
-	BRA Z	L__main398
+	BRA Z	L__main391
 	GOTO	L_main66
-L__main398:
+L__main391:
 ;NodoAcelerometro.c,223 :: 		sdflags.init_ok = true;
 	MOV	#lo_addr(_sdflags), W0
 	BSET.B	[W0], #0
@@ -1774,8 +1774,8 @@ L_main66:
 ;NodoAcelerometro.c,232 :: 		}
 L_main67:
 ;NodoAcelerometro.c,221 :: 		if (sdflags.detected && !sdflags.init_ok) {
-L__main314:
-L__main313:
+L__main310:
+L__main309:
 ;NodoAcelerometro.c,234 :: 		Delay_ms(2000);
 	MOV	#245, W8
 	MOV	#9362, W7
@@ -2044,9 +2044,9 @@ _Muestrear:
 	MOV	#lo_addr(_banCiclo), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #0
-	BRA Z	L__Muestrear402
+	BRA Z	L__Muestrear395
 	GOTO	L_Muestrear74
-L__Muestrear402:
+L__Muestrear395:
 ;NodoAcelerometro.c,328 :: 		ADXL355_write_byte(POWER_CTL, DRDY_OFF|MEASURING);                     //Coloca el ADXL en modo medicion
 	MOV.B	#4, W11
 	MOV.B	#45, W10
@@ -2059,9 +2059,9 @@ L_Muestrear74:
 	MOV	#lo_addr(_banCiclo), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA Z	L__Muestrear403
+	BRA Z	L__Muestrear396
 	GOTO	L_Muestrear76
-L__Muestrear403:
+L__Muestrear396:
 ;NodoAcelerometro.c,333 :: 		banCiclo = 2;                                                          //Limpia la bandera de ciclo completo
 	MOV	#lo_addr(_banCiclo), W1
 	MOV.B	#2, W0
@@ -2091,9 +2091,9 @@ L_Muestrear77:
 	ZE	[W0], W1
 	MOV	#lo_addr(_x), W0
 	CP	W1, [W0]
-	BRA GTU	L__Muestrear404
+	BRA GTU	L__Muestrear397
 	GOTO	L_Muestrear78
-L__Muestrear404:
+L__Muestrear397:
 ;NodoAcelerometro.c,341 :: 		ADXL355_read_FIFO(datosLeidos);                                    //Lee una sola posicion del FIFO
 	MOV	#lo_addr(_datosLeidos), W10
 	CALL	_ADXL355_read_FIFO
@@ -2103,9 +2103,9 @@ L__Muestrear404:
 L_Muestrear80:
 	MOV	_y, W0
 	CP	W0, #9
-	BRA LTU	L__Muestrear405
+	BRA LTU	L__Muestrear398
 	GOTO	L_Muestrear81
-L__Muestrear405:
+L__Muestrear398:
 ;NodoAcelerometro.c,343 :: 		datosFIFO[y+(x*9)] = datosLeidos[y];                           //LLena la trama datosFIFO
 	MOV	_x, W1
 	MOV	#9, W0
@@ -2142,27 +2142,27 @@ L_Muestrear83:
 	MUL.SS	W1, W0, W2
 	MOV	#lo_addr(_x), W0
 	CP	W2, [W0]
-	BRA GTU	L__Muestrear406
+	BRA GTU	L__Muestrear399
 	GOTO	L_Muestrear84
-L__Muestrear406:
+L__Muestrear399:
 ;NodoAcelerometro.c,349 :: 		if ((x==0)||(x%9==0)){
 	MOV	_x, W0
 	CP	W0, #0
-	BRA NZ	L__Muestrear407
-	GOTO	L__Muestrear317
-L__Muestrear407:
+	BRA NZ	L__Muestrear400
+	GOTO	L__Muestrear313
+L__Muestrear400:
 	MOV	_x, W0
 	MOV	#9, W2
 	REPEAT	#17
 	DIV.U	W0, W2
 	MOV	W1, W0
 	CP	W0, #0
-	BRA NZ	L__Muestrear408
-	GOTO	L__Muestrear316
-L__Muestrear408:
+	BRA NZ	L__Muestrear401
+	GOTO	L__Muestrear312
+L__Muestrear401:
 	GOTO	L_Muestrear88
-L__Muestrear317:
-L__Muestrear316:
+L__Muestrear313:
+L__Muestrear312:
 ;NodoAcelerometro.c,350 :: 		tramaAceleracion[contFIFO+contMuestras+x] = contMuestras;          //Funciona bien
 	MOV	#lo_addr(_contMuestras), W0
 	ZE	[W0], W1
@@ -2253,9 +2253,9 @@ _GuardarBufferSD:
 L_GuardarBufferSD90:
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__GuardarBufferSD410
+	BRA LTU	L__GuardarBufferSD403
 	GOTO	L_GuardarBufferSD91
-L__GuardarBufferSD410:
+L__GuardarBufferSD403:
 ;NodoAcelerometro.c,379 :: 		checkEscSD = SD_Write_Block(bufferLleno,sector);
 	PUSH	W11
 	PUSH	W12
@@ -2268,9 +2268,9 @@ L__GuardarBufferSD410:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,380 :: 		if (checkEscSD == DATA_ACCEPTED){
 	CP.B	W0, #22
-	BRA Z	L__GuardarBufferSD411
+	BRA Z	L__GuardarBufferSD404
 	GOTO	L_GuardarBufferSD93
-L__GuardarBufferSD411:
+L__GuardarBufferSD404:
 ;NodoAcelerometro.c,382 :: 		break;
 	GOTO	L_GuardarBufferSD91
 ;NodoAcelerometro.c,383 :: 		}
@@ -2305,9 +2305,9 @@ _GuardarTramaSD:
 L_GuardarTramaSD96:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__GuardarTramaSD413
+	BRA LTU	L__GuardarTramaSD406
 	GOTO	L_GuardarTramaSD97
-L__GuardarTramaSD413:
+L__GuardarTramaSD406:
 ;NodoAcelerometro.c,399 :: 		bufferSD[x] = cabeceraSD[x];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -2329,9 +2329,9 @@ L_GuardarTramaSD97:
 L_GuardarTramaSD99:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__GuardarTramaSD414
+	BRA LTU	L__GuardarTramaSD407
 	GOTO	L_GuardarTramaSD100
-L__GuardarTramaSD414:
+L__GuardarTramaSD407:
 ;NodoAcelerometro.c,403 :: 		bufferSD[6+x] = tiempoSD[x];
 	MOV	_x, W0
 	ADD	W0, #6, W1
@@ -2354,9 +2354,9 @@ L_GuardarTramaSD102:
 	MOV	_x, W1
 	MOV	#500, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarTramaSD415
+	BRA LTU	L__GuardarTramaSD408
 	GOTO	L_GuardarTramaSD103
-L__GuardarTramaSD415:
+L__GuardarTramaSD408:
 ;NodoAcelerometro.c,407 :: 		bufferSD[12+x] = aceleracionSD[x];
 	MOV	_x, W0
 	ADD	W0, #12, W1
@@ -2392,9 +2392,9 @@ L_GuardarTramaSD105:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarTramaSD416
+	BRA LTU	L__GuardarTramaSD409
 	GOTO	L_GuardarTramaSD106
-L__GuardarTramaSD416:
+L__GuardarTramaSD409:
 ;NodoAcelerometro.c,416 :: 		bufferSD[x] = aceleracionSD[x+500];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -2431,9 +2431,9 @@ L_GuardarTramaSD108:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarTramaSD417
+	BRA LTU	L__GuardarTramaSD410
 	GOTO	L_GuardarTramaSD109
-L__GuardarTramaSD417:
+L__GuardarTramaSD410:
 ;NodoAcelerometro.c,423 :: 		bufferSD[x] = aceleracionSD[x+1012];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -2470,9 +2470,9 @@ L_GuardarTramaSD111:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarTramaSD418
+	BRA LTU	L__GuardarTramaSD411
 	GOTO	L_GuardarTramaSD112
-L__GuardarTramaSD418:
+L__GuardarTramaSD411:
 ;NodoAcelerometro.c,430 :: 		bufferSD[x] = aceleracionSD[x+1524];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -2509,16 +2509,16 @@ L_GuardarTramaSD114:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarTramaSD419
+	BRA LTU	L__GuardarTramaSD412
 	GOTO	L_GuardarTramaSD115
-L__GuardarTramaSD419:
+L__GuardarTramaSD412:
 ;NodoAcelerometro.c,437 :: 		if (x<464){
 	MOV	_x, W1
 	MOV	#464, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarTramaSD420
+	BRA LTU	L__GuardarTramaSD413
 	GOTO	L_GuardarTramaSD117
-L__GuardarTramaSD420:
+L__GuardarTramaSD413:
 ;NodoAcelerometro.c,438 :: 		bufferSD[x] = aceleracionSD[x+2036];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -2617,9 +2617,9 @@ L_GuardarInfoSector119:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarInfoSector422
+	BRA LTU	L__GuardarInfoSector415
 	GOTO	L_GuardarInfoSector120
-L__GuardarInfoSector422:
+L__GuardarInfoSector415:
 ;NodoAcelerometro.c,466 :: 		bufferSectores[x] = 0;                                                 //Rellena de ceros el resto del buffer
 	ADD	W14, #0, W1
 	MOV	#lo_addr(_x), W0
@@ -2639,9 +2639,9 @@ L_GuardarInfoSector120:
 L_GuardarInfoSector122:
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__GuardarInfoSector423
+	BRA LTU	L__GuardarInfoSector416
 	GOTO	L_GuardarInfoSector123
-L__GuardarInfoSector423:
+L__GuardarInfoSector416:
 ;NodoAcelerometro.c,471 :: 		checkEscSD = SD_Write_Block(bufferSectores,localizacionSector);
 	ADD	W14, #0, W0
 	PUSH.D	W12
@@ -2656,9 +2656,9 @@ L__GuardarInfoSector423:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,472 :: 		if (checkEscSD == DATA_ACCEPTED){
 	CP.B	W0, #22
-	BRA Z	L__GuardarInfoSector424
+	BRA Z	L__GuardarInfoSector417
 	GOTO	L_GuardarInfoSector125
-L__GuardarInfoSector424:
+L__GuardarInfoSector417:
 ;NodoAcelerometro.c,474 :: 		break;
 	GOTO	L_GuardarInfoSector123
 ;NodoAcelerometro.c,475 :: 		}
@@ -2707,9 +2707,9 @@ L_UbicarPrimerSectorEscrito128:
 ; ptrPrimerSectorSD end address is: 6 (W3)
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__UbicarPrimerSectorEscrito426
+	BRA LTU	L__UbicarPrimerSectorEscrito419
 	GOTO	L_UbicarPrimerSectorEscrito129
-L__UbicarPrimerSectorEscrito426:
+L__UbicarPrimerSectorEscrito419:
 ; ptrPrimerSectorSD end address is: 6 (W3)
 ;NodoAcelerometro.c,496 :: 		checkLecSD = SD_Read_Block(bufferSectorInicio, infoPrimerSector);
 ; ptrPrimerSectorSD start address is: 6 (W3)
@@ -2724,9 +2724,9 @@ L__UbicarPrimerSectorEscrito426:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,498 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__UbicarPrimerSectorEscrito427
+	BRA Z	L__UbicarPrimerSectorEscrito420
 	GOTO	L_UbicarPrimerSectorEscrito131
-L__UbicarPrimerSectorEscrito427:
+L__UbicarPrimerSectorEscrito420:
 ;NodoAcelerometro.c,500 :: 		*ptrPrimerSectorSD = bufferSectorInicio[3];                      //LSB
 	ADD	W14, #0, W2
 	ADD	W2, #3, W0
@@ -2788,9 +2788,9 @@ _UbicarUltimoSectorEscrito:
 	MOV	W0, W3
 ;NodoAcelerometro.c,528 :: 		if (sobrescribirSD==1){
 	CP.B	W10, #1
-	BRA Z	L__UbicarUltimoSectorEscrito429
+	BRA Z	L__UbicarUltimoSectorEscrito422
 	GOTO	L_UbicarUltimoSectorEscrito135
-L__UbicarUltimoSectorEscrito429:
+L__UbicarUltimoSectorEscrito422:
 ; ptrSectorInicioSD end address is: 6 (W3)
 ;NodoAcelerometro.c,529 :: 		sectorInicioSD = PSE;                                                  //Se escoje el PSE para sobrescribir la SD
 	MOV	_PSE, W0
@@ -2813,9 +2813,9 @@ L_UbicarUltimoSectorEscrito137:
 ; ptrSectorInicioSD end address is: 6 (W3)
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__UbicarUltimoSectorEscrito430
+	BRA LTU	L__UbicarUltimoSectorEscrito423
 	GOTO	L_UbicarUltimoSectorEscrito138
-L__UbicarUltimoSectorEscrito430:
+L__UbicarUltimoSectorEscrito423:
 ; ptrSectorInicioSD end address is: 6 (W3)
 ;NodoAcelerometro.c,535 :: 		checkLecSD = SD_Read_Block(bufferSectorFinal, infoUltimoSector);
 ; ptrSectorInicioSD start address is: 6 (W3)
@@ -2832,9 +2832,9 @@ L__UbicarUltimoSectorEscrito430:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,537 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__UbicarUltimoSectorEscrito431
+	BRA Z	L__UbicarUltimoSectorEscrito424
 	GOTO	L_UbicarUltimoSectorEscrito140
-L__UbicarUltimoSectorEscrito431:
+L__UbicarUltimoSectorEscrito424:
 ;NodoAcelerometro.c,539 :: 		*ptrSectorInicioSD = bufferSectorFinal[3];                      //LSB
 	ADD	W14, #0, W2
 	ADD	W2, #3, W0
@@ -2930,9 +2930,9 @@ _InformacionSectores:
 	MOV	#lo_addr(_banInicioMuestreo), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #0
-	BRA Z	L__InformacionSectores433
+	BRA Z	L__InformacionSectores426
 	GOTO	L_InformacionSectores144
-L__InformacionSectores433:
+L__InformacionSectores426:
 ;NodoAcelerometro.c,582 :: 		infoSA = UbicarUltimoSectorEscrito(0);                                  //Calcula el ultimo sector escrito
 	PUSH	W6
 	PUSH.D	W4
@@ -3037,9 +3037,9 @@ _InspeccionarSector:
 ;NodoAcelerometro.c,617 :: 		if (modoLec==0xD2){
 	MOV.B	#210, W0
 	CP.B	W10, W0
-	BRA Z	L__InspeccionarSector435
+	BRA Z	L__InspeccionarSector428
 	GOTO	L_InspeccionarSector146
-L__InspeccionarSector435:
+L__InspeccionarSector428:
 ;NodoAcelerometro.c,618 :: 		TEST = ~TEST;
 	BTG	LATA2_bit, BitPos(LATA2_bit+0)
 ;NodoAcelerometro.c,619 :: 		}
@@ -3048,9 +3048,9 @@ L_InspeccionarSector146:
 	MOV	#lo_addr(_banInicioMuestreo), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #0
-	BRA Z	L__InspeccionarSector436
+	BRA Z	L__InspeccionarSector429
 	GOTO	L_InspeccionarSector147
-L__InspeccionarSector436:
+L__InspeccionarSector429:
 ;NodoAcelerometro.c,623 :: 		USE = UbicarUltimoSectorEscrito(0);
 	PUSH.D	W10
 	PUSH.D	W12
@@ -3083,22 +3083,22 @@ L_InspeccionarSector148:
 	MOV	#lo_addr(_PSE), W0
 	CP	W11, [W0++]
 	CPB	W12, [W0--]
-	BRA GEU	L__InspeccionarSector437
-	GOTO	L__InspeccionarSector320
-L__InspeccionarSector437:
+	BRA GEU	L__InspeccionarSector430
+	GOTO	L__InspeccionarSector316
+L__InspeccionarSector430:
 	MOV	#lo_addr(_USF), W0
 	CP	W11, [W0++]
 	CPB	W12, [W0--]
-	BRA LTU	L__InspeccionarSector438
-	GOTO	L__InspeccionarSector319
-L__InspeccionarSector438:
-L__InspeccionarSector318:
+	BRA LTU	L__InspeccionarSector431
+	GOTO	L__InspeccionarSector315
+L__InspeccionarSector431:
+L__InspeccionarSector314:
 ;NodoAcelerometro.c,633 :: 		if (sectorReq<USE){
 	CP	W11, W1
 	CPB	W12, W2
-	BRA LTU	L__InspeccionarSector439
+	BRA LTU	L__InspeccionarSector432
 	GOTO	L_InspeccionarSector152
-L__InspeccionarSector439:
+L__InspeccionarSector432:
 ; USE end address is: 2 (W1)
 ;NodoAcelerometro.c,634 :: 		checkLecSD = 1;
 	MOV	#lo_addr(_checkLecSD), W1
@@ -3110,9 +3110,9 @@ L__InspeccionarSector439:
 L_InspeccionarSector153:
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__InspeccionarSector440
+	BRA LTU	L__InspeccionarSector433
 	GOTO	L_InspeccionarSector154
-L__InspeccionarSector440:
+L__InspeccionarSector433:
 ;NodoAcelerometro.c,638 :: 		checkLecSD = SD_Read_Block(bufferSectorReq, sectorReq);
 	ADD	W14, #0, W0
 	PUSH.D	W10
@@ -3125,9 +3125,9 @@ L__InspeccionarSector440:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,640 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__InspeccionarSector441
+	BRA Z	L__InspeccionarSector434
 	GOTO	L_InspeccionarSector156
-L__InspeccionarSector441:
+L__InspeccionarSector434:
 ;NodoAcelerometro.c,642 :: 		for (y=0;y<numDatosSec;y++){
 	CLR	W0
 	MOV	W0, _y
@@ -3136,9 +3136,9 @@ L_InspeccionarSector157:
 	MOV	#512, W0
 	ADD	W14, W0, W0
 	CP	W1, [W0]
-	BRA LTU	L__InspeccionarSector442
+	BRA LTU	L__InspeccionarSector435
 	GOTO	L_InspeccionarSector158
-L__InspeccionarSector442:
+L__InspeccionarSector435:
 ;NodoAcelerometro.c,643 :: 		tramaDatosSec[y+1] = bufferSectorReq[y];
 	MOV	_y, W0
 	INC	W0
@@ -3198,8 +3198,8 @@ L_InspeccionarSector161:
 ;NodoAcelerometro.c,661 :: 		} else {
 	GOTO	L_InspeccionarSector162
 ;NodoAcelerometro.c,631 :: 		if ((sectorReq>=PSE)&&(sectorReq<USF)){
-L__InspeccionarSector320:
-L__InspeccionarSector319:
+L__InspeccionarSector316:
+L__InspeccionarSector315:
 ;NodoAcelerometro.c,664 :: 		tramaDatosSec[1] = 0xEE;
 	ADD	W13, #1, W1
 	MOV.B	#238, W0
@@ -3254,9 +3254,9 @@ L_RecuperarTramaAceleracion163:
 ; contSector start address is: 6 (W3)
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__RecuperarTramaAceleracion444
-	GOTO	L__RecuperarTramaAceleracion321
-L__RecuperarTramaAceleracion444:
+	BRA LTU	L__RecuperarTramaAceleracion437
+	GOTO	L__RecuperarTramaAceleracion317
+L__RecuperarTramaAceleracion437:
 ;NodoAcelerometro.c,690 :: 		checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
 	ADD	W10, W3, W1
 	ADDC	W11, W4, W2
@@ -3277,9 +3277,9 @@ L__RecuperarTramaAceleracion444:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,691 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__RecuperarTramaAceleracion445
+	BRA Z	L__RecuperarTramaAceleracion438
 	GOTO	L_RecuperarTramaAceleracion166
-L__RecuperarTramaAceleracion445:
+L__RecuperarTramaAceleracion438:
 ;NodoAcelerometro.c,693 :: 		for (y=0;y<6;y++){
 	CLR	W0
 	MOV	W0, _y
@@ -3288,9 +3288,9 @@ L_RecuperarTramaAceleracion167:
 ; contSector start address is: 6 (W3)
 	MOV	_y, W0
 	CP	W0, #6
-	BRA LTU	L__RecuperarTramaAceleracion446
+	BRA LTU	L__RecuperarTramaAceleracion439
 	GOTO	L_RecuperarTramaAceleracion168
-L__RecuperarTramaAceleracion446:
+L__RecuperarTramaAceleracion439:
 ;NodoAcelerometro.c,694 :: 		tiempoAcel[y] = bufferSectorReq[y+6];
 	MOV	#512, W1
 	ADD	W14, W1, W1
@@ -3317,9 +3317,9 @@ L_RecuperarTramaAceleracion170:
 	MOV	_y, W1
 	MOV	#500, W0
 	CP	W1, W0
-	BRA LTU	L__RecuperarTramaAceleracion447
+	BRA LTU	L__RecuperarTramaAceleracion440
 	GOTO	L_RecuperarTramaAceleracion171
-L__RecuperarTramaAceleracion447:
+L__RecuperarTramaAceleracion440:
 ;NodoAcelerometro.c,698 :: 		tramaAcelSeg[y+1] = bufferSectorReq[y+12];
 	MOV	_y, W0
 	INC	W0
@@ -3350,7 +3350,7 @@ L_RecuperarTramaAceleracion166:
 ;NodoAcelerometro.c,703 :: 		}
 ; contSector end address is: 6 (W3)
 	GOTO	L_RecuperarTramaAceleracion163
-L__RecuperarTramaAceleracion321:
+L__RecuperarTramaAceleracion317:
 ;NodoAcelerometro.c,689 :: 		for (x=0;x<5;x++){
 ;NodoAcelerometro.c,703 :: 		}
 L_RecuperarTramaAceleracion164:
@@ -3367,9 +3367,9 @@ L_RecuperarTramaAceleracion173:
 ; contSector start address is: 6 (W3)
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__RecuperarTramaAceleracion448
-	GOTO	L__RecuperarTramaAceleracion322
-L__RecuperarTramaAceleracion448:
+	BRA LTU	L__RecuperarTramaAceleracion441
+	GOTO	L__RecuperarTramaAceleracion318
+L__RecuperarTramaAceleracion441:
 ;NodoAcelerometro.c,709 :: 		checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
 	ADD	W10, W3, W1
 	ADDC	W11, W4, W2
@@ -3390,9 +3390,9 @@ L__RecuperarTramaAceleracion448:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,710 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__RecuperarTramaAceleracion449
+	BRA Z	L__RecuperarTramaAceleracion442
 	GOTO	L_RecuperarTramaAceleracion176
-L__RecuperarTramaAceleracion449:
+L__RecuperarTramaAceleracion442:
 ;NodoAcelerometro.c,712 :: 		for (y=0;y<512;y++){
 	CLR	W0
 	MOV	W0, _y
@@ -3402,9 +3402,9 @@ L_RecuperarTramaAceleracion177:
 	MOV	_y, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__RecuperarTramaAceleracion450
+	BRA LTU	L__RecuperarTramaAceleracion443
 	GOTO	L_RecuperarTramaAceleracion178
-L__RecuperarTramaAceleracion450:
+L__RecuperarTramaAceleracion443:
 ;NodoAcelerometro.c,713 :: 		tramaAcelSeg[y+501] = bufferSectorReq[y];
 	MOV	_y, W1
 	MOV	#501, W0
@@ -3435,7 +3435,7 @@ L_RecuperarTramaAceleracion176:
 ;NodoAcelerometro.c,718 :: 		}
 ; contSector end address is: 6 (W3)
 	GOTO	L_RecuperarTramaAceleracion173
-L__RecuperarTramaAceleracion322:
+L__RecuperarTramaAceleracion318:
 ;NodoAcelerometro.c,708 :: 		for (x=0;x<5;x++){
 ;NodoAcelerometro.c,718 :: 		}
 L_RecuperarTramaAceleracion174:
@@ -3452,9 +3452,9 @@ L_RecuperarTramaAceleracion180:
 ; contSector start address is: 6 (W3)
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__RecuperarTramaAceleracion451
-	GOTO	L__RecuperarTramaAceleracion323
-L__RecuperarTramaAceleracion451:
+	BRA LTU	L__RecuperarTramaAceleracion444
+	GOTO	L__RecuperarTramaAceleracion319
+L__RecuperarTramaAceleracion444:
 ;NodoAcelerometro.c,724 :: 		checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
 	ADD	W10, W3, W1
 	ADDC	W11, W4, W2
@@ -3475,9 +3475,9 @@ L__RecuperarTramaAceleracion451:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,725 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__RecuperarTramaAceleracion452
+	BRA Z	L__RecuperarTramaAceleracion445
 	GOTO	L_RecuperarTramaAceleracion183
-L__RecuperarTramaAceleracion452:
+L__RecuperarTramaAceleracion445:
 ;NodoAcelerometro.c,727 :: 		for (y=0;y<512;y++){
 	CLR	W0
 	MOV	W0, _y
@@ -3487,9 +3487,9 @@ L_RecuperarTramaAceleracion184:
 	MOV	_y, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__RecuperarTramaAceleracion453
+	BRA LTU	L__RecuperarTramaAceleracion446
 	GOTO	L_RecuperarTramaAceleracion185
-L__RecuperarTramaAceleracion453:
+L__RecuperarTramaAceleracion446:
 ;NodoAcelerometro.c,728 :: 		tramaAcelSeg[y+1013] = bufferSectorReq[y];
 	MOV	_y, W1
 	MOV	#1013, W0
@@ -3520,7 +3520,7 @@ L_RecuperarTramaAceleracion183:
 ;NodoAcelerometro.c,733 :: 		}
 ; contSector end address is: 6 (W3)
 	GOTO	L_RecuperarTramaAceleracion180
-L__RecuperarTramaAceleracion323:
+L__RecuperarTramaAceleracion319:
 ;NodoAcelerometro.c,723 :: 		for (x=0;x<5;x++){
 ;NodoAcelerometro.c,733 :: 		}
 L_RecuperarTramaAceleracion181:
@@ -3537,9 +3537,9 @@ L_RecuperarTramaAceleracion187:
 ; contSector start address is: 6 (W3)
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__RecuperarTramaAceleracion454
-	GOTO	L__RecuperarTramaAceleracion324
-L__RecuperarTramaAceleracion454:
+	BRA LTU	L__RecuperarTramaAceleracion447
+	GOTO	L__RecuperarTramaAceleracion320
+L__RecuperarTramaAceleracion447:
 ;NodoAcelerometro.c,739 :: 		checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
 	ADD	W10, W3, W1
 	ADDC	W11, W4, W2
@@ -3560,9 +3560,9 @@ L__RecuperarTramaAceleracion454:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,740 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__RecuperarTramaAceleracion455
+	BRA Z	L__RecuperarTramaAceleracion448
 	GOTO	L_RecuperarTramaAceleracion190
-L__RecuperarTramaAceleracion455:
+L__RecuperarTramaAceleracion448:
 ;NodoAcelerometro.c,742 :: 		for (y=0;y<512;y++){
 	CLR	W0
 	MOV	W0, _y
@@ -3572,9 +3572,9 @@ L_RecuperarTramaAceleracion191:
 	MOV	_y, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__RecuperarTramaAceleracion456
+	BRA LTU	L__RecuperarTramaAceleracion449
 	GOTO	L_RecuperarTramaAceleracion192
-L__RecuperarTramaAceleracion456:
+L__RecuperarTramaAceleracion449:
 ;NodoAcelerometro.c,743 :: 		tramaAcelSeg[y+1525] = bufferSectorReq[y];
 	MOV	_y, W1
 	MOV	#1525, W0
@@ -3605,7 +3605,7 @@ L_RecuperarTramaAceleracion190:
 ;NodoAcelerometro.c,748 :: 		}
 ; contSector end address is: 6 (W3)
 	GOTO	L_RecuperarTramaAceleracion187
-L__RecuperarTramaAceleracion324:
+L__RecuperarTramaAceleracion320:
 ;NodoAcelerometro.c,738 :: 		for (x=0;x<5;x++){
 ;NodoAcelerometro.c,748 :: 		}
 L_RecuperarTramaAceleracion188:
@@ -3622,9 +3622,9 @@ L_RecuperarTramaAceleracion194:
 ; contSector end address is: 6 (W3)
 	MOV	_x, W0
 	CP	W0, #5
-	BRA LTU	L__RecuperarTramaAceleracion457
+	BRA LTU	L__RecuperarTramaAceleracion450
 	GOTO	L_RecuperarTramaAceleracion195
-L__RecuperarTramaAceleracion457:
+L__RecuperarTramaAceleracion450:
 ; contSector end address is: 6 (W3)
 ;NodoAcelerometro.c,754 :: 		checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
 ; contSector start address is: 6 (W3)
@@ -3647,9 +3647,9 @@ L__RecuperarTramaAceleracion457:
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,755 :: 		if (checkLecSD==0) {
 	CP.B	W0, #0
-	BRA Z	L__RecuperarTramaAceleracion458
+	BRA Z	L__RecuperarTramaAceleracion451
 	GOTO	L_RecuperarTramaAceleracion197
-L__RecuperarTramaAceleracion458:
+L__RecuperarTramaAceleracion451:
 ; contSector end address is: 6 (W3)
 ;NodoAcelerometro.c,757 :: 		for (y=0;y<464;y++){
 	CLR	W0
@@ -3658,9 +3658,9 @@ L_RecuperarTramaAceleracion198:
 	MOV	_y, W1
 	MOV	#464, W0
 	CP	W1, W0
-	BRA LTU	L__RecuperarTramaAceleracion459
+	BRA LTU	L__RecuperarTramaAceleracion452
 	GOTO	L_RecuperarTramaAceleracion199
-L__RecuperarTramaAceleracion459:
+L__RecuperarTramaAceleracion452:
 ;NodoAcelerometro.c,758 :: 		tramaAcelSeg[y+2037] = bufferSectorReq[y];
 	MOV	_y, W1
 	MOV	#2037, W0
@@ -3696,9 +3696,9 @@ L_RecuperarTramaAceleracion195:
 L_RecuperarTramaAceleracion201:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__RecuperarTramaAceleracion460
+	BRA LTU	L__RecuperarTramaAceleracion453
 	GOTO	L_RecuperarTramaAceleracion202
-L__RecuperarTramaAceleracion460:
+L__RecuperarTramaAceleracion453:
 ;NodoAcelerometro.c,767 :: 		tramaAcelSeg[2501+x] = tiempoAcel[x];
 	MOV	#2501, W1
 	MOV	#lo_addr(_x), W0
@@ -3741,9 +3741,9 @@ L_GuardarPruebaSD204:
 	MOV	_x, W1
 	MOV	#2500, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarPruebaSD462
+	BRA LTU	L__GuardarPruebaSD455
 	GOTO	L_GuardarPruebaSD205
-L__GuardarPruebaSD462:
+L__GuardarPruebaSD455:
 ;NodoAcelerometro.c,786 :: 		aceleracionSD[x] = contadorEjemploSD;
 	ADD	W14, #0, W1
 	MOV	#lo_addr(_x), W0
@@ -3755,15 +3755,15 @@ L__GuardarPruebaSD462:
 ;NodoAcelerometro.c,788 :: 		if (contadorEjemploSD >= 255){
 	MOV.B	#255, W0
 	CP.B	W1, W0
-	BRA GEU	L__GuardarPruebaSD463
-	GOTO	L__GuardarPruebaSD325
-L__GuardarPruebaSD463:
+	BRA GEU	L__GuardarPruebaSD456
+	GOTO	L__GuardarPruebaSD321
+L__GuardarPruebaSD456:
 ;NodoAcelerometro.c,789 :: 		contadorEjemploSD = 0;
 	CLR	W2
 ; contadorEjemploSD end address is: 4 (W2)
 ;NodoAcelerometro.c,790 :: 		}
 	GOTO	L_GuardarPruebaSD207
-L__GuardarPruebaSD325:
+L__GuardarPruebaSD321:
 ;NodoAcelerometro.c,788 :: 		if (contadorEjemploSD >= 255){
 ;NodoAcelerometro.c,790 :: 		}
 L_GuardarPruebaSD207:
@@ -3782,9 +3782,9 @@ L_GuardarPruebaSD205:
 L_GuardarPruebaSD208:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__GuardarPruebaSD464
+	BRA LTU	L__GuardarPruebaSD457
 	GOTO	L_GuardarPruebaSD209
-L__GuardarPruebaSD464:
+L__GuardarPruebaSD457:
 ;NodoAcelerometro.c,795 :: 		bufferSD[x] = cabeceraSD[x];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -3806,9 +3806,9 @@ L_GuardarPruebaSD209:
 L_GuardarPruebaSD211:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__GuardarPruebaSD465
+	BRA LTU	L__GuardarPruebaSD458
 	GOTO	L_GuardarPruebaSD212
-L__GuardarPruebaSD465:
+L__GuardarPruebaSD458:
 ;NodoAcelerometro.c,799 :: 		bufferSD[6+x] = tiempoSD[x];
 	MOV	_x, W0
 	ADD	W0, #6, W1
@@ -3831,9 +3831,9 @@ L_GuardarPruebaSD214:
 	MOV	_x, W1
 	MOV	#500, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarPruebaSD466
+	BRA LTU	L__GuardarPruebaSD459
 	GOTO	L_GuardarPruebaSD215
-L__GuardarPruebaSD466:
+L__GuardarPruebaSD459:
 ;NodoAcelerometro.c,803 :: 		bufferSD[12+x] = aceleracionSD[x];
 	MOV	_x, W0
 	ADD	W0, #12, W1
@@ -3870,9 +3870,9 @@ L_GuardarPruebaSD217:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarPruebaSD467
+	BRA LTU	L__GuardarPruebaSD460
 	GOTO	L_GuardarPruebaSD218
-L__GuardarPruebaSD467:
+L__GuardarPruebaSD460:
 ;NodoAcelerometro.c,812 :: 		bufferSD[x] = aceleracionSD[x+500];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -3910,9 +3910,9 @@ L_GuardarPruebaSD220:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarPruebaSD468
+	BRA LTU	L__GuardarPruebaSD461
 	GOTO	L_GuardarPruebaSD221
-L__GuardarPruebaSD468:
+L__GuardarPruebaSD461:
 ;NodoAcelerometro.c,819 :: 		bufferSD[x] = aceleracionSD[x+1012];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -3950,9 +3950,9 @@ L_GuardarPruebaSD223:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarPruebaSD469
+	BRA LTU	L__GuardarPruebaSD462
 	GOTO	L_GuardarPruebaSD224
-L__GuardarPruebaSD469:
+L__GuardarPruebaSD462:
 ;NodoAcelerometro.c,826 :: 		bufferSD[x] = aceleracionSD[x+1524];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -3990,16 +3990,16 @@ L_GuardarPruebaSD226:
 	MOV	_x, W1
 	MOV	#512, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarPruebaSD470
+	BRA LTU	L__GuardarPruebaSD463
 	GOTO	L_GuardarPruebaSD227
-L__GuardarPruebaSD470:
+L__GuardarPruebaSD463:
 ;NodoAcelerometro.c,833 :: 		if (x<464){
 	MOV	_x, W1
 	MOV	#464, W0
 	CP	W1, W0
-	BRA LTU	L__GuardarPruebaSD471
+	BRA LTU	L__GuardarPruebaSD464
 	GOTO	L_GuardarPruebaSD229
-L__GuardarPruebaSD471:
+L__GuardarPruebaSD464:
 ;NodoAcelerometro.c,834 :: 		bufferSD[x] = aceleracionSD[x+2036];
 	MOV	#lo_addr(_bufferSD), W1
 	MOV	#lo_addr(_x), W0
@@ -4079,16 +4079,16 @@ _int_1:
 	MOV	_horaSistema+2, W1
 	CP	W0, #0
 	CPB	W1, #0
-	BRA Z	L__int_1473
-	GOTO	L__int_1328
-L__int_1473:
+	BRA Z	L__int_1466
+	GOTO	L__int_1324
+L__int_1466:
 	MOV	#lo_addr(_banInicioMuestreo), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA Z	L__int_1474
-	GOTO	L__int_1327
-L__int_1474:
-L__int_1326:
+	BRA Z	L__int_1467
+	GOTO	L__int_1323
+L__int_1467:
+L__int_1322:
 ;NodoAcelerometro.c,864 :: 		PSEC = sectorSD;
 	MOV	_sectorSD, W0
 	MOV	_sectorSD+2, W1
@@ -4101,15 +4101,15 @@ L__int_1326:
 	MOV	_sectorSD+2, W11
 	CALL	_GuardarInfoSector
 ;NodoAcelerometro.c,863 :: 		if ((horaSistema==0)&&(banInicioMuestreo==1)){
-L__int_1328:
-L__int_1327:
+L__int_1324:
+L__int_1323:
 ;NodoAcelerometro.c,868 :: 		if (banSetReloj==1){
 	MOV	#lo_addr(_banSetReloj), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA Z	L__int_1475
+	BRA Z	L__int_1468
 	GOTO	L_int_1234
-L__int_1475:
+L__int_1468:
 ;NodoAcelerometro.c,869 :: 		horaSistema++;                                                          //Incrementa el reloj del sistema
 	MOV	#1, W1
 	MOV	#0, W2
@@ -4136,9 +4136,9 @@ L_int_1234:
 	MOV	#1, W1
 	CP	W2, W0
 	CPB	W3, W1
-	BRA Z	L__int_1476
+	BRA Z	L__int_1469
 	GOTO	L_int_1235
-L__int_1476:
+L__int_1469:
 ;NodoAcelerometro.c,875 :: 		horaSistema = 0;                                                        //Reinicia el reloj al llegar a las 24:00:00 horas
 	CLR	W0
 	CLR	W1
@@ -4156,9 +4156,9 @@ L_int_1235:
 	MOV	#lo_addr(_banInicioMuestreo), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA Z	L__int_1477
+	BRA Z	L__int_1470
 	GOTO	L_int_1236
-L__int_1477:
+L__int_1470:
 ;NodoAcelerometro.c,880 :: 		Muestrear();
 	CALL	_Muestrear
 ;NodoAcelerometro.c,881 :: 		}
@@ -4213,9 +4213,9 @@ L_Timer1Int237:
 	ZE	[W0], W1
 	MOV	#lo_addr(_x), W0
 	CP	W1, [W0]
-	BRA GTU	L__Timer1Int479
+	BRA GTU	L__Timer1Int472
 	GOTO	L_Timer1Int238
-L__Timer1Int479:
+L__Timer1Int472:
 ;NodoAcelerometro.c,897 :: 		ADXL355_read_FIFO(datosLeidos);                                        //Lee una sola posicion del FIFO
 	MOV	#lo_addr(_datosLeidos), W10
 	CALL	_ADXL355_read_FIFO
@@ -4225,9 +4225,9 @@ L__Timer1Int479:
 L_Timer1Int240:
 	MOV	_y, W0
 	CP	W0, #9
-	BRA LTU	L__Timer1Int480
+	BRA LTU	L__Timer1Int473
 	GOTO	L_Timer1Int241
-L__Timer1Int480:
+L__Timer1Int473:
 ;NodoAcelerometro.c,899 :: 		datosFIFO[y+(x*9)] = datosLeidos[y];                               //LLena la trama datosFIFO
 	MOV	_x, W1
 	MOV	#9, W0
@@ -4264,27 +4264,27 @@ L_Timer1Int243:
 	MUL.SS	W1, W0, W2
 	MOV	#lo_addr(_x), W0
 	CP	W2, [W0]
-	BRA GTU	L__Timer1Int481
+	BRA GTU	L__Timer1Int474
 	GOTO	L_Timer1Int244
-L__Timer1Int481:
+L__Timer1Int474:
 ;NodoAcelerometro.c,905 :: 		if ((x==0)||(x%9==0)){
 	MOV	_x, W0
 	CP	W0, #0
-	BRA NZ	L__Timer1Int482
-	GOTO	L__Timer1Int331
-L__Timer1Int482:
+	BRA NZ	L__Timer1Int475
+	GOTO	L__Timer1Int327
+L__Timer1Int475:
 	MOV	_x, W0
 	MOV	#9, W2
 	REPEAT	#17
 	DIV.U	W0, W2
 	MOV	W1, W0
 	CP	W0, #0
-	BRA NZ	L__Timer1Int483
-	GOTO	L__Timer1Int330
-L__Timer1Int483:
+	BRA NZ	L__Timer1Int476
+	GOTO	L__Timer1Int326
+L__Timer1Int476:
 	GOTO	L_Timer1Int248
-L__Timer1Int331:
-L__Timer1Int330:
+L__Timer1Int327:
+L__Timer1Int326:
 ;NodoAcelerometro.c,906 :: 		tramaAceleracion[contFIFO+contMuestras+x] = contMuestras;
 	MOV	#lo_addr(_contMuestras), W0
 	ZE	[W0], W1
@@ -4355,9 +4355,9 @@ L_Timer1Int244:
 	MOV	#lo_addr(_numTMR1), W0
 	SE	[W0], W0
 	CP	W1, W0
-	BRA Z	L__Timer1Int484
+	BRA Z	L__Timer1Int477
 	GOTO	L_Timer1Int250
-L__Timer1Int484:
+L__Timer1Int477:
 ;NodoAcelerometro.c,919 :: 		T1CON.TON = 0;                                                          //Apaga el Timer1
 	BCLR	T1CON, #15
 ;NodoAcelerometro.c,920 :: 		banCiclo = 1;                                                           //Activa la bandera que indica que se completo un ciclo de medicion
@@ -4444,17 +4444,16 @@ _urx_1:
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #2
-	BRA Z	L__urx_1487
+	BRA Z	L__urx_1480
 	GOTO	L_urx_1251
-L__urx_1487:
-;NodoAcelerometro.c,953 :: 		if (i_rs485<(numDatosRS485+2)){
-	MOV	_numDatosRS485, W0
-	ADD	W0, #2, W1
-	MOV	#lo_addr(_i_rs485), W0
+L__urx_1480:
+;NodoAcelerometro.c,953 :: 		if (i_rs485<(numDatosRS485)){
+	MOV	_i_rs485, W1
+	MOV	#lo_addr(_numDatosRS485), W0
 	CP	W1, [W0]
-	BRA GTU	L__urx_1488
+	BRA LTU	L__urx_1481
 	GOTO	L_urx_1252
-L__urx_1488:
+L__urx_1481:
 ;NodoAcelerometro.c,954 :: 		inputPyloadRS485[i_rs485] = byteRS485;
 	MOV	#lo_addr(_inputPyloadRS485), W1
 	MOV	#lo_addr(_i_rs485), W0
@@ -4470,219 +4469,182 @@ L__urx_1488:
 L_urx_1252:
 ;NodoAcelerometro.c,957 :: 		T2CON.TON = 0;                                                       //Apaga el Timer2
 	BCLR	T2CON, #15
-;NodoAcelerometro.c,959 :: 		if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
-	MOV	#lo_addr(_inputPyloadRS485), W1
-	MOV	#lo_addr(_numDatosRS485), W0
-	ADD	W1, [W0], W0
-	MOV.B	[W0], W0
-	CP.B	W0, #13
-	BRA Z	L__urx_1489
-	GOTO	L__urx_1338
-L__urx_1489:
-	MOV	_numDatosRS485, W0
-	ADD	W0, #1, W1
-	MOV	#lo_addr(_inputPyloadRS485), W0
-	ADD	W0, W1, W0
-	MOV.B	[W0], W0
-	CP.B	W0, #10
-	BRA Z	L__urx_1490
-	GOTO	L__urx_1337
-L__urx_1490:
-L__urx_1336:
-;NodoAcelerometro.c,960 :: 		banRSI = 0;                                                       //Limpia la bandera de inicio de trama
+;NodoAcelerometro.c,958 :: 		banRSI = 0;                                                          //Limpia la bandera de inicio de trama
 	MOV	#lo_addr(_banRSI), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,961 :: 		banRSC = 1;                                                       //Activa la bandera de trama completa
+;NodoAcelerometro.c,959 :: 		banRSC = 1;                                                          //Activa la bandera de trama completa
 	MOV	#lo_addr(_banRSC), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,962 :: 		} else {
-	GOTO	L_urx_1257
-;NodoAcelerometro.c,959 :: 		if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
-L__urx_1338:
-L__urx_1337:
-;NodoAcelerometro.c,963 :: 		banRSI = 0;
-	MOV	#lo_addr(_banRSI), W1
-	CLR	W0
-	MOV.B	W0, [W1]
-;NodoAcelerometro.c,964 :: 		banRSC = 0;
-	MOV	#lo_addr(_banRSC), W1
-	CLR	W0
-	MOV.B	W0, [W1]
-;NodoAcelerometro.c,965 :: 		i_rs485 = 0;
-	CLR	W0
-	MOV	W0, _i_rs485
-;NodoAcelerometro.c,966 :: 		}
-L_urx_1257:
-;NodoAcelerometro.c,967 :: 		}
+;NodoAcelerometro.c,971 :: 		}
 L_urx_1253:
-;NodoAcelerometro.c,968 :: 		}
+;NodoAcelerometro.c,972 :: 		}
 L_urx_1251:
-;NodoAcelerometro.c,971 :: 		if ((banRSI==0)&&(banRSC==0)){
+;NodoAcelerometro.c,975 :: 		if ((banRSI==0)&&(banRSC==0)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #0
-	BRA Z	L__urx_1491
-	GOTO	L__urx_1340
-L__urx_1491:
+	BRA Z	L__urx_1482
+	GOTO	L__urx_1333
+L__urx_1482:
 	MOV	#lo_addr(_banRSC), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #0
-	BRA Z	L__urx_1492
-	GOTO	L__urx_1339
-L__urx_1492:
-L__urx_1335:
-;NodoAcelerometro.c,972 :: 		if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
+	BRA Z	L__urx_1483
+	GOTO	L__urx_1332
+L__urx_1483:
+L__urx_1331:
+;NodoAcelerometro.c,976 :: 		if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
 	MOV	#lo_addr(_byteRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#58, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1493
-	GOTO	L_urx_1261
-L__urx_1493:
-;NodoAcelerometro.c,973 :: 		T2CON.TON = 1;                                                       //Enciende el Timer2
+	BRA Z	L__urx_1484
+	GOTO	L_urx_1257
+L__urx_1484:
+;NodoAcelerometro.c,977 :: 		T2CON.TON = 1;                                                       //Enciende el Timer2
 	BSET	T2CON, #15
-;NodoAcelerometro.c,974 :: 		banRSI = 1;
+;NodoAcelerometro.c,978 :: 		banRSI = 1;
 	MOV	#lo_addr(_banRSI), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,975 :: 		i_rs485 = 0;
+;NodoAcelerometro.c,979 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;NodoAcelerometro.c,976 :: 		}
-L_urx_1261:
-;NodoAcelerometro.c,971 :: 		if ((banRSI==0)&&(banRSC==0)){
-L__urx_1340:
-L__urx_1339:
-;NodoAcelerometro.c,978 :: 		if ((banRSI==1)&&(i_rs485<5)){
+;NodoAcelerometro.c,980 :: 		}
+L_urx_1257:
+;NodoAcelerometro.c,975 :: 		if ((banRSI==0)&&(banRSC==0)){
+L__urx_1333:
+L__urx_1332:
+;NodoAcelerometro.c,982 :: 		if ((banRSI==1)&&(i_rs485<5)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA Z	L__urx_1494
-	GOTO	L__urx_1342
-L__urx_1494:
+	BRA Z	L__urx_1485
+	GOTO	L__urx_1335
+L__urx_1485:
 	MOV	_i_rs485, W0
 	CP	W0, #5
-	BRA LTU	L__urx_1495
-	GOTO	L__urx_1341
-L__urx_1495:
-L__urx_1334:
-;NodoAcelerometro.c,979 :: 		tramaCabeceraRS485[i_rs485] = byteRS485;                                //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatosLSB, NumeroDatosMSB]
+	BRA LTU	L__urx_1486
+	GOTO	L__urx_1334
+L__urx_1486:
+L__urx_1330:
+;NodoAcelerometro.c,983 :: 		tramaCabeceraRS485[i_rs485] = byteRS485;                                //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatosLSB, NumeroDatosMSB]
 	MOV	#lo_addr(_tramaCabeceraRS485), W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], W1
 	MOV	#lo_addr(_byteRS485), W0
 	MOV.B	[W0], [W1]
-;NodoAcelerometro.c,980 :: 		i_rs485++;
+;NodoAcelerometro.c,984 :: 		i_rs485++;
 	MOV	#1, W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], [W0]
-;NodoAcelerometro.c,978 :: 		if ((banRSI==1)&&(i_rs485<5)){
-L__urx_1342:
-L__urx_1341:
-;NodoAcelerometro.c,982 :: 		if ((banRSI==1)&&(i_rs485==5)){
+;NodoAcelerometro.c,982 :: 		if ((banRSI==1)&&(i_rs485<5)){
+L__urx_1335:
+L__urx_1334:
+;NodoAcelerometro.c,986 :: 		if ((banRSI==1)&&(i_rs485==5)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA Z	L__urx_1496
-	GOTO	L__urx_1346
-L__urx_1496:
+	BRA Z	L__urx_1487
+	GOTO	L__urx_1339
+L__urx_1487:
 	MOV	_i_rs485, W0
 	CP	W0, #5
-	BRA Z	L__urx_1497
-	GOTO	L__urx_1345
-L__urx_1497:
-L__urx_1333:
-;NodoAcelerometro.c,984 :: 		if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
+	BRA Z	L__urx_1488
+	GOTO	L__urx_1338
+L__urx_1488:
+L__urx_1329:
+;NodoAcelerometro.c,988 :: 		if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
 	MOV	#lo_addr(_tramaCabeceraRS485+1), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA NZ	L__urx_1498
-	GOTO	L__urx_1344
-L__urx_1498:
+	BRA NZ	L__urx_1489
+	GOTO	L__urx_1337
+L__urx_1489:
 	MOV	#lo_addr(_tramaCabeceraRS485+1), W0
 	MOV.B	[W0], W1
 	MOV.B	#255, W0
 	CP.B	W1, W0
-	BRA NZ	L__urx_1499
-	GOTO	L__urx_1343
-L__urx_1499:
-	GOTO	L_urx_1270
-L__urx_1344:
-L__urx_1343:
-;NodoAcelerometro.c,985 :: 		funcionRS485 = tramaCabeceraRS485[2];
+	BRA NZ	L__urx_1490
+	GOTO	L__urx_1336
+L__urx_1490:
+	GOTO	L_urx_1266
+L__urx_1337:
+L__urx_1336:
+;NodoAcelerometro.c,989 :: 		funcionRS485 = tramaCabeceraRS485[2];
 	MOV	#lo_addr(_funcionRS485), W1
 	MOV	#lo_addr(_tramaCabeceraRS485+2), W0
 	MOV.B	[W0], [W1]
-;NodoAcelerometro.c,986 :: 		*(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
+;NodoAcelerometro.c,990 :: 		*(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
 	MOV	#lo_addr(_tramaCabeceraRS485+3), W1
 	MOV	_ptrnumDatosRS485, W0
 	MOV.B	[W1], [W0]
-;NodoAcelerometro.c,987 :: 		*(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
+;NodoAcelerometro.c,991 :: 		*(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
 	MOV	_ptrnumDatosRS485, W0
 	ADD	W0, #1, W1
 	MOV	#lo_addr(_tramaCabeceraRS485+4), W0
 	MOV.B	[W0], [W1]
-;NodoAcelerometro.c,988 :: 		banRSI = 2;
+;NodoAcelerometro.c,992 :: 		banRSI = 2;
 	MOV	#lo_addr(_banRSI), W1
 	MOV.B	#2, W0
-	MOV.B	W0, [W1]
-;NodoAcelerometro.c,989 :: 		i_rs485 = 0;
-	CLR	W0
-	MOV	W0, _i_rs485
-;NodoAcelerometro.c,990 :: 		} else {
-	GOTO	L_urx_1271
-L_urx_1270:
-;NodoAcelerometro.c,991 :: 		banRSI = 0;
-	MOV	#lo_addr(_banRSI), W1
-	CLR	W0
-	MOV.B	W0, [W1]
-;NodoAcelerometro.c,992 :: 		banRSC = 0;
-	MOV	#lo_addr(_banRSC), W1
-	CLR	W0
 	MOV.B	W0, [W1]
 ;NodoAcelerometro.c,993 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;NodoAcelerometro.c,994 :: 		}
-L_urx_1271:
-;NodoAcelerometro.c,982 :: 		if ((banRSI==1)&&(i_rs485==5)){
-L__urx_1346:
-L__urx_1345:
-;NodoAcelerometro.c,998 :: 		if (banRSC==1){
+;NodoAcelerometro.c,994 :: 		} else {
+	GOTO	L_urx_1267
+L_urx_1266:
+;NodoAcelerometro.c,995 :: 		banRSI = 0;
+	MOV	#lo_addr(_banRSI), W1
+	CLR	W0
+	MOV.B	W0, [W1]
+;NodoAcelerometro.c,996 :: 		banRSC = 0;
+	MOV	#lo_addr(_banRSC), W1
+	CLR	W0
+	MOV.B	W0, [W1]
+;NodoAcelerometro.c,997 :: 		i_rs485 = 0;
+	CLR	W0
+	MOV	W0, _i_rs485
+;NodoAcelerometro.c,998 :: 		}
+L_urx_1267:
+;NodoAcelerometro.c,986 :: 		if ((banRSI==1)&&(i_rs485==5)){
+L__urx_1339:
+L__urx_1338:
+;NodoAcelerometro.c,1002 :: 		if (banRSC==1){
 	MOV	#lo_addr(_banRSC), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
-	BRA Z	L__urx_1500
-	GOTO	L_urx_1272
-L__urx_1500:
-;NodoAcelerometro.c,999 :: 		subFuncionRS485 = inputPyloadRS485[0];
+	BRA Z	L__urx_1491
+	GOTO	L_urx_1268
+L__urx_1491:
+;NodoAcelerometro.c,1003 :: 		subFuncionRS485 = inputPyloadRS485[0];
 	MOV	#lo_addr(_subFuncionRS485), W1
 	MOV	#lo_addr(_inputPyloadRS485), W0
 	MOV.B	[W0], [W1]
-;NodoAcelerometro.c,1000 :: 		switch (funcionRS485){
-	GOTO	L_urx_1273
-;NodoAcelerometro.c,1001 :: 		case 0xF1:
-L_urx_1275:
-;NodoAcelerometro.c,1003 :: 		if (subFuncionRS485==0xD1){
+;NodoAcelerometro.c,1004 :: 		switch (funcionRS485){
+	GOTO	L_urx_1269
+;NodoAcelerometro.c,1005 :: 		case 0xF1:
+L_urx_1271:
+;NodoAcelerometro.c,1007 :: 		if (subFuncionRS485==0xD1){
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#209, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1501
-	GOTO	L_urx_1276
-L__urx_1501:
-;NodoAcelerometro.c,1004 :: 		for (x=0;x<6;x++) {
+	BRA Z	L__urx_1492
+	GOTO	L_urx_1272
+L__urx_1492:
+;NodoAcelerometro.c,1008 :: 		for (x=0;x<6;x++) {
 	CLR	W0
 	MOV	W0, _x
-L_urx_1277:
+L_urx_1273:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__urx_1502
-	GOTO	L_urx_1278
-L__urx_1502:
-;NodoAcelerometro.c,1005 :: 		tiempo[x] = inputPyloadRS485[x+1];                  //LLena la trama tiempo con el payload de la trama recuperada
+	BRA LTU	L__urx_1493
+	GOTO	L_urx_1274
+L__urx_1493:
+;NodoAcelerometro.c,1009 :: 		tiempo[x] = inputPyloadRS485[x+1];                  //LLena la trama tiempo con el payload de la trama recuperada
 	MOV	#lo_addr(_tiempo), W1
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], W2
@@ -4691,51 +4653,51 @@ L__urx_1502:
 	MOV	#lo_addr(_inputPyloadRS485), W0
 	ADD	W0, W1, W0
 	MOV.B	[W0], [W2]
-;NodoAcelerometro.c,1004 :: 		for (x=0;x<6;x++) {
+;NodoAcelerometro.c,1008 :: 		for (x=0;x<6;x++) {
 	MOV	#1, W1
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], [W0]
-;NodoAcelerometro.c,1006 :: 		}
-	GOTO	L_urx_1277
-L_urx_1278:
-;NodoAcelerometro.c,1007 :: 		horaSistema = RecuperarHoraRPI(tiempo);                 //Recupera la hora de la RPi
+;NodoAcelerometro.c,1010 :: 		}
+	GOTO	L_urx_1273
+L_urx_1274:
+;NodoAcelerometro.c,1011 :: 		horaSistema = RecuperarHoraRPI(tiempo);                 //Recupera la hora de la RPi
 	MOV	#lo_addr(_tiempo), W10
 	CALL	_RecuperarHoraRPI
 	MOV	W0, _horaSistema
 	MOV	W1, _horaSistema+2
-;NodoAcelerometro.c,1008 :: 		fechaSistema = RecuperarFechaRPI(tiempo);               //Recupera la fecha de la RPi
+;NodoAcelerometro.c,1012 :: 		fechaSistema = RecuperarFechaRPI(tiempo);               //Recupera la fecha de la RPi
 	MOV	#lo_addr(_tiempo), W10
 	CALL	_RecuperarFechaRPI
 	MOV	W0, _fechaSistema
 	MOV	W1, _fechaSistema+2
-;NodoAcelerometro.c,1009 :: 		banSetReloj = 1;                                        //Activa la bandera para indicar que se establecio la hora y fecha
+;NodoAcelerometro.c,1013 :: 		banSetReloj = 1;                                        //Activa la bandera para indicar que se establecio la hora y fecha
 	MOV	#lo_addr(_banSetReloj), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,1010 :: 		}
-L_urx_1276:
-;NodoAcelerometro.c,1012 :: 		if (subFuncionRS485==0xD2){
+;NodoAcelerometro.c,1014 :: 		}
+L_urx_1272:
+;NodoAcelerometro.c,1016 :: 		if (subFuncionRS485==0xD2){
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#210, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1503
-	GOTO	L_urx_1280
-L__urx_1503:
-;NodoAcelerometro.c,1014 :: 		outputPyloadRS485[0] = 0xD2;
+	BRA Z	L__urx_1494
+	GOTO	L_urx_1276
+L__urx_1494:
+;NodoAcelerometro.c,1018 :: 		outputPyloadRS485[0] = 0xD2;
 	MOV	#lo_addr(_outputPyloadRS485), W1
 	MOV.B	#210, W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,1015 :: 		for (x=0;x<6;x++){
+;NodoAcelerometro.c,1019 :: 		for (x=0;x<6;x++){
 	CLR	W0
 	MOV	W0, _x
-L_urx_1281:
+L_urx_1277:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__urx_1504
-	GOTO	L_urx_1282
-L__urx_1504:
-;NodoAcelerometro.c,1016 :: 		outputPyloadRS485[x+1] = tiempo[x];
+	BRA LTU	L__urx_1495
+	GOTO	L_urx_1278
+L__urx_1495:
+;NodoAcelerometro.c,1020 :: 		outputPyloadRS485[x+1] = tiempo[x];
 	MOV	_x, W0
 	ADD	W0, #1, W1
 	MOV	#lo_addr(_outputPyloadRS485), W0
@@ -4744,14 +4706,14 @@ L__urx_1504:
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], W0
 	MOV.B	[W0], [W2]
-;NodoAcelerometro.c,1015 :: 		for (x=0;x<6;x++){
+;NodoAcelerometro.c,1019 :: 		for (x=0;x<6;x++){
 	MOV	#1, W1
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], [W0]
-;NodoAcelerometro.c,1017 :: 		}
-	GOTO	L_urx_1281
-L_urx_1282:
-;NodoAcelerometro.c,1018 :: 		EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);//Envia la hora local al Master
+;NodoAcelerometro.c,1021 :: 		}
+	GOTO	L_urx_1277
+L_urx_1278:
+;NodoAcelerometro.c,1022 :: 		EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);//Envia la hora local al Master
 	MOV	#7, W13
 	MOV.B	#241, W12
 	MOV.B	#1, W11
@@ -4760,89 +4722,89 @@ L_urx_1282:
 	PUSH	W0
 	CALL	_EnviarTramaRS485
 	SUB	#2, W15
-;NodoAcelerometro.c,1019 :: 		}
+;NodoAcelerometro.c,1023 :: 		}
+L_urx_1276:
+;NodoAcelerometro.c,1024 :: 		break;
+	GOTO	L_urx_1270
+;NodoAcelerometro.c,1026 :: 		case 0xF2:
 L_urx_1280:
-;NodoAcelerometro.c,1020 :: 		break;
-	GOTO	L_urx_1274
-;NodoAcelerometro.c,1022 :: 		case 0xF2:
-L_urx_1284:
-;NodoAcelerometro.c,1024 :: 		if (subFuncionRS485==0xD1){
+;NodoAcelerometro.c,1028 :: 		if (subFuncionRS485==0xD1){
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#209, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1505
-	GOTO	L_urx_1285
-L__urx_1505:
-;NodoAcelerometro.c,1025 :: 		sectorSD = UbicarUltimoSectorEscrito(inputPyloadRS485[1]);   //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
+	BRA Z	L__urx_1496
+	GOTO	L_urx_1281
+L__urx_1496:
+;NodoAcelerometro.c,1029 :: 		sectorSD = UbicarUltimoSectorEscrito(inputPyloadRS485[1]);   //inputPyloadRS485[1] = sobrescribir (0=no, 1=si)
 	MOV	#lo_addr(_inputPyloadRS485+1), W0
 	MOV.B	[W0], W10
 	CALL	_UbicarUltimoSectorEscrito
 	MOV	W0, _sectorSD
 	MOV	W1, _sectorSD+2
-;NodoAcelerometro.c,1026 :: 		PSEC = sectorSD;                                             //Guarda el numero del primer sector escrito en este ciclo de muestreo
+;NodoAcelerometro.c,1030 :: 		PSEC = sectorSD;                                             //Guarda el numero del primer sector escrito en este ciclo de muestreo
 	MOV	W0, _PSEC
 	MOV	W1, _PSEC+2
-;NodoAcelerometro.c,1027 :: 		GuardarInfoSector(PSEC, infoPrimerSector);
+;NodoAcelerometro.c,1031 :: 		GuardarInfoSector(PSEC, infoPrimerSector);
 	MOV	_infoPrimerSector, W12
 	MOV	_infoPrimerSector+2, W13
 	MOV.D	W0, W10
 	CALL	_GuardarInfoSector
-;NodoAcelerometro.c,1028 :: 		banInicioMuestreo = 1;                                       //Activa la bandera para iniciar el muestreo
+;NodoAcelerometro.c,1032 :: 		banInicioMuestreo = 1;                                       //Activa la bandera para iniciar el muestreo
 	MOV	#lo_addr(_banInicioMuestreo), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,1029 :: 		}
-L_urx_1285:
-;NodoAcelerometro.c,1031 :: 		if (subFuncionRS485==0xD2){
+;NodoAcelerometro.c,1033 :: 		}
+L_urx_1281:
+;NodoAcelerometro.c,1035 :: 		if (subFuncionRS485==0xD2){
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#210, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1506
-	GOTO	L_urx_1286
-L__urx_1506:
-;NodoAcelerometro.c,1032 :: 		banInicioMuestreo = 0;                                        //Limpia la bandera para detener el muestreo
+	BRA Z	L__urx_1497
+	GOTO	L_urx_1282
+L__urx_1497:
+;NodoAcelerometro.c,1036 :: 		banInicioMuestreo = 0;                                        //Limpia la bandera para detener el muestreo
 	MOV	#lo_addr(_banInicioMuestreo), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,1033 :: 		}
-L_urx_1286:
-;NodoAcelerometro.c,1034 :: 		break;
-	GOTO	L_urx_1274
-;NodoAcelerometro.c,1036 :: 		case 0xF3:
-L_urx_1287:
-;NodoAcelerometro.c,1039 :: 		*ptrsectorReq = inputPyloadRS485[1];                        //LSB sectorReq
+;NodoAcelerometro.c,1037 :: 		}
+L_urx_1282:
+;NodoAcelerometro.c,1038 :: 		break;
+	GOTO	L_urx_1270
+;NodoAcelerometro.c,1040 :: 		case 0xF3:
+L_urx_1283:
+;NodoAcelerometro.c,1043 :: 		*ptrsectorReq = inputPyloadRS485[1];                        //LSB sectorReq
 	MOV	#lo_addr(_inputPyloadRS485+1), W1
 	MOV	_ptrsectorReq, W0
 	MOV.B	[W1], [W0]
-;NodoAcelerometro.c,1040 :: 		*(ptrsectorReq+1) = inputPyloadRS485[2];
+;NodoAcelerometro.c,1044 :: 		*(ptrsectorReq+1) = inputPyloadRS485[2];
 	MOV	_ptrsectorReq, W0
 	ADD	W0, #1, W1
 	MOV	#lo_addr(_inputPyloadRS485+2), W0
 	MOV.B	[W0], [W1]
-;NodoAcelerometro.c,1041 :: 		*(ptrsectorReq+2) = inputPyloadRS485[3];
+;NodoAcelerometro.c,1045 :: 		*(ptrsectorReq+2) = inputPyloadRS485[3];
 	MOV	_ptrsectorReq, W0
 	ADD	W0, #2, W1
 	MOV	#lo_addr(_inputPyloadRS485+3), W0
 	MOV.B	[W0], [W1]
-;NodoAcelerometro.c,1042 :: 		*(ptrsectorReq+3) = inputPyloadRS485[4];                    //MSB sectorReq
+;NodoAcelerometro.c,1046 :: 		*(ptrsectorReq+3) = inputPyloadRS485[4];                    //MSB sectorReq
 	MOV	_ptrsectorReq, W0
 	ADD	W0, #3, W1
 	MOV	#lo_addr(_inputPyloadRS485+4), W0
 	MOV.B	[W0], [W1]
-;NodoAcelerometro.c,1045 :: 		if (subFuncionRS485==0xD1){
+;NodoAcelerometro.c,1049 :: 		if (subFuncionRS485==0xD1){
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#209, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1507
-	GOTO	L_urx_1288
-L__urx_1507:
-;NodoAcelerometro.c,1047 :: 		InformacionSectores(outputPyloadRS485);
+	BRA Z	L__urx_1498
+	GOTO	L_urx_1284
+L__urx_1498:
+;NodoAcelerometro.c,1051 :: 		InformacionSectores(outputPyloadRS485);
 	MOV	#lo_addr(_outputPyloadRS485), W10
 	CALL	_InformacionSectores
-;NodoAcelerometro.c,1048 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 17, outputPyloadRS485);
+;NodoAcelerometro.c,1052 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 17, outputPyloadRS485);
 	MOV	#17, W13
 	MOV.B	#243, W12
 	MOV.B	#1, W11
@@ -4851,38 +4813,38 @@ L__urx_1507:
 	PUSH	W0
 	CALL	_EnviarTramaRS485
 	SUB	#2, W15
-;NodoAcelerometro.c,1049 :: 		}
-L_urx_1288:
-;NodoAcelerometro.c,1051 :: 		if (subFuncionRS485==0xD2){
+;NodoAcelerometro.c,1053 :: 		}
+L_urx_1284:
+;NodoAcelerometro.c,1055 :: 		if (subFuncionRS485==0xD2){
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#210, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1508
-	GOTO	L_urx_1289
-L__urx_1508:
-;NodoAcelerometro.c,1053 :: 		InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
+	BRA Z	L__urx_1499
+	GOTO	L_urx_1285
+L__urx_1499:
+;NodoAcelerometro.c,1057 :: 		InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
 	MOV	#lo_addr(_outputPyloadRS485), W13
 	MOV	_sectorReq, W11
 	MOV	_sectorReq+2, W12
 	MOV.B	#210, W10
 	CALL	_InspeccionarSector
-;NodoAcelerometro.c,1054 :: 		}
-L_urx_1289:
-;NodoAcelerometro.c,1056 :: 		if (subFuncionRS485==0xD3){
+;NodoAcelerometro.c,1058 :: 		}
+L_urx_1285:
+;NodoAcelerometro.c,1060 :: 		if (subFuncionRS485==0xD3){
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#211, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1509
-	GOTO	L_urx_1290
-L__urx_1509:
-;NodoAcelerometro.c,1058 :: 		RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
+	BRA Z	L__urx_1500
+	GOTO	L_urx_1286
+L__urx_1500:
+;NodoAcelerometro.c,1062 :: 		RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
 	MOV	#lo_addr(_outputPyloadRS485), W12
 	MOV	_sectorReq, W10
 	MOV	_sectorReq+2, W11
 	CALL	_RecuperarTramaAceleracion
-;NodoAcelerometro.c,1059 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 2507, outputPyloadRS485);
+;NodoAcelerometro.c,1063 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 2507, outputPyloadRS485);
 	MOV	#2507, W13
 	MOV.B	#243, W12
 	MOV.B	#1, W11
@@ -4891,45 +4853,45 @@ L__urx_1509:
 	PUSH	W0
 	CALL	_EnviarTramaRS485
 	SUB	#2, W15
-;NodoAcelerometro.c,1060 :: 		}
-L_urx_1290:
-;NodoAcelerometro.c,1061 :: 		break;
-	GOTO	L_urx_1274
-;NodoAcelerometro.c,1063 :: 		}
-L_urx_1273:
+;NodoAcelerometro.c,1064 :: 		}
+L_urx_1286:
+;NodoAcelerometro.c,1065 :: 		break;
+	GOTO	L_urx_1270
+;NodoAcelerometro.c,1067 :: 		}
+L_urx_1269:
 	MOV	#lo_addr(_funcionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#241, W0
 	CP.B	W1, W0
-	BRA NZ	L__urx_1510
-	GOTO	L_urx_1275
-L__urx_1510:
+	BRA NZ	L__urx_1501
+	GOTO	L_urx_1271
+L__urx_1501:
 	MOV	#lo_addr(_funcionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#242, W0
 	CP.B	W1, W0
-	BRA NZ	L__urx_1511
-	GOTO	L_urx_1284
-L__urx_1511:
+	BRA NZ	L__urx_1502
+	GOTO	L_urx_1280
+L__urx_1502:
 	MOV	#lo_addr(_funcionRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#243, W0
 	CP.B	W1, W0
-	BRA NZ	L__urx_1512
-	GOTO	L_urx_1287
-L__urx_1512:
-L_urx_1274:
-;NodoAcelerometro.c,1065 :: 		banRSC = 0;
+	BRA NZ	L__urx_1503
+	GOTO	L_urx_1283
+L__urx_1503:
+L_urx_1270:
+;NodoAcelerometro.c,1069 :: 		banRSC = 0;
 	MOV	#lo_addr(_banRSC), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,1066 :: 		banRSI = 0;
+;NodoAcelerometro.c,1070 :: 		banRSI = 0;
 	MOV	#lo_addr(_banRSI), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;NodoAcelerometro.c,1068 :: 		}
-L_urx_1272:
-;NodoAcelerometro.c,1070 :: 		}
+;NodoAcelerometro.c,1072 :: 		}
+L_urx_1268:
+;NodoAcelerometro.c,1074 :: 		}
 L_end_urx_1:
 	POP	W13
 	POP	W12

@@ -171,6 +171,7 @@ void ObtenerOperacion(){
 	//printf("Funcion: %X\n", funcionSPI);
 	//printf("Subfuncion: %X\n", subFuncionSPI);
 	//printf("Numero de bytes: %d\n", numBytesSPI);
+	delay(50);
 	
 	switch (funcionSPI){                                                                     
           //Funciones de tiempo:
@@ -276,7 +277,7 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 		pyloadNodo[3] = *(ptrSectorReq+2);
 		pyloadNodo[4] = *(ptrSectorReq+3);
 		banSolicitud = 0;
-		delay(15);
+		
 	}
 		
 }

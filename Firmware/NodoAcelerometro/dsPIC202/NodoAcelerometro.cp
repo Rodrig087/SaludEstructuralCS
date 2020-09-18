@@ -1369,20 +1369,14 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (banRSI==2){
 
- if (i_rs485<(numDatosRS485+2)){
+ if (i_rs485<(numDatosRS485)){
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
  T2CON.TON = 0;
-
- if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
  banRSI = 0;
  banRSC = 1;
- } else {
- banRSI = 0;
- banRSC = 0;
- i_rs485 = 0;
- }
+#line 971 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC202/NodoAcelerometro.c"
  }
  }
 

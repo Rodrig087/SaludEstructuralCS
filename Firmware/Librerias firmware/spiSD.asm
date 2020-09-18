@@ -13,9 +13,9 @@ _SPISD_Init:
 	BRA Z	L__SPISD_Init7
 	GOTO	L_SPISD_Init0
 L__SPISD_Init7:
-;spiSD.c,21 :: 		SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_2, _SPI_PRESCALE_PRI_16, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
-	MOV	#1, W13
-	MOV	#24, W12
+;spiSD.c,19 :: 		SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_4, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
+	CLR	W13
+	MOV	#16, W12
 	CLR	W11
 	MOV	#32, W10
 	CLR	W0
@@ -28,10 +28,10 @@ L__SPISD_Init7:
 	PUSH	W0
 	CALL	_SPI1_Init_Advanced
 	SUB	#8, W15
-;spiSD.c,24 :: 		} else {
+;spiSD.c,26 :: 		} else {
 	GOTO	L_SPISD_Init1
 L_SPISD_Init0:
-;spiSD.c,26 :: 		SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
+;spiSD.c,28 :: 		SPI1_Init_Advanced(_SPI_MASTER, _SPI_8_BIT, _SPI_PRESCALE_SEC_1, _SPI_PRESCALE_PRI_64, _SPI_SS_DISABLE, _SPI_DATA_SAMPLE_MIDDLE, _SPI_CLK_IDLE_HIGH, _SPI_ACTIVE_2_IDLE);
 	CLR	W13
 	MOV	#28, W12
 	CLR	W11
@@ -46,11 +46,11 @@ L_SPISD_Init0:
 	PUSH	W0
 	CALL	_SPI1_Init_Advanced
 	SUB	#8, W15
-;spiSD.c,27 :: 		}
+;spiSD.c,29 :: 		}
 L_SPISD_Init1:
-;spiSD.c,29 :: 		SPI1STAT.SPIEN = 1;                                                         //Habilita el SPI1
+;spiSD.c,31 :: 		SPI1STAT.SPIEN = 1;                                                         //Habilita el SPI1
 	BSET	SPI1STAT, #15
-;spiSD.c,33 :: 		}
+;spiSD.c,35 :: 		}
 L_end_SPISD_Init:
 	POP	W13
 	POP	W12
@@ -61,25 +61,25 @@ L_end_SPISD_Init:
 
 _SPISD_Write:
 
-;spiSD.c,42 :: 		unsigned char SPISD_Write(unsigned char datos) {
-;spiSD.c,43 :: 		SPI1BUF = datos;
+;spiSD.c,44 :: 		unsigned char SPISD_Write(unsigned char datos) {
+;spiSD.c,45 :: 		SPI1BUF = datos;
 	ZE	W10, W0
 	MOV	WREG, SPI1BUF
-;spiSD.c,44 :: 		while(SPI1STATbits.SPITBF);          // Transmitting
+;spiSD.c,46 :: 		while(SPI1STATbits.SPITBF);          // Transmitting
 L_SPISD_Write2:
 	BTSS	SPI1STATbits, #1
 	GOTO	L_SPISD_Write3
 	GOTO	L_SPISD_Write2
 L_SPISD_Write3:
-;spiSD.c,45 :: 		while(SPI1STATbits.SPIRBF == 0);     // Receiving
+;spiSD.c,47 :: 		while(SPI1STATbits.SPIRBF == 0);     // Receiving
 L_SPISD_Write4:
 	BTSC	SPI1STATbits, #0
 	GOTO	L_SPISD_Write5
 	GOTO	L_SPISD_Write4
 L_SPISD_Write5:
-;spiSD.c,46 :: 		return SPI1BUF;
+;spiSD.c,48 :: 		return SPI1BUF;
 	MOV.B	SPI1BUF, WREG
-;spiSD.c,47 :: 		}
+;spiSD.c,49 :: 		}
 L_end_SPISD_Write:
 	RETURN
 ; end of _SPISD_Write

@@ -9,7 +9,7 @@ _SD_Read:
 ; i end address is: 4 (W2)
 L_SD_Read0:
 ; i start address is: 4 (W2)
-	MOV	#100, W0
+	MOV	#2000, W0
 	CP	W2, W0
 	BRA LTU	L__SD_Read78
 	GOTO	L_SD_Read1
@@ -30,15 +30,15 @@ L__SD_Read79:
 ; i end address is: 4 (W2)
 	GOTO	L_SD_Read1
 L_SD_Read3:
-;sdcard.c,98 :: 		if(i == SD_TIME_OUT-1) return 0xEE;
+;sdcard.c,97 :: 		if(i == SD_TIME_OUT-1) return TOKEN_NOT_RECEIVED;
 ; i start address is: 4 (W2)
-	MOV	#99, W0
+	MOV	#1999, W0
 	CP	W2, W0
 	BRA Z	L__SD_Read80
 	GOTO	L_SD_Read4
 L__SD_Read80:
 ; i end address is: 4 (W2)
-	MOV.B	#238, W0
+	MOV.B	#21, W0
 	GOTO	L_end_SD_Read
 L_SD_Read4:
 ;sdcard.c,94 :: 		for(i = 0; i < SD_TIME_OUT; i++){
@@ -438,10 +438,10 @@ L_SD_Init32:
 	CLR	W0
 	MOV	W0, [W14+0]
 L_SD_Init34:
-	MOV	#100, W1
-	ADD	W14, #0, W0
-	CP	W1, [W0]
-	BRA GTU	L__SD_Init101
+	MOV	[W14+0], W1
+	MOV	#2000, W0
+	CP	W1, W0
+	BRA LTU	L__SD_Init101
 	GOTO	L_SD_Init35
 L__SD_Init101:
 ;sdcard.c,223 :: 		SD_Send_Command(GO_IDLE_STATE,0x00000000,0x4A);     // CMD0
@@ -460,9 +460,9 @@ L__SD_Init102:
 	GOTO	L_SD_Init35
 L_SD_Init37:
 ;sdcard.c,226 :: 		if(i==(SD_TIME_OUT-1)) return CARD_NOT_INSERTED;
-	MOV	#99, W1
-	ADD	W14, #0, W0
-	CP	W1, [W0]
+	MOV	[W14+0], W1
+	MOV	#1999, W0
+	CP	W1, W0
 	BRA Z	L__SD_Init103
 	GOTO	L_SD_Init38
 L__SD_Init103:
@@ -505,10 +505,10 @@ L__SD_Init105:
 	CLR	W0
 	MOV	W0, [W14+0]
 L_SD_Init41:
-	MOV	#100, W1
-	ADD	W14, #0, W0
-	CP	W1, [W0]
-	BRA GTU	L__SD_Init106
+	MOV	[W14+0], W1
+	MOV	#2000, W0
+	CP	W1, W0
+	BRA LTU	L__SD_Init106
 	GOTO	L_SD_Init42
 L__SD_Init106:
 ;sdcard.c,236 :: 		if(SD_Ready() == 0) return SD_NOT_READY;
@@ -536,9 +536,9 @@ L__SD_Init108:
 	GOTO	L_SD_Init42
 L_SD_Init45:
 ;sdcard.c,240 :: 		if(i==(SD_TIME_OUT-1)) return UNUSABLE_CARD;
-	MOV	#99, W1
-	ADD	W14, #0, W0
-	CP	W1, [W0]
+	MOV	[W14+0], W1
+	MOV	#1999, W0
+	CP	W1, W0
 	BRA Z	L__SD_Init109
 	GOTO	L_SD_Init46
 L__SD_Init109:
@@ -676,10 +676,10 @@ L_SD_Init55:
 	CLR	W0
 	MOV	W0, [W14+0]
 L_SD_Init56:
-	MOV	#100, W1
-	ADD	W14, #0, W0
-	CP	W1, [W0]
-	BRA GTU	L__SD_Init118
+	MOV	[W14+0], W1
+	MOV	#2000, W0
+	CP	W1, W0
+	BRA LTU	L__SD_Init118
 	GOTO	L_SD_Init57
 L__SD_Init118:
 ;sdcard.c,266 :: 		if(SD_Ready() == 0) return SD_NOT_READY;
@@ -724,9 +724,9 @@ L__SD_Init121:
 	GOTO	L_SD_Init57
 L_SD_Init61:
 ;sdcard.c,273 :: 		if(i==(SD_TIME_OUT-1)) return UNUSABLE_CARD;
-	MOV	#99, W1
-	ADD	W14, #0, W0
-	CP	W1, [W0]
+	MOV	[W14+0], W1
+	MOV	#1999, W0
+	CP	W1, W0
 	BRA Z	L__SD_Init122
 	GOTO	L_SD_Init62
 L__SD_Init122:
@@ -1048,7 +1048,7 @@ _SD_Ready:
 ; i end address is: 4 (W2)
 L_SD_Ready70:
 ; i start address is: 4 (W2)
-	MOV	#100, W0
+	MOV	#2000, W0
 	CP	W2, W0
 	BRA LTU	L__SD_Ready134
 	GOTO	L_SD_Ready71
@@ -1070,7 +1070,7 @@ L__SD_Ready135:
 L_SD_Ready73:
 ;sdcard.c,392 :: 		if(i == (SD_TIME_OUT-1)) return 0x00;
 ; i start address is: 4 (W2)
-	MOV	#99, W0
+	MOV	#1999, W0
 	CP	W2, W0
 	BRA Z	L__SD_Ready136
 	GOTO	L_SD_Ready74
