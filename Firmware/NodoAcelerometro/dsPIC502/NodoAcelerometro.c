@@ -275,7 +275,6 @@ void ConfiguracionPrincipal(){
      U1RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART1 RX
      IPC2bits.U1RXIP = 0x04;                                                    //Prioridad de la interrupcion UART1 RX
      UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);                            //Inicializa el UART1 con una velocidad de 2Mbps
-     //U1MODE.UARTEN = 0;                                                         //Desabilita el UART
 
      //Configuracion del puerto SPI2 en modo Master:
      RPINR22bits.SDI2R = 0x21;                                                  //Configura el pin RB1/RPI33 como SDI2 *
@@ -305,6 +304,14 @@ void ConfiguracionPrincipal(){
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR2
      PR2 = 62500;                                                               //Carga el preload para un tiempo de 100ms
      IPC1bits.T2IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR2
+
+     //Configuracion del TMR3 con un tiempo de 150ms
+     T3CON = 0x0020;
+     T3CON.TON = 0;                                                             //Apaga el Timer3
+     T3IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR3
+     T3IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR3
+     PR3 = 62500;                                                               //Carga el preload para un tiempo de 100ms
+     IPC2bits.T3IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR3
 
      //Configuracion del acelerometro:
      ADXL355_write_byte(POWER_CTL, DRDY_OFF|STANDBY);                           //Coloco el ADXL en modo STANDBY para pausar las conversiones y limpiar el FIFO
@@ -939,6 +946,20 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
+//Interrupcion por desbordamiento del Timer3
+void Timer3Int() org IVT_ADDR_T3INTERRUPT{
+
+     T3IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer3
+
+     //Reactiva de nuevo la interrupcion por UART1:
+     //UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+     U1RXIE_bit = 1;
+     T3CON.TON = 0;
+
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
 //Interrupcion UART1
 void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
@@ -957,17 +978,6 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            T2CON.TON = 0;                                                       //Apaga el Timer2
            banRSI = 0;                                                          //Limpia la bandera de inicio de trama
            banRSC = 1;                                                          //Activa la bandera de trama completa
-           /*
-           //Verifica los bytes de final de trama:
-           if ((inputPyloadRS485[numDatosRS485]==0x0D)&&(inputPyloadRS485[numDatosRS485+1]==0x0A)){
-              banRSI = 0;                                                       //Limpia la bandera de inicio de trama
-              banRSC = 1;                                                       //Activa la bandera de trama completa
-           } else {
-              banRSI = 0;
-              banRSC = 0;
-              i_rs485 = 0;
-           }
-           */
         }
      }
 
@@ -995,6 +1005,10 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            banRSI = 0;
            banRSC = 0;
            i_rs485 = 0;
+           //Suspende la comunicacion por UART durante 100ms:
+           //U1MODE.UARTEN = 0;
+           U1RXIE_bit = 0;
+           T3CON.TON = 1;
         }
      }
 

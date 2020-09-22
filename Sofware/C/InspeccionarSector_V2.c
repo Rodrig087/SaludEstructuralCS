@@ -144,6 +144,7 @@ int ConfiguracionPrincipal(){
 //C:0xA0    F:0xF0
 void ObtenerOperacion(){
 	
+	printf("OOp..\n"); 
 	unsigned short funcionSPI;
 	unsigned short subFuncionSPI;
 	unsigned short numBytesMSB;
@@ -151,6 +152,8 @@ void ObtenerOperacion(){
 	unsigned int numBytesSPI; 
     unsigned char *ptrnumBytesSPI;
 	ptrnumBytesSPI = (unsigned char *) & numBytesSPI;
+	
+	delay(1);
 	
 	//Recupera: [operacion, byteLSB, byteMSB]
 	bcm2835_spi_transfer(0xA0);
@@ -168,10 +171,7 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	//printf("Funcion: %X\n", funcionSPI);
-	//printf("Subfuncion: %X\n", subFuncionSPI);
-	//printf("Numero de bytes: %d\n", numBytesSPI);
-	delay(50);
+	//delay(5);
 	
 	switch (funcionSPI){                                                                     
           //Funciones de tiempo:
@@ -222,6 +222,7 @@ void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsig
 //C:0xAA	F:0xFA
 void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485){
 	
+	printf("OPy..\n"); 
 	bcm2835_spi_transfer(0xAA);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	for (i=0;i<numBytesPyload;i++){
@@ -270,7 +271,7 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 		}
 		//Incrementa el sector:
 		sectorReq++;
-		printf("Inspeccionando sector: %d\n", sectorReq);
+		//printf("Inspeccionando sector: %d\n", sectorReq);
 		pyloadNodo[0] = subFuncionNodo;
 		pyloadNodo[1] = *ptrSectorReq;
 		pyloadNodo[2] = *(ptrSectorReq+1);

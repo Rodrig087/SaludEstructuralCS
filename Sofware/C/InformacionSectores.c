@@ -139,6 +139,8 @@ void ObtenerOperacion(){
     unsigned char *ptrnumBytesSPI;
 	ptrnumBytesSPI = (unsigned char *) & numBytesSPI;
 	
+	delay(1);
+	
 	//Recupera: [operacion, byteLSB, byteMSB]
 	bcm2835_spi_transfer(0xA0);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);

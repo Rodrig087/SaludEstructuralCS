@@ -13423,6 +13423,7 @@ tgen_bit
 tiempo
 timer1int
 timer2int
+timer3int
 tmr1
 tmr1_0
 tmr1_0_bit

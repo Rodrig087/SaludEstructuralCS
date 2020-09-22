@@ -533,6 +533,7 @@ unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
 unsigned char checkEscSD;
 unsigned char checkLecSD;
+unsigned short banInsSec;
 
 
 
@@ -548,7 +549,7 @@ void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
 unsigned long UbicarPrimerSectorEscrito();
 unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 
@@ -609,6 +610,7 @@ void main() {
  checkEscSD = 0;
  checkLecSD = 0;
  MSRS485 = 0;
+ banInsSec = 0;
 
 
  switch ( 8 ){
@@ -633,7 +635,7 @@ void main() {
  infoPrimerSector = PSF+ 1000 -2;
  infoUltimoSector = PSF+ 1000 -1;
  PSE = PSF+ 1000 ;
-#line 218 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
+#line 220 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
@@ -656,7 +658,7 @@ void main() {
  while(1){
 
  asm CLRWDT;
-
+ Delay_ms(100);
  }
 
 }
@@ -728,6 +730,14 @@ void ConfiguracionPrincipal(){
  IPC1bits.T2IP = 0x02;
 
 
+ T3CON = 0x0020;
+ T3CON.TON = 0;
+ T3IE_bit = 1;
+ T3IF_bit = 0;
+ PR3 = 62500;
+ IPC2bits.T3IP = 0x02;
+
+
  ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
 
 
@@ -782,7 +792,13 @@ void Muestrear(){
  contFIFO = 0;
  T1CON.TON = 1;
 
+
  GuardarTramaSD(tiempo, tramaAceleracion);
+
+
+ if (banInsSec==1){
+ InspeccionarSector(1, sectorReq, outputPyloadRS485);
+ }
 
 
  }
@@ -927,8 +943,8 @@ unsigned long UbicarPrimerSectorEscrito(){
  } else {
  primerSectorSD = PSE;
  }
- }
 
+ }
 
  return primerSectorSD;
 
@@ -963,9 +979,8 @@ unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD){
  *(ptrSectorInicioSD+3) = bufferSectorFinal[0];
  break;
  Delay_ms(5);
- } else {
- sectorInicioSD = PSE;
  }
+
  }
  }
 
@@ -1028,25 +1043,22 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 
 
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
  unsigned char bufferSectorReq[512];
  unsigned int numDatosSec;
  unsigned int contadorSector;
  unsigned long USE;
 
- if (modoLec==0xD2){
- TEST = ~TEST;
- }
 
-
- if (banInicioMuestreo==0){
+ if (estadoMuestreo==0){
  USE = UbicarUltimoSectorEscrito(0);
+ TEST = ~TEST;
  } else {
  USE = sectorSD - 1;
  }
 
- tramaDatosSec[0] = modoLec;
+ tramaDatosSec[0] = 0xD2;
 
 
  if ((sectorReq>=PSE)&&(sectorReq<USF)){
@@ -1071,6 +1083,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
  tramaDatosSec[2] = 0xE3;
  numDatosSec = 3;
  }
+ Delay_us(10);
  }
  } else {
 
@@ -1088,6 +1101,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
 
  }
 
+ banInsSec = 0;
  EnviarTramaRS485(1,  2 , 0xF3, numDatosSec, tramaDatosSec);
 
 }
@@ -1361,6 +1375,19 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
 
 
+void Timer3Int() org IVT_ADDR_T3INTERRUPT{
+
+ T3IF_bit = 0;
+
+
+ UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+ T3CON.TON = 0;
+
+}
+
+
+
+
 void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
@@ -1378,7 +1405,6 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  T2CON.TON = 0;
  banRSI = 0;
  banRSC = 1;
-#line 973 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
  }
  }
 
@@ -1406,6 +1432,9 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  banRSI = 0;
  banRSC = 0;
  i_rs485 = 0;
+
+ U1MODE.UARTEN = 0;
+ T3CON.TON = 1;
  }
  }
 
@@ -1465,7 +1494,13 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD2){
 
- InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
+ if (banInicioMuestreo==1){
+
+ banInsSec=1;
+ } else {
+
+ InspeccionarSector(0, sectorReq, outputPyloadRS485);
+ }
  }
 
  if (subFuncionRS485==0xD3){

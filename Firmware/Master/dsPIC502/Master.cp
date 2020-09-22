@@ -699,7 +699,8 @@ void ConfiguracionPrincipal(){
  tramaSolicitudSPI[3] = *(ptrnumBytesSPI+1);
 
  RP1 = 1;
- Delay_us(20);
+
+ Delay_us(500);
  RP1 = 0;
  banRespuestaPi = 0;
  }
@@ -1132,7 +1133,7 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  banRSI = 0;
  banRSC = 1;
-#line 734 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
+#line 736 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
  }
  }
 

@@ -202,9 +202,11 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	printf("Funcion: %X\n", funcionSPI);
-	printf("Subfuncion: %X\n", subFuncionSPI);
-	printf("Numero de bytes: %d\n", numBytesSPI);
+	delay(50);
+	
+	// printf("Funcion: %X\n", funcionSPI);
+	// printf("Subfuncion: %X\n", subFuncionSPI);
+	// printf("Numero de bytes: %d\n", numBytesSPI);
 	
 	switch (funcionSPI){                                                                     
           //Funciones de tiempo:

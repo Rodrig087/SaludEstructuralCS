@@ -27,13 +27,13 @@ int main(int argc, char *argv[]) {
 
 	while(1){	
 		
-		    printf("Prueba numero: %d\n", contador); 
-			system("sudo ./inspeccionarsector 2 3639");
+		    printf("\nPrueba numero: %d\n", contador); 
+			system("sudo ./inspeccionarsector 2 3313");
 			
 			
 			contador++;
-			printf("\n");
-			delay (1000);
+			//printf("\n");
+			delay (300);
 	
 	}
 

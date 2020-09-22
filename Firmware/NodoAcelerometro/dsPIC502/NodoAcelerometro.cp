@@ -696,7 +696,6 @@ void ConfiguracionPrincipal(){
  UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
 
 
-
  RPINR22bits.SDI2R = 0x21;
  RPOR2bits.RP38R = 0x08;
  RPOR1bits.RP37R = 0x09;
@@ -724,6 +723,14 @@ void ConfiguracionPrincipal(){
  T2IF_bit = 0;
  PR2 = 62500;
  IPC1bits.T2IP = 0x02;
+
+
+ T3CON = 0x0020;
+ T3CON.TON = 0;
+ T3IE_bit = 1;
+ T3IF_bit = 0;
+ PR3 = 62500;
+ IPC2bits.T3IP = 0x02;
 
 
  ADXL355_write_byte( 0x2D ,  0x04 | 0x01 );
@@ -1359,6 +1366,20 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
 
 
+void Timer3Int() org IVT_ADDR_T3INTERRUPT{
+
+ T3IF_bit = 0;
+
+
+
+ U1RXIE_bit = 1;
+ T3CON.TON = 0;
+
+}
+
+
+
+
 void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
@@ -1376,7 +1397,6 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  T2CON.TON = 0;
  banRSI = 0;
  banRSC = 1;
-#line 971 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
  }
  }
 
@@ -1404,6 +1424,10 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  banRSI = 0;
  banRSC = 0;
  i_rs485 = 0;
+
+
+ U1RXIE_bit = 0;
+ T3CON.TON = 1;
  }
  }
 
