@@ -171,6 +171,7 @@ void main() {
 
      while(1){
               asm CLRWDT;         //Clear the watchdog timer
+              Delay_ms(100);
      }
 
 }

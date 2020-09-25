@@ -237,6 +237,7 @@ void main() {
      while(1){
 
               asm CLRWDT;         //Clear the watchdog timer
+              Delay_ms(100);
 
      }
 
@@ -628,7 +629,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
      }
 
      tramaDatosSec[0] = modoLec;                                                //Subfuncion
-     
+
      //Comprueba que el sector requerido este dentro del rango de sectores permitidos:
      if ((sectorReq>=PSE)&&(sectorReq<USF)){
          //Comprueba que sector requerido sea menor al ultimo sector escrito:
@@ -668,7 +669,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
         numDatosSec = 3;
 
     }
-    
+
     EnviarTramaRS485(1, IDNODO, 0xF3, numDatosSec, tramaDatosSec);
 
 }
@@ -866,7 +867,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
         PSEC = sectorSD;
         GuardarInfoSector(PSEC, infoPrimerSector);
      }
-     
+
      if (banSetReloj==1){
         horaSistema++;                                                          //Incrementa el reloj del sistema
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza la trama de tiempo

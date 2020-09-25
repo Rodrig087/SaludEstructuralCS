@@ -7,18 +7,18 @@ warning: 164	1503	Result is not defined in function: 'ADXL355_read_data'	adxl355
 warning: 186	1503	Result is not defined in function: ''	adxl355_spi.c
 warning: 187	1503	Result is not defined in function: 'ADXL355_read_FIFO'	adxl355_spi.c
 hint: 89	1163	Variable 'valueSet' has been declared, but not used	tiempo_rtc.c
-hint: 616	1163	Variable 'contadorSector' has been declared, but not used	NodoAcelerometro.c
+hint: 617	1163	Variable 'contadorSector' has been declared, but not used	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (int_1 at 0x003C)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (Timer1Int at 0x001A)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (Timer2Int at 0x0022)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (urx_1 at 0x002A)	NodoAcelerometro.c
-diagnostics: 1076	123	Compiled Successfully	NodoAcelerometro.c
+diagnostics: 1077	123	Compiled Successfully	NodoAcelerometro.c
 warning: 192	1519	Logical expression is always: 'True'	NodoAcelerometro.c
 warning: 237	1519	Logical expression is always: 'False'	NodoAcelerometro.c
-warning: 492	1512	variable 'primerSectorSD' might not have been initialized	NodoAcelerometro.c
-warning: 527	1512	variable 'sectorInicioSD' might not have been initialized	NodoAcelerometro.c
-warning: 578	1512	variable 'infoPSEC' might not have been initialized	NodoAcelerometro.c
-warning: 579	1512	variable 'infoSA' might not have been initialized	NodoAcelerometro.c
+warning: 493	1512	variable 'primerSectorSD' might not have been initialized	NodoAcelerometro.c
+warning: 528	1512	variable 'sectorInicioSD' might not have been initialized	NodoAcelerometro.c
+warning: 579	1512	variable 'infoPSEC' might not have been initialized	NodoAcelerometro.c
+warning: 580	1512	variable 'infoSA' might not have been initialized	NodoAcelerometro.c
 hint: 138	1164	Variable 'value' has been eliminated by optimizer	NodoAcelerometro.c
 hint: 150	1164	Variable 'muestra' has been eliminated by optimizer	NodoAcelerometro.c
 hint: 168	1164	Variable 'add' has been eliminated by optimizer	NodoAcelerometro.c
@@ -39,11 +39,11 @@ hint: 330	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 348	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 diagnostics: 0	122	Compilation Started	spisd.h
 diagnostics: 49	123	Compiled Successfully	spiSD.c
-diagnostics: 0	127	All files Compiled in 344 ms	 
+diagnostics: 0	127	All files Compiled in 343 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
 hint: 0	1144	Static RAM (bytes): 5995   Dynamic RAM (bytes): 22676	Static RAM (bytes): 5995   Dynamic RAM (bytes): 22676
-hint: 0	1144	Used ROM (bytes): 7867 (4%)  Free ROM (bytes): 168241 (96%)	Used ROM (bytes): 7867 (4%)  Free ROM (bytes): 168241 (96%)
+hint: 0	1144	Used ROM (bytes): 7879 (4%)  Free ROM (bytes): 168229 (96%)	Used ROM (bytes): 7879 (4%)  Free ROM (bytes): 168229 (96%)
 diagnostics: 0	125	Project Linked Successfully	NodoAcelerometro.mcpds
 diagnostics: 0	128	Linked in 422 ms	 
-diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 1141 ms	 
-diagnostics: 0	103	Finished successfully: 17 sep. 2020, 12:55:11	NodoAcelerometro.mcpds
+diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 1125 ms	 
+diagnostics: 0	103	Finished successfully: 24 sep. 2020, 19:48:32	NodoAcelerometro.mcpds

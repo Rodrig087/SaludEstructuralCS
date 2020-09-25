@@ -583,6 +583,7 @@ void main() {
 
  while(1){
  asm CLRWDT;
+ Delay_ms(100);
  }
 
 }
@@ -1132,7 +1133,7 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  banRSI = 0;
  banRSC = 1;
-#line 734 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
+#line 735 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
  }
  }
 

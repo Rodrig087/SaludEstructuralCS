@@ -236,6 +236,7 @@ void main() {
      //Entra al bucle princial del programa:
      while(1){
             asm CLRWDT;         //Clear the watchdog timer
+            Delay_ms(100);
      }
 
 }

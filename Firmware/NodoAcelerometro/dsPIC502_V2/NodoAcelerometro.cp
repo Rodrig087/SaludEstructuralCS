@@ -656,6 +656,7 @@ void main() {
  while(1){
 
  asm CLRWDT;
+ Delay_ms(100);
 
  }
 
@@ -1378,7 +1379,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  T2CON.TON = 0;
  banRSI = 0;
  banRSC = 1;
-#line 973 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
+#line 974 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
  }
  }
 
