@@ -57,34 +57,35 @@ int_1
 			GuardarBufferSD
 				SD_Write_Block
 			GuardarInfoSector
+		InspeccionarSector
+			UbicarUltimoSectorEscrito
+				SD_Read_Block
+					Select_SD
+					SD_Ready
+					SD_Send_Command
+					R1_Response
+					SD_Read
+						SPISD_Write
+					Release_SD
+			SD_Read_Block
+			EnviarTramaRS485
+				UART1_Write
+				UART1_Tx_Idle
+				UART2_Write
+				UART2_Tx_Idle
 urx_1
 	RecuperarHoraRPI
 		_Multiply_32x32
 	RecuperarFechaRPI
 		_Multiply_32x32
 	EnviarTramaRS485
-		UART1_Write
-		UART1_Tx_Idle
-		UART2_Write
-		UART2_Tx_Idle
 	UbicarUltimoSectorEscrito
-		SD_Read_Block
-			Select_SD
-			SD_Ready
-			SD_Send_Command
-			R1_Response
-			SD_Read
-				SPISD_Write
-			Release_SD
 	GuardarInfoSector
 	InformacionSectores
 		UbicarPrimerSectorEscrito
 			SD_Read_Block
 		UbicarUltimoSectorEscrito
 	InspeccionarSector
-		UbicarUltimoSectorEscrito
-		SD_Read_Block
-		EnviarTramaRS485
 	RecuperarTramaAceleracion
 		SD_Read_Block
 Timer2Int

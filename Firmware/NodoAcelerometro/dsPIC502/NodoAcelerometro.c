@@ -93,7 +93,7 @@ unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};                      
 unsigned char bufferSD [clusterSizeSD];                                         //Buffer del tamaño del cluster, siempre se guarda este numero de datos en la SD
 unsigned char checkEscSD;                                                       //Esta variable indica si la escritura en la SD se completo correctamente
 unsigned char checkLecSD;
-
+unsigned short banInsSec;                                                       //Bandera para inspeccionar un sector de la SD
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,7 +108,7 @@ void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
 unsigned long UbicarPrimerSectorEscrito();
 unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,6 +169,7 @@ void main() {
      checkEscSD = 0;
      checkLecSD = 0;
      MSRS485 = 0;                                                               //Establece el Max485 en modo lectura
+     banInsSec = 0;
 
     //Determina el ultimo sector fisico en funcion de la capacidad de la SD:
      switch (SIZESD){
@@ -356,14 +357,17 @@ void Muestrear(){
              }
          }
 
-         //AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
-
          contMuestras = 0;                                                      //Limpia el contador de muestras
          contFIFO = 0;                                                          //Limpia el contador de FIFOs
          T1CON.TON = 1;                                                         //Enciende el Timer1
 
+         //Guarda la trama completa de aceleracion en la SD:
          GuardarTramaSD(tiempo, tramaAceleracion);
-         //TEST = 0;
+
+         //Si hay una solicitud pendiente inspecciona el sector de la SD:
+         if (banInsSec==1){
+            InspeccionarSector(1, sectorReq, outputPyloadRS485);
+         }
 
      }
 
@@ -608,25 +612,22 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 //*****************************************************************************************************************************************
 //Funcion para inspeccionar los datos de un sector
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
      unsigned char bufferSectorReq[512];                                        //Trama para recuperar el buffer leido
      unsigned int numDatosSec;
      unsigned int contadorSector;
      unsigned long USE;
 
-     if (modoLec==0xD2){
-        TEST = ~TEST;
-     }
-
      //Calcula el ultimo sector escrito:
-     if (banInicioMuestreo==0){
+     if (estadoMuestreo==0){
         USE = UbicarUltimoSectorEscrito(0);
+        TEST = ~TEST;
      } else {
         USE = sectorSD - 1;
      }
 
-     tramaDatosSec[0] = modoLec;                                                //Subfuncion
+     tramaDatosSec[0] = 0xD2;                                                //Subfuncion
 
      //Comprueba que el sector requerido este dentro del rango de sectores permitidos:
      if ((sectorReq>=PSE)&&(sectorReq<USF)){
@@ -668,6 +669,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
 
     }
 
+    banInsSec = 0;
     EnviarTramaRS485(1, IDNODO, 0xF3, numDatosSec, tramaDatosSec);
 
 }
@@ -1054,8 +1056,14 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     }
                     //Inspecciona el contenido del sector solicitado:
                     if (subFuncionRS485==0xD2){
-                       //Recupera los datos de cabecera y tiempo y envia la trama de respuesta al Master:
-                        InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
+                       //Verifica si se esta muestreando en este momento:
+                       if (banInicioMuestreo==1){
+                          //Activa la bandera para inspeccionar el sector cuando haya terminado de escribir la SD:
+                          banInsSec=1;
+                       } else {
+                          //Envia la orden de inspeccionar el sector inmediatamente:
+                          InspeccionarSector(0, sectorReq, outputPyloadRS485);
+                       }
                     }
                     //Recupera los datos de aceleracion de un segundo:
                     if (subFuncionRS485==0xD3){

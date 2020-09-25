@@ -533,7 +533,7 @@ unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
 unsigned char checkEscSD;
 unsigned char checkLecSD;
-
+unsigned short banInsSec;
 
 
 
@@ -548,7 +548,7 @@ void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
 unsigned long UbicarPrimerSectorEscrito();
 unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
 void InformacionSectores(unsigned char* tramaInfoSec);
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq, unsigned char* tramaDatosSec);
 void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
 
 
@@ -609,6 +609,7 @@ void main() {
  checkEscSD = 0;
  checkLecSD = 0;
  MSRS485 = 0;
+ banInsSec = 0;
 
 
  switch ( 8 ){
@@ -633,7 +634,7 @@ void main() {
  infoPrimerSector = PSF+ 1000 -2;
  infoUltimoSector = PSF+ 1000 -1;
  PSE = PSF+ 1000 ;
-#line 218 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+#line 219 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
  sdflags.detected =  1 ;
 
 
@@ -775,14 +776,17 @@ void Muestrear(){
  }
  }
 
-
-
  contMuestras = 0;
  contFIFO = 0;
  T1CON.TON = 1;
 
+
  GuardarTramaSD(tiempo, tramaAceleracion);
 
+
+ if (banInsSec==1){
+ InspeccionarSector(1, sectorReq, outputPyloadRS485);
+ }
 
  }
 
@@ -1027,25 +1031,22 @@ void InformacionSectores(unsigned char* tramaInfoSec){
 
 
 
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq, unsigned char* tramaDatosSec){
 
  unsigned char bufferSectorReq[512];
  unsigned int numDatosSec;
  unsigned int contadorSector;
  unsigned long USE;
 
- if (modoLec==0xD2){
- TEST = ~TEST;
- }
 
-
- if (banInicioMuestreo==0){
+ if (estadoMuestreo==0){
  USE = UbicarUltimoSectorEscrito(0);
+ TEST = ~TEST;
  } else {
  USE = sectorSD - 1;
  }
 
- tramaDatosSec[0] = modoLec;
+ tramaDatosSec[0] = 0xD2;
 
 
  if ((sectorReq>=PSE)&&(sectorReq<USF)){
@@ -1087,6 +1088,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
 
  }
 
+ banInsSec = 0;
  EnviarTramaRS485(1,  1 , 0xF3, numDatosSec, tramaDatosSec);
 
 }
@@ -1377,7 +1379,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  T2CON.TON = 0;
  banRSI = 0;
  banRSC = 1;
-#line 972 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+#line 974 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
  }
  }
 
@@ -1464,7 +1466,13 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD2){
 
- InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
+ if (banInicioMuestreo==1){
+
+ banInsSec=1;
+ } else {
+
+ InspeccionarSector(0, sectorReq, outputPyloadRS485);
+ }
  }
 
  if (subFuncionRS485==0xD3){
