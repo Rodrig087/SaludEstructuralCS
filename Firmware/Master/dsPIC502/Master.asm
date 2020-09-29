@@ -3965,19 +3965,19 @@ L__urx_2513:
 L_urx_2195:
 ;Master.c,720 :: 		T2CON.TON = 0;                                                       //Detiene el TimeOut
 	BCLR	T2CON, #15
-;Master.c,722 :: 		banRSI = 0;                                                          //Limpia la bandera de inicio de trama
+;Master.c,721 :: 		banRSI = 0;                                                          //Limpia la bandera de inicio de trama
 	MOV	#lo_addr(_banRSI), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,723 :: 		banRSC = 1;                                                          //Activa la bandera de trama completa
+;Master.c,722 :: 		banRSC = 1;                                                          //Activa la bandera de trama completa
 	MOV	#lo_addr(_banRSC), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;Master.c,735 :: 		}
+;Master.c,723 :: 		}
 L_urx_2196:
-;Master.c,736 :: 		}
+;Master.c,724 :: 		}
 L_urx_2194:
-;Master.c,739 :: 		if ((banRSI==0)&&(banRSC==0)){
+;Master.c,727 :: 		if ((banRSI==0)&&(banRSC==0)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #0
@@ -3991,7 +3991,7 @@ L__urx_2514:
 	GOTO	L__urx_2356
 L__urx_2515:
 L__urx_2355:
-;Master.c,740 :: 		if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
+;Master.c,728 :: 		if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
 	MOV	#lo_addr(_byteRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#58, W0
@@ -3999,21 +3999,21 @@ L__urx_2355:
 	BRA Z	L__urx_2516
 	GOTO	L_urx_2200
 L__urx_2516:
-;Master.c,741 :: 		T2CON.TON = 1;                                                       //Inicia el TimeOut
+;Master.c,729 :: 		T2CON.TON = 1;                                                       //Inicia el TimeOut
 	BSET	T2CON, #15
-;Master.c,742 :: 		banRSI = 1;
+;Master.c,730 :: 		banRSI = 1;
 	MOV	#lo_addr(_banRSI), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;Master.c,743 :: 		i_rs485 = 0;
+;Master.c,731 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;Master.c,744 :: 		}
+;Master.c,732 :: 		}
 L_urx_2200:
-;Master.c,739 :: 		if ((banRSI==0)&&(banRSC==0)){
+;Master.c,727 :: 		if ((banRSI==0)&&(banRSC==0)){
 L__urx_2357:
 L__urx_2356:
-;Master.c,746 :: 		if ((banRSI==1)&&(i_rs485<5)){
+;Master.c,734 :: 		if ((banRSI==1)&&(i_rs485<5)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
@@ -4026,20 +4026,20 @@ L__urx_2517:
 	GOTO	L__urx_2358
 L__urx_2518:
 L__urx_2354:
-;Master.c,747 :: 		tramaCabeceraRS485[i_rs485] = byteRS485;                                 //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
+;Master.c,735 :: 		tramaCabeceraRS485[i_rs485] = byteRS485;                                 //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
 	MOV	#lo_addr(_tramaCabeceraRS485), W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], W1
 	MOV	#lo_addr(_byteRS485), W0
 	MOV.B	[W0], [W1]
-;Master.c,748 :: 		i_rs485++;
+;Master.c,736 :: 		i_rs485++;
 	MOV	#1, W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], [W0]
-;Master.c,746 :: 		if ((banRSI==1)&&(i_rs485<5)){
+;Master.c,734 :: 		if ((banRSI==1)&&(i_rs485<5)){
 L__urx_2359:
 L__urx_2358:
-;Master.c,750 :: 		if ((banRSI==1)&&(i_rs485==5)){
+;Master.c,738 :: 		if ((banRSI==1)&&(i_rs485==5)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
@@ -4052,7 +4052,7 @@ L__urx_2519:
 	GOTO	L__urx_2360
 L__urx_2520:
 L__urx_2353:
-;Master.c,752 :: 		if (tramaCabeceraRS485[1]==direccionRS485){
+;Master.c,740 :: 		if (tramaCabeceraRS485[1]==direccionRS485){
 	MOV	#lo_addr(_tramaCabeceraRS485+1), W0
 	MOV.B	[W0], W1
 	MOV	#lo_addr(_direccionRS485), W0
@@ -4060,83 +4060,83 @@ L__urx_2353:
 	BRA Z	L__urx_2521
 	GOTO	L_urx_2207
 L__urx_2521:
-;Master.c,753 :: 		funcionRS485 = tramaCabeceraRS485[2];
+;Master.c,741 :: 		funcionRS485 = tramaCabeceraRS485[2];
 	MOV	#lo_addr(_funcionRS485), W1
 	MOV	#lo_addr(_tramaCabeceraRS485+2), W0
 	MOV.B	[W0], [W1]
-;Master.c,754 :: 		*(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
+;Master.c,742 :: 		*(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
 	MOV	#lo_addr(_tramaCabeceraRS485+3), W1
 	MOV	_ptrnumDatosRS485, W0
 	MOV.B	[W1], [W0]
-;Master.c,755 :: 		*(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
+;Master.c,743 :: 		*(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
 	MOV	_ptrnumDatosRS485, W0
 	ADD	W0, #1, W1
 	MOV	#lo_addr(_tramaCabeceraRS485+4), W0
 	MOV.B	[W0], [W1]
-;Master.c,756 :: 		banRSI = 2;
+;Master.c,744 :: 		banRSI = 2;
 	MOV	#lo_addr(_banRSI), W1
 	MOV.B	#2, W0
 	MOV.B	W0, [W1]
-;Master.c,757 :: 		i_rs485 = 0;
+;Master.c,745 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;Master.c,758 :: 		} else {
+;Master.c,746 :: 		} else {
 	GOTO	L_urx_2208
 L_urx_2207:
-;Master.c,759 :: 		banRSI = 0;
+;Master.c,747 :: 		banRSI = 0;
 	MOV	#lo_addr(_banRSI), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,760 :: 		banRSC = 0;
+;Master.c,748 :: 		banRSC = 0;
 	MOV	#lo_addr(_banRSC), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,761 :: 		i_rs485 = 0;
+;Master.c,749 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;Master.c,762 :: 		}
+;Master.c,750 :: 		}
 L_urx_2208:
-;Master.c,750 :: 		if ((banRSI==1)&&(i_rs485==5)){
+;Master.c,738 :: 		if ((banRSI==1)&&(i_rs485==5)){
 L__urx_2361:
 L__urx_2360:
-;Master.c,766 :: 		if (banRSC==1){
+;Master.c,754 :: 		if (banRSC==1){
 	MOV	#lo_addr(_banRSC), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
 	BRA Z	L__urx_2522
 	GOTO	L_urx_2209
 L__urx_2522:
-;Master.c,767 :: 		subFuncionRS485 = inputPyloadRS485[0];
+;Master.c,755 :: 		subFuncionRS485 = inputPyloadRS485[0];
 	MOV	#lo_addr(_subFuncionRS485), W1
 	MOV	#lo_addr(_inputPyloadRS485), W0
 	MOV.B	[W0], [W1]
-;Master.c,768 :: 		switch (funcionRS485){
+;Master.c,756 :: 		switch (funcionRS485){
 	GOTO	L_urx_2210
-;Master.c,769 :: 		case 0xF1:
+;Master.c,757 :: 		case 0xF1:
 L_urx_2212:
-;Master.c,770 :: 		InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
+;Master.c,758 :: 		InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV	_numDatosRS485, W12
 	MOV.B	[W0], W11
 	MOV.B	#177, W10
 	CALL	_InterrupcionP1
-;Master.c,771 :: 		break;
+;Master.c,759 :: 		break;
 	GOTO	L_urx_2211
-;Master.c,772 :: 		case 0xF2:
+;Master.c,760 :: 		case 0xF2:
 L_urx_2213:
-;Master.c,774 :: 		break;
+;Master.c,762 :: 		break;
 	GOTO	L_urx_2211
-;Master.c,775 :: 		case 0xF3:
+;Master.c,763 :: 		case 0xF3:
 L_urx_2214:
-;Master.c,776 :: 		InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
+;Master.c,764 :: 		InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV	_numDatosRS485, W12
 	MOV.B	[W0], W11
 	MOV.B	#179, W10
 	CALL	_InterrupcionP1
-;Master.c,778 :: 		break;
+;Master.c,766 :: 		break;
 	GOTO	L_urx_2211
-;Master.c,779 :: 		}
+;Master.c,767 :: 		}
 L_urx_2210:
 	MOV	#lo_addr(_funcionRS485), W0
 	MOV.B	[W0], W1
@@ -4160,13 +4160,13 @@ L__urx_2524:
 	GOTO	L_urx_2214
 L__urx_2525:
 L_urx_2211:
-;Master.c,781 :: 		banRSC = 0;
+;Master.c,769 :: 		banRSC = 0;
 	MOV	#lo_addr(_banRSC), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,783 :: 		}
+;Master.c,771 :: 		}
 L_urx_2209:
-;Master.c,784 :: 		}
+;Master.c,772 :: 		}
 L_end_urx_2:
 	POP	W12
 	POP	W11

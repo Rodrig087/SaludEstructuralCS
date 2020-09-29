@@ -1130,10 +1130,8 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  i_rs485++;
  } else {
  T2CON.TON = 0;
-
  banRSI = 0;
  banRSC = 1;
-#line 735 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
  }
  }
 
