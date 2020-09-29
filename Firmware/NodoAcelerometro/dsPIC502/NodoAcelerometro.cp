@@ -1152,6 +1152,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1167,6 +1168,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1182,6 +1184,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1197,6 +1200,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1212,6 +1216,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1448,6 +1453,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  if (banRSC==1){
  subFuncionRS485 = inputPyloadRS485[0];
  switch (funcionRS485){
+
  case 0xF1:
 
 
@@ -1513,7 +1519,10 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD3){
 
+
+ if (banInicioMuestreo==0){
  RecuperarTramaAceleracion(sectorReq);
+ }
  }
  break;
 

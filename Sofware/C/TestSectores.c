@@ -1,6 +1,5 @@
 //Compilar:
-//gcc InspeccionarSector.c -o /home/pi/Ejecutables/inspeccionarsector -lbcm2835 -lwiringPi 
-//gcc InspeccionarSector_V2.c -o inspeccionarsector -lbcm2835 -lwiringPi 
+//gcc TestSectores.c -o testsectores -lbcm2835 -lwiringPi 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,9 +32,9 @@ unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
 
-int direccionNodo,sectorReq;
+int direccionNodo,sectorReq, duracionSeg;;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
-unsigned short banSolicitud, contSolicitud;
+unsigned short banSolicitud, contSolicitud, contSegundos;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
 
@@ -56,9 +55,12 @@ int main(int argc, char *argv[]) {
 	x = 0;
 	banSolicitud = 0;
 	contSolicitud = 0;
+	contSegundos = 0;
 	
 	direccionNodo = (short)(atoi(argv[1]));
 	sectorReq = atoi(argv[2]);
+	duracionSeg = (short)(atoi(argv[3]));
+	
 	//Asociacion de los punteros a las variables:
     ptrSectorReq = (unsigned char *) & sectorReq;
 	
@@ -81,9 +83,14 @@ int main(int argc, char *argv[]) {
 		
 		if (banSolicitud==0){
 			banSolicitud = 1;
+			//Realiza una breve pausa cada 5 segundos:
+			
+			if ((contSegundos!=0)&&(contSegundos%5==0)){
+				delay(200);
+			}
+			
 			//Envia la solicitud al nodo:
 			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-			contSolicitud++;
 		}
 		
 	}
@@ -250,35 +257,33 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 		printf("%0.2d ", pyloadRS485[9]);
 		printf("%0.2d:", pyloadRS485[10]);
 		printf("%0.2d:", pyloadRS485[11]);
-		printf("%0.2d\n", pyloadRS485[12]);
-		exit(-1);
+		printf("%0.2d\n", pyloadRS485[12]);	
+		printf("Segundo: %d\n", contSegundos);
+		printf("\n");
+		contSegundos++;
+		//Incrementa el sector hasta el siguiente segundo:
+		sectorReq = sectorReq + 5;
+		//Encera el contador para realizar ubicar otro sector erroneo:
+		contSolicitud = 0;
 	} else {
-		if (pyloadRS485[1]==0xEE){
-			if (pyloadRS485[2]==0xE1){ 
-				printf("Error %X: Sector fuera de rango\n", pyloadRS485[2]);
-			} 
-			if (pyloadRS485[2]==0xE2){
-				printf("Error %X: Sector sin datos\n", pyloadRS485[2]);
-			}
-			if (pyloadRS485[2]==0xE3){
-				printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
-			}
-		}
-		if (contSolicitud==5){
-			exit(-1);
-		}
-		//Incrementa el sector:
-		sectorReq++;
-		printf("Inspeccionando sector: %d\n", sectorReq);
-		pyloadNodo[0] = subFuncionNodo;
-		pyloadNodo[1] = *ptrSectorReq;
-		pyloadNodo[2] = *(ptrSectorReq+1);
-		pyloadNodo[3] = *(ptrSectorReq+2);
-		pyloadNodo[4] = *(ptrSectorReq+3);
-		banSolicitud = 0;
-		
+		contSolicitud++;
+		//Incrementa el sector una unidad:
+		sectorReq = sectorReq + 1;
 	}
-		
+
+	if ((contSegundos==duracionSeg)||(contSolicitud==5)){
+		exit(-1);
+	}
+	
+	
+	printf("Inspeccionando sector: %d\n", sectorReq);
+	pyloadNodo[0] = subFuncionNodo;
+	pyloadNodo[1] = *ptrSectorReq;
+	pyloadNodo[2] = *(ptrSectorReq+1);
+	pyloadNodo[3] = *(ptrSectorReq+2);
+	pyloadNodo[4] = *(ptrSectorReq+3);
+	banSolicitud = 0;
+				
 }
 
 //**************************************************************************************************************************************

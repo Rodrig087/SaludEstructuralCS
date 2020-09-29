@@ -712,6 +712,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
             contSector++;
             break;
         }
+        Delay_us(10);
     }
 
     //Lee el segundo sector:
@@ -727,6 +728,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
             contSector++;
             break;
         }
+        Delay_us(10);
     }
 
     //Lee el tercer sector:
@@ -742,6 +744,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
             contSector++;
             break;
         }
+        Delay_us(10);
     }
 
     //Lee el cuarto sector:
@@ -757,6 +760,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
             contSector++;
             break;
         }
+        Delay_us(10);
     }
 
     //Lee el quinto sector:
@@ -772,6 +776,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
             contSector++;
             break;
         }
+        Delay_us(10);
     }
 
     //Agrega la trama de tiempo al final de la trama de aceleracion (Para conincidir con el formato de datos anterior):
@@ -1008,6 +1013,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
      if (banRSC==1){
         subFuncionRS485 = inputPyloadRS485[0];
         switch (funcionRS485){
+        
                case 0xF1:
                     //***Funcion de tiempo***
                     //Recupera el tiempo de la trama RS485:
@@ -1072,8 +1078,11 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     }
                     //Recupera los datos de aceleracion de un segundo:
                     if (subFuncionRS485==0xD3){
-                        //Recupera todos los datos de aceleracion dsede el sector requerido y envia la trama de respuesta al Master:
-                        RecuperarTramaAceleracion(sectorReq);
+                       //Recupera todos los datos de aceleracion dsede el sector requerido y envia la trama de respuesta al Master:
+                       //Verifica si se esta muestreando en este momento:
+                       if (banInicioMuestreo==0){
+                          RecuperarTramaAceleracion(sectorReq);
+                       }
                     }
                     break;
 

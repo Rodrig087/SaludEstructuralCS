@@ -533,7 +533,7 @@ unsigned char cabeceraSD[6] = {255, 253, 251, 10, 0, 250};
 unsigned char bufferSD [clusterSizeSD];
 unsigned char checkEscSD;
 unsigned char checkLecSD;
-
+unsigned short banInsSec;
 
 
 
@@ -547,9 +547,9 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD);
 void GuardarInfoSector(unsigned long sector, unsigned long localizacionSector);
 unsigned long UbicarPrimerSectorEscrito();
 unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD);
-void InformacionSectores(unsigned char* tramaInfoSec);
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec);
-void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg);
+void InformacionSectores();
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq);
+void RecuperarTramaAceleracion(unsigned long sectorReq);
 
 
 
@@ -609,6 +609,7 @@ void main() {
  checkEscSD = 0;
  checkLecSD = 0;
  MSRS485 = 0;
+ banInsSec = 0;
 
 
  switch ( 8 ){
@@ -630,11 +631,32 @@ void main() {
  USF = 31115263;
  break;
  }
- infoPrimerSector = PSF+ 1000 -2;
- infoUltimoSector = PSF+ 1000 -1;
- PSE = PSF+ 1000 ;
-#line 218 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC202/NodoAcelerometro.c"
+ infoPrimerSector = PSF+ 97952 -2;
+ infoUltimoSector = PSF+ 97952 -1;
+ PSE = PSF+ 97952 ;
+
+
+
+
+
+
+ while (1) {
+ if (SD_Detect() ==  0xDE ) {
+
  sdflags.detected =  1 ;
+
+ break;
+ } else {
+
+ sdflags.detected =  0 ;
+ sdflags.init_ok =  0 ;
+
+ }
+ Delay_ms(100);
+ }
+
+
+
 
 
  if (sdflags.detected && !sdflags.init_ok) {
@@ -655,6 +677,7 @@ void main() {
 
  while(1){
  asm CLRWDT;
+ Delay_ms(100);
  }
 
 }
@@ -684,6 +707,7 @@ void ConfiguracionPrincipal(){
  TRISB14_bit = 1;
 
 
+
  INTCON2.GIE = 1;
 
 
@@ -696,7 +720,6 @@ void ConfiguracionPrincipal(){
  UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
 
 
-
  RPINR22bits.SDI2R = 0x21;
  RPOR2bits.RP38R = 0x08;
  RPOR1bits.RP37R = 0x09;
@@ -705,6 +728,7 @@ void ConfiguracionPrincipal(){
 
 
  RPINR0 = 0x2E00;
+
  INT1IE_bit = 1;
  INT1IF_bit = 0;
  IPC5bits.INT1IP = 0x01;
@@ -774,14 +798,17 @@ void Muestrear(){
  }
  }
 
-
-
  contMuestras = 0;
  contFIFO = 0;
  T1CON.TON = 1;
 
+
  GuardarTramaSD(tiempo, tramaAceleracion);
 
+
+ if (banInsSec==1){
+ InspeccionarSector(1, sectorReq);
+ }
 
  }
 
@@ -797,7 +824,6 @@ void GuardarBufferSD(unsigned char* bufferLleno, unsigned long sector){
  for (x=0;x<5;x++){
  checkEscSD = SD_Write_Block(bufferLleno,sector);
  if (checkEscSD ==  22 ){
-
  break;
  }
  Delay_us(10);
@@ -863,7 +889,9 @@ void GuardarTramaSD(unsigned char* tiempoSD, unsigned char* aceleracionSD){
  sectorSD++;
 
 
+ if (horaSistema%300==0){
  GuardarInfoSector(sectorSD, infoUltimoSector);
+ }
 
  TEST = 0;
 
@@ -974,7 +1002,9 @@ unsigned long UbicarUltimoSectorEscrito(unsigned short sobrescribirSD){
 
 
 
-void InformacionSectores(unsigned char* tramaInfoSec){
+void InformacionSectores(){
+
+ unsigned char tramaInfoSec[20];
 
  unsigned long infoPSF;
  unsigned long infoPSE;
@@ -995,12 +1025,13 @@ void InformacionSectores(unsigned char* tramaInfoSec){
  ptrPSEC = (unsigned char *) & infoPSEC;
  ptrSA = (unsigned char *) & infoSA;
 
- infoPSEC = UbicarPrimerSectorEscrito();
 
  if (banInicioMuestreo==0){
+ infoPSEC = UbicarPrimerSectorEscrito();
  infoSA = UbicarUltimoSectorEscrito(0);
  } else {
  infoSA = sectorSD - 1;
+ infoPSEC = PSEC;
  }
 
  tramaInfoSec[0] = 0xD1;
@@ -1021,30 +1052,29 @@ void InformacionSectores(unsigned char* tramaInfoSec){
  tramaInfoSec[15] = *(ptrSA+2);
  tramaInfoSec[16] = *(ptrSA+3);
 
+ EnviarTramaRS485(1,  1 , 0xF3, 17, tramaInfoSec);
+
 }
 
 
 
 
-void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigned char* tramaDatosSec){
+void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
 
+ unsigned char tramaDatosSec[15];
  unsigned char bufferSectorReq[512];
  unsigned int numDatosSec;
  unsigned int contadorSector;
  unsigned long USE;
 
- if (modoLec==0xD2){
- TEST = ~TEST;
- }
 
-
- if (banInicioMuestreo==0){
+ if (estadoMuestreo==0){
  USE = UbicarUltimoSectorEscrito(0);
  } else {
  USE = sectorSD - 1;
  }
 
- tramaDatosSec[0] = modoLec;
+ tramaDatosSec[0] = 0xD2;
 
 
  if ((sectorReq>=PSE)&&(sectorReq<USF)){
@@ -1069,6 +1099,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
  tramaDatosSec[2] = 0xE3;
  numDatosSec = 3;
  }
+ Delay_us(10);
  }
  } else {
 
@@ -1086,6 +1117,7 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
 
  }
 
+ banInsSec = 0;
  EnviarTramaRS485(1,  1 , 0xF3, numDatosSec, tramaDatosSec);
 
 }
@@ -1093,8 +1125,9 @@ void InspeccionarSector(unsigned short modoLec, unsigned long sectorReq, unsigne
 
 
 
-void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcelSeg){
+void RecuperarTramaAceleracion(unsigned long sectorReq){
 
+ unsigned char tramaAcelSeg[2510];
  unsigned char bufferSectorReq[512];
  unsigned short tiempoAcel[6];
  unsigned long contSector;
@@ -1119,6 +1152,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1134,6 +1168,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1149,6 +1184,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1164,6 +1200,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
@@ -1179,12 +1216,16 @@ void RecuperarTramaAceleracion(unsigned long sectorReq, unsigned char* tramaAcel
  contSector++;
  break;
  }
+ Delay_us(10);
  }
 
 
  for (x=0;x<6;x++){
  tramaAcelSeg[2501+x] = tiempoAcel[x];
  }
+
+
+ EnviarTramaRS485(1,  1 , 0xF3, 2507, tramaAcelSeg);
 
 }
 
@@ -1259,7 +1300,9 @@ void GuardarPruebaSD(unsigned char* tiempoSD){
  sectorSD++;
 
 
+ if (horaSistema%300==0){
  GuardarInfoSector(sectorSD, infoUltimoSector);
+ }
 
  TEST = 0;
 
@@ -1286,17 +1329,17 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
  if (banSetReloj==1){
  horaSistema++;
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- TEST = ~TEST;
- }
-
  if (horaSistema==86400){
  horaSistema = 0;
  fechaSistema = IncrementarFecha(fechaSistema);
  }
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ TEST = ~TEST;
+ }
 
  if (banInicioMuestreo==1){
  Muestrear();
+
  }
 
 }
@@ -1376,7 +1419,6 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  T2CON.TON = 0;
  banRSI = 0;
  banRSC = 1;
-#line 971 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC202/NodoAcelerometro.c"
  }
  }
 
@@ -1411,7 +1453,9 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  if (banRSC==1){
  subFuncionRS485 = inputPyloadRS485[0];
  switch (funcionRS485){
+
  case 0xF1:
+
 
  if (subFuncionRS485==0xD1){
  for (x=0;x<6;x++) {
@@ -1434,14 +1478,16 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  case 0xF2:
 
- if (subFuncionRS485==0xD1){
+
+ if ((subFuncionRS485==0xD1)&&(banInicioMuestreo==0)){
  sectorSD = UbicarUltimoSectorEscrito(inputPyloadRS485[1]);
  PSEC = sectorSD;
  GuardarInfoSector(PSEC, infoPrimerSector);
  banInicioMuestreo = 1;
  }
 
- if (subFuncionRS485==0xD2){
+ if ((subFuncionRS485==0xD2)&&(banInicioMuestreo==1)){
+ GuardarInfoSector(sectorSD, infoUltimoSector);
  banInicioMuestreo = 0;
  }
  break;
@@ -1457,19 +1503,26 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if (subFuncionRS485==0xD1){
 
- InformacionSectores(outputPyloadRS485);
- EnviarTramaRS485(1,  1 , 0xF3, 17, outputPyloadRS485);
+ InformacionSectores();
  }
 
  if (subFuncionRS485==0xD2){
 
- InspeccionarSector(0xD2, sectorReq, outputPyloadRS485);
+ if (banInicioMuestreo==0){
+
+ InspeccionarSector(0, sectorReq);
+ } else {
+
+ banInsSec=1;
+ }
  }
 
  if (subFuncionRS485==0xD3){
 
- RecuperarTramaAceleracion(sectorReq, outputPyloadRS485);
- EnviarTramaRS485(1,  1 , 0xF3, 2507, outputPyloadRS485);
+
+ if (banInicioMuestreo==0){
+ RecuperarTramaAceleracion(sectorReq);
+ }
  }
  break;
 
