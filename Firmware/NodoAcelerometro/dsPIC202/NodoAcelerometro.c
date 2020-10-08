@@ -17,7 +17,7 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 1                                                                //Direccion del nodo
+#define IDNODO 2                                                                //Direccion del nodo
 #define SIZESD 8                                                                //Capacidad de la SD (GB)
 #define DELTASECTOR 97952                                                       //Desface donde empiezan los datos del sector a partir del PSF
 

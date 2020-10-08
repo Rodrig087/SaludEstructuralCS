@@ -1052,7 +1052,7 @@ void InformacionSectores(){
  tramaInfoSec[15] = *(ptrSA+2);
  tramaInfoSec[16] = *(ptrSA+3);
 
- EnviarTramaRS485(1,  1 , 0xF3, 17, tramaInfoSec);
+ EnviarTramaRS485(1,  2 , 0xF3, 17, tramaInfoSec);
 
 }
 
@@ -1118,7 +1118,7 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
  }
 
  banInsSec = 0;
- EnviarTramaRS485(1,  1 , 0xF3, numDatosSec, tramaDatosSec);
+ EnviarTramaRS485(1,  2 , 0xF3, numDatosSec, tramaDatosSec);
 
 }
 
@@ -1225,7 +1225,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  }
 
 
- EnviarTramaRS485(1,  1 , 0xF3, 2507, tramaAcelSeg);
+ EnviarTramaRS485(1,  2 , 0xF3, 2507, tramaAcelSeg);
 
 }
 
@@ -1436,7 +1436,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==5)){
 
- if ((tramaCabeceraRS485[1]== 1 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 2 )||(tramaCabeceraRS485[1]==255)){
  funcionRS485 = tramaCabeceraRS485[2];
  *(ptrnumDatosRS485) = tramaCabeceraRS485[3];
  *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];
@@ -1472,7 +1472,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  for (x=0;x<6;x++){
  outputPyloadRS485[x+1] = tiempo[x];
  }
- EnviarTramaRS485(1,  1 , 0xF1, 7, outputPyloadRS485);
+ EnviarTramaRS485(1,  2 , 0xF1, 7, outputPyloadRS485);
  }
  break;
 

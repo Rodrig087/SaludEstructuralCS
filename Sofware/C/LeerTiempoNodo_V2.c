@@ -232,6 +232,12 @@ void ObtenerTiempoMaster(){
 	if (fuenteTiempoPic==1){
 		printf("GPS ");
 	}
+	if (fuenteTiempoPic==5){
+		printf("GPS*");
+	}
+	if (fuenteTiempoPic==6){
+		printf("GPS**");
+	}
 	
 	printf("%0.2d/",tiempoPIC[0]);		//aa
 	printf("%0.2d/",tiempoPIC[1]);		//MM

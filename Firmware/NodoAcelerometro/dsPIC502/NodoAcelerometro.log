@@ -39,11 +39,11 @@ hint: 330	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 348	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 diagnostics: 0	122	Compilation Started	spisd.h
 diagnostics: 49	123	Compiled Successfully	spiSD.c
-diagnostics: 0	127	All files Compiled in 250 ms	 
+diagnostics: 0	127	All files Compiled in 469 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
 hint: 0	1144	Static RAM (bytes): 5996   Dynamic RAM (bytes): 22676	Static RAM (bytes): 5996   Dynamic RAM (bytes): 22676
 hint: 0	1144	Used ROM (bytes): 8131 (5%)  Free ROM (bytes): 167977 (95%)	Used ROM (bytes): 8131 (5%)  Free ROM (bytes): 167977 (95%)
 diagnostics: 0	125	Project Linked Successfully	NodoAcelerometro.mcpds
-diagnostics: 0	128	Linked in 219 ms	 
-diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 625 ms	 
-diagnostics: 0	103	Finished successfully: 29 sep. 2020, 11:22:37	NodoAcelerometro.mcpds
+diagnostics: 0	128	Linked in 375 ms	 
+diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 1094 ms	 
+diagnostics: 0	103	Finished successfully: 30 sep. 2020, 12:07:48	NodoAcelerometro.mcpds
