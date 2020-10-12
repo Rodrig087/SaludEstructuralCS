@@ -1131,9 +1131,13 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  unsigned char bufferSectorReq[512];
  unsigned short tiempoAcel[6];
  unsigned long contSector;
+ unsigned int numDatosTramaAcel;
+ unsigned short banLecturaCorrecta;
 
  tramaAcelSeg[0] = 0xD3;
  contSector = 0;
+ banLecturaCorrecta = 0;
+ numDatosTramaAcel = 2513;
 
 
  checkLecSD = 1;
@@ -1153,13 +1157,21 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  for (y=0;y<500;y++){
  tramaAcelSeg[y+7] = bufferSectorReq[y+12];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1169,13 +1181,22 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  for (y=0;y<512;y++){
  tramaAcelSeg[y+507] = bufferSectorReq[y];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
+ }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1185,13 +1206,22 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  for (y=0;y<512;y++){
  tramaAcelSeg[y+1019] = bufferSectorReq[y];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
+ }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1201,13 +1231,22 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  for (y=0;y<512;y++){
  tramaAcelSeg[y+1531] = bufferSectorReq[y];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
+ }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1217,19 +1256,28 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  for (y=0;y<464;y++){
  tramaAcelSeg[y+2043] = bufferSectorReq[y];
  }
- contSector++;
+ banLecturaCorrecta = 1;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
-
-
- for (x=0;x<6;x++){
- tramaAcelSeg[2507+x] = tiempoAcel[x];
  }
 
 
- EnviarTramaRS485(1,  1 , 0xF3, 2513, tramaAcelSeg);
+ if (banLecturaCorrecta==1){
+ for (x=0;x<6;x++){
+ tramaAcelSeg[2507+x] = tiempoAcel[x];
+ }
+ }
+
+
+ EnviarTramaRS485(1,  1 , 0xF3, numDatosTramaAcel, tramaAcelSeg);
 
 }
 

@@ -166,9 +166,9 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	printf("Funcion: %X\n", funcionSPI);
-	printf("Subfuncion: %X\n", subFuncionSPI);
-	printf("Numero de bytes: %d\n", numBytesSPI);
+	//printf("Funcion: %X\n", funcionSPI);
+	//printf("Subfuncion: %X\n", subFuncionSPI);
+	//printf("Numero de bytes: %d\n", numBytesSPI);
 	delay(50);
 	
 	switch (funcionSPI){                                                                     
@@ -250,67 +250,74 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 	double yAceleracion;
 	double zAceleracion;
 	
-	//Imprime los datos de cabecera:
-	printf("Datos de cabecera: ");
-	printf("%X ", pyloadRS485[1]);
-	printf("%X ", pyloadRS485[2]);
-	printf("%X\n", pyloadRS485[3]);	
-	
-	
-	//Imprime la hora y fecha recuperada de la trama de datos:
-	printf("Datos de la trama:\n");
-	printf("| ");
-	printf("%0.2d:", pyloadRS485[2513-3]);			//hh
-	printf("%0.2d:", pyloadRS485[2513-2]);			//mm
-	printf("%0.2d ", pyloadRS485[2513-1]);			//ss
-	printf("%0.2d/", pyloadRS485[2513-6]);			//aa
-	printf("%0.2d/", pyloadRS485[2513-5]);			//mm
-	printf("%0.2d ", pyloadRS485[2513-4]);			//dd
-	printf("| ");
-			
-	//Imprime los primeros datos de aceleracion:
-	for (x=0;x<3;x++){
-		xData[x] = pyloadRS485[x+8];	
-		yData[x] = pyloadRS485[x+11];	
-		zData[x] = pyloadRS485[x+14];	
+	//Verifica los datos de cabecera:
+	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
+		
+		//Imprime la hora y fecha recuperada de la trama de datos:
+		printf("Datos de la trama:\n");
+		printf("| ");
+		printf("%0.2d:", pyloadRS485[2513-3]);			//hh
+		printf("%0.2d:", pyloadRS485[2513-2]);			//mm
+		printf("%0.2d ", pyloadRS485[2513-1]);			//ss
+		printf("%0.2d/", pyloadRS485[2513-6]);			//aa
+		printf("%0.2d/", pyloadRS485[2513-5]);			//mm
+		printf("%0.2d ", pyloadRS485[2513-4]);			//dd
+		printf("| ");
+				
+		//Imprime los primeros datos de aceleracion:
+		for (x=0;x<3;x++){
+			xData[x] = pyloadRS485[x+8];	
+			yData[x] = pyloadRS485[x+11];	
+			zData[x] = pyloadRS485[x+14];	
+		}
+		
+		//Calculo aceleracion eje x:
+		xValue = ((xData[0]<<12)&0xFF000)+((xData[1]<<4)&0xFF0)+((xData[2]>>4)&0xF);
+		// Apply two complement
+		if (xValue >= 0x80000) {
+			xValue = xValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
+			xValue = -1*(((~xValue)+1)& 0x7FFFF);
+		}
+		xAceleracion = xValue * (9.8/pow(2,18));
+		
+		//Calculo aceleracion eje y:
+		yValue = ((yData[0]<<12)&0xFF000)+((yData[1]<<4)&0xFF0)+((yData[2]>>4)&0xF);
+		// Apply two complement
+		if (yValue >= 0x80000) {
+			yValue = yValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
+			yValue = -1*(((~yValue)+1)& 0x7FFFF);
+		}
+		yAceleracion = yValue * (9.8/pow(2,18));
+		
+		//Calculo aceleracion eje z:
+		zValue = ((zData[0]<<12)&0xFF000)+((zData[1]<<4)&0xFF0)+((zData[2]>>4)&0xF);
+		// Apply two complement
+		if (zValue >= 0x80000) {
+			zValue = zValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
+			zValue = -1*(((~zValue)+1)& 0x7FFFF);
+		}
+		zAceleracion = zValue * (9.8/pow(2,18));	
+				
+		printf("X: ");
+		printf("%2.8f ", xAceleracion);
+		printf("Y: ");
+		printf("%2.8f ", yAceleracion);
+		printf("Z: ");
+		printf("%2.8f ", zAceleracion); 
+		printf("|\n"); 
+		
+		exit(-1);
+		
+	} else {
+		
+		if (pyloadRS485[1]==0xEE){
+			if (pyloadRS485[2]==0xE3){
+				printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
+			}
+			exit(-1);
+		}
+		
 	}
-	
-	//Calculo aceleracion eje x:
-	xValue = ((xData[0]<<12)&0xFF000)+((xData[1]<<4)&0xFF0)+((xData[2]>>4)&0xF);
-	// Apply two complement
-	if (xValue >= 0x80000) {
-		xValue = xValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-		xValue = -1*(((~xValue)+1)& 0x7FFFF);
-	}
-	xAceleracion = xValue * (9.8/pow(2,18));
-	
-	//Calculo aceleracion eje y:
-	yValue = ((yData[0]<<12)&0xFF000)+((yData[1]<<4)&0xFF0)+((yData[2]>>4)&0xF);
-	// Apply two complement
-	if (yValue >= 0x80000) {
-		yValue = yValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-		yValue = -1*(((~yValue)+1)& 0x7FFFF);
-	}
-	yAceleracion = yValue * (9.8/pow(2,18));
-	
-	//Calculo aceleracion eje z:
-	zValue = ((zData[0]<<12)&0xFF000)+((zData[1]<<4)&0xFF0)+((zData[2]>>4)&0xF);
-	// Apply two complement
-	if (zValue >= 0x80000) {
-		zValue = zValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-		zValue = -1*(((~zValue)+1)& 0x7FFFF);
-	}
-	zAceleracion = zValue * (9.8/pow(2,18));	
-			
-	printf("X: ");
-	printf("%2.8f ", xAceleracion);
-	printf("Y: ");
-	printf("%2.8f ", yAceleracion);
-	printf("Z: ");
-	printf("%2.8f ", zAceleracion); 
-	printf("|\n"); 
-	
-	exit(-1);
 	
 }
 
