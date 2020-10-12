@@ -24,7 +24,7 @@ unsigned int i, x;
 unsigned short buffer;
 unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
-unsigned char tramaPyloadRS485[515];
+unsigned char tramaPyloadRS485[2600];
 
 short fuenteTiempoPic;
 
@@ -249,26 +249,30 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 	double xAceleracion;
 	double yAceleracion;
 	double zAceleracion;
-		
 	
-	printf("Imprimiendo datos...\n");
+	//Imprime los datos de cabecera:
+	printf("Datos de cabecera: ");
+	printf("%X ", pyloadRS485[1]);
+	printf("%X ", pyloadRS485[2]);
+	printf("%X\n", pyloadRS485[3]);	
+	
 	
 	//Imprime la hora y fecha recuperada de la trama de datos:
 	printf("Datos de la trama:\n");
 	printf("| ");
-	printf("%0.2d:", pyloadRS485[2507-3]);			//hh
-	printf("%0.2d:", pyloadRS485[2507-2]);			//mm
-	printf("%0.2d ", pyloadRS485[2507-1]);			//ss
-	printf("%0.2d/", pyloadRS485[2507-6]);			//aa
-	printf("%0.2d/", pyloadRS485[2507-5]);			//mm
-	printf("%0.2d ", pyloadRS485[2507-4]);			//dd
+	printf("%0.2d:", pyloadRS485[2513-3]);			//hh
+	printf("%0.2d:", pyloadRS485[2513-2]);			//mm
+	printf("%0.2d ", pyloadRS485[2513-1]);			//ss
+	printf("%0.2d/", pyloadRS485[2513-6]);			//aa
+	printf("%0.2d/", pyloadRS485[2513-5]);			//mm
+	printf("%0.2d ", pyloadRS485[2513-4]);			//dd
 	printf("| ");
-	
+			
 	//Imprime los primeros datos de aceleracion:
 	for (x=0;x<3;x++){
-		xData[x] = pyloadRS485[x+2];	
-		yData[x] = pyloadRS485[x+5];	
-		zData[x] = pyloadRS485[x+8];	
+		xData[x] = pyloadRS485[x+8];	
+		yData[x] = pyloadRS485[x+11];	
+		zData[x] = pyloadRS485[x+14];	
 	}
 	
 	//Calculo aceleracion eje x:
@@ -307,6 +311,7 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 	printf("|\n"); 
 	
 	exit(-1);
+	
 }
 
 //**************************************************************************************************************************************

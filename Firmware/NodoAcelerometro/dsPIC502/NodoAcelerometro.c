@@ -19,7 +19,7 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 //Credenciales:
 #define IDNODO 1                                                                //Direccion del nodo
 #define SIZESD 8                                                                //Capacidad de la SD (GB)
-#define DELTASECTOR 97952                                                       //Desface donde empiezan los datos del sector a partir del PSF
+#define DELTASECTOR 97952                                                       //Desface donde empiezan los datos del sector a partir del PSF (sector 100000)
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
@@ -687,7 +687,7 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
 //Funcion para recuperar un segundo de datos de aceleracion
 void RecuperarTramaAceleracion(unsigned long sectorReq){
 
-    unsigned char tramaAcelSeg[2510];                                           //Trama para almacenar los datos del vector de aceleracion
+    unsigned char tramaAcelSeg[2515];                                           //Trama para almacenar los datos del vector de aceleracion
     unsigned char bufferSectorReq[512];                                         //Trama para recuperar el buffer leido
     unsigned short tiempoAcel[6];                                               //Trama de tiempo del vector de aceleracion
     unsigned long contSector;
@@ -705,9 +705,13 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
             for (y=0;y<6;y++){
                 tiempoAcel[y] = bufferSectorReq[y+6];
             }
+            //Recupera los datos de cabecera:
+            for (y=0;y<6;y++){
+                tramaAcelSeg[y+1] = bufferSectorReq[y];
+            }
             //Recupera los primeros 500 bytes de aceleracion:
             for (y=0;y<500;y++){
-                tramaAcelSeg[y+1] = bufferSectorReq[y+12];
+                tramaAcelSeg[y+7] = bufferSectorReq[y+12];
             }
             contSector++;
             break;
@@ -723,7 +727,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
         if (checkLecSD==0) {
             //Recupera los siguientes 512 bytes de aceleracion (500 - 1011):
             for (y=0;y<512;y++){
-                tramaAcelSeg[y+501] = bufferSectorReq[y];
+                tramaAcelSeg[y+507] = bufferSectorReq[y];
             }
             contSector++;
             break;
@@ -739,7 +743,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
         if (checkLecSD==0) {
             //Recupera los siguientes 512 bytes de aceleracion (1012 - 1523):
             for (y=0;y<512;y++){
-                tramaAcelSeg[y+1013] = bufferSectorReq[y];
+                tramaAcelSeg[y+1019] = bufferSectorReq[y];
             }
             contSector++;
             break;
@@ -755,7 +759,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
         if (checkLecSD==0) {
             //Recupera los siguientes 512 bytes de aceleracion (1524 - 2035):
             for (y=0;y<512;y++){
-                tramaAcelSeg[y+1525] = bufferSectorReq[y];
+                tramaAcelSeg[y+1531] = bufferSectorReq[y];
             }
             contSector++;
             break;
@@ -771,7 +775,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
         if (checkLecSD==0) {
             //Recupera los ultimos 464 bytes de aceleracion (2036 - 2499):
             for (y=0;y<464;y++){
-                tramaAcelSeg[y+2037] = bufferSectorReq[y];
+                tramaAcelSeg[y+2043] = bufferSectorReq[y];
             }
             contSector++;
             break;
@@ -781,11 +785,11 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
 
     //Agrega la trama de tiempo al final de la trama de aceleracion (Para conincidir con el formato de datos anterior):
     for (x=0;x<6;x++){
-    tramaAcelSeg[2501+x] = tiempoAcel[x];
+    tramaAcelSeg[2507+x] = tiempoAcel[x];
     }
     
     //Envia la trama aceleracion por RS485:
-    EnviarTramaRS485(1, IDNODO, 0xF3, 2507, tramaAcelSeg);
+    EnviarTramaRS485(1, IDNODO, 0xF3, 2513, tramaAcelSeg);
 
 }
 //*****************************************************************************************************************************************

@@ -1127,7 +1127,7 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
 
 void RecuperarTramaAceleracion(unsigned long sectorReq){
 
- unsigned char tramaAcelSeg[2510];
+ unsigned char tramaAcelSeg[2515];
  unsigned char bufferSectorReq[512];
  unsigned short tiempoAcel[6];
  unsigned long contSector;
@@ -1146,8 +1146,12 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  tiempoAcel[y] = bufferSectorReq[y+6];
  }
 
+ for (y=0;y<6;y++){
+ tramaAcelSeg[y+1] = bufferSectorReq[y];
+ }
+
  for (y=0;y<500;y++){
- tramaAcelSeg[y+1] = bufferSectorReq[y+12];
+ tramaAcelSeg[y+7] = bufferSectorReq[y+12];
  }
  contSector++;
  break;
@@ -1163,7 +1167,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<512;y++){
- tramaAcelSeg[y+501] = bufferSectorReq[y];
+ tramaAcelSeg[y+507] = bufferSectorReq[y];
  }
  contSector++;
  break;
@@ -1179,7 +1183,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<512;y++){
- tramaAcelSeg[y+1013] = bufferSectorReq[y];
+ tramaAcelSeg[y+1019] = bufferSectorReq[y];
  }
  contSector++;
  break;
@@ -1195,7 +1199,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<512;y++){
- tramaAcelSeg[y+1525] = bufferSectorReq[y];
+ tramaAcelSeg[y+1531] = bufferSectorReq[y];
  }
  contSector++;
  break;
@@ -1211,7 +1215,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<464;y++){
- tramaAcelSeg[y+2037] = bufferSectorReq[y];
+ tramaAcelSeg[y+2043] = bufferSectorReq[y];
  }
  contSector++;
  break;
@@ -1221,11 +1225,11 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
 
 
  for (x=0;x<6;x++){
- tramaAcelSeg[2501+x] = tiempoAcel[x];
+ tramaAcelSeg[2507+x] = tiempoAcel[x];
  }
 
 
- EnviarTramaRS485(1,  1 , 0xF3, 2507, tramaAcelSeg);
+ EnviarTramaRS485(1,  1 , 0xF3, 2513, tramaAcelSeg);
 
 }
 
