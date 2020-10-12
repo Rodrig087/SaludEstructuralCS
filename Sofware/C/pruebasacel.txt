@@ -1,0 +1,10 @@
+sudo ./inspeccionarsector 1 1768204
+sudo ./inspeccionarevento 1 1768205
+
+sudo ./recuperarevento 1 1768202 10
+sudo ./leeraceleracion 1 1768205 10
+
+
+
+1768204
+1768205
