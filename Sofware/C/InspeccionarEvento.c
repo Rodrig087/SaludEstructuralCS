@@ -166,9 +166,9 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	//printf("Funcion: %X\n", funcionSPI);
-	//printf("Subfuncion: %X\n", subFuncionSPI);
-	//printf("Numero de bytes: %d\n", numBytesSPI);
+	printf("Funcion: %X\n", funcionSPI);
+	printf("Subfuncion: %X\n", subFuncionSPI);
+	printf("Numero de bytes: %d\n", numBytesSPI);
 	delay(50);
 	
 	switch (funcionSPI){                                                                     
@@ -194,7 +194,7 @@ void ObtenerOperacion(){
 //C:0xA8	F:0xF8
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
-	//printf("Enviando solicitud al nodo: %d\n", direccion);
+	printf("Enviando solicitud al nodo: %d\n", direccion);
 		
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
@@ -219,7 +219,7 @@ void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsig
 
 //C:0xAA	F:0xFA
 void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485){
-	
+	printf("Recuperando datos de la trama...\n");
 	bcm2835_spi_transfer(0xAA);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	for (i=0;i<numBytesPyload;i++){
@@ -250,11 +250,12 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 	double yAceleracion;
 	double zAceleracion;
 	
+	printf("Imprimiendo datos de la trama...\n");
+	
 	//Verifica los datos de cabecera:
 	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
 		
 		//Imprime la hora y fecha recuperada de la trama de datos:
-		printf("Datos de la trama:\n");
 		printf("| ");
 		printf("%0.2d:", pyloadRS485[2513-3]);			//hh
 		printf("%0.2d:", pyloadRS485[2513-2]);			//mm
@@ -314,9 +315,17 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 			if (pyloadRS485[2]==0xE3){
 				printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
 			}
-			exit(-1);
+			if (pyloadRS485[2]==0xE4){
+				printf("Error %X: Timeout expiro al recuperar la trama RS485\n", pyloadRS485[2]);
+			}
+			
+		} else {
+			printf("No se pudo realizar la lectura. Revise el sector seleccionado.\n");
+			printf("%X ", pyloadRS485[0]);			
+			printf("%X ", pyloadRS485[1]);			
+			printf("%X\n", pyloadRS485[2]);			
 		}
-		
+		exit(-1);
 	}
 	
 }

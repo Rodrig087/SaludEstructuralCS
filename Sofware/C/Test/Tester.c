@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	while(1){	
 		
 		    printf("Prueba numero: %d\n", contador); 
-			system("sudo ./inspeccionarsector 2 3639");
+			system("sudo ./inspeccionarevento 1 1768190");
 			
 			
 			contador++;

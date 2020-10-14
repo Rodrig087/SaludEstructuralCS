@@ -1274,6 +1274,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  for (x=0;x<6;x++){
  tramaAcelSeg[2507+x] = tiempoAcel[x];
  }
+ TEST = ~TEST;
  }
 
 

@@ -495,6 +495,11 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         } else {
             outputPyloadRS485[0] = tramaSolicitudNodo[1];
         }
+        //prueba
+        banRSI = 0;
+        banRSC = 0;
+        i_rs485 = 0;
+        //fin prueba
         banRespuestaPi = 1;
         //Reenvia la solicitud al nodo por RS485:
         EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
@@ -599,12 +604,25 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
-
+     T2CON.TON = 0;                                                             //Apaga el Timer
+     
      //Limpia estas banderas para restablecer la comunicacion por RS485:
+     /*
      banRSI = 0;
      banRSC = 0;
      i_rs485 = 0;
-
+     */
+     
+     //pruebas
+     INT_SINC = ~INT_SINC;//TEST
+     /*
+     numDatosRS485 = 3;
+     inputPyloadRS485[0] = 0xD3;
+     inputPyloadRS485[1] = 0xEE;
+     inputPyloadRS485[2] = 0xE4;
+     */
+     //InterrupcionP1(0xB3,0xD3,3);
+     //fin pruebas
 }
 //*****************************************************************************************************************************************
 
@@ -757,16 +775,12 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
                case 0xF1:
                     InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
                     break;
-               case 0xF2:
-                                        
-                    break;
                case 0xF3:
                     InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
-                    //InterrupcionP1(0xB3,subFuncionRS485,512);
                     break;
-                }
+        }
                 
-         banRSC = 0;
+        banRSC = 0;
          
      }
 }

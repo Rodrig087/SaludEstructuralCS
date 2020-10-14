@@ -496,24 +496,24 @@ unsigned long UbicarPrimerSectorEscrito(){
 
      ptrPrimerSectorSD = (unsigned char *) & primerSectorSD;
 
-         checkLecSD = 1;
-         // Intenta leer los datos del sector como maximo 5 veces:
-         for (x=0;x<5;x++){
-                 //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
-                 checkLecSD = SD_Read_Block(bufferSectorInicio, infoPrimerSector);
-                 //checkLecSD = 0, significa que la lectura fue exitosa:
-                 if (checkLecSD==0) {
-                        //Almacena el datos en la variable sectorInicioSD:
-                        *ptrPrimerSectorSD = bufferSectorInicio[3];                      //LSB
-                        *(ptrPrimerSectorSD+1) = bufferSectorInicio[2];
-                        *(ptrPrimerSectorSD+2) = bufferSectorInicio[1];
-                        *(ptrPrimerSectorSD+3) = bufferSectorInicio[0];                  //MSB
-                        break;
-                        Delay_ms(5);
-                 } else {
-                        primerSectorSD = PSE;                                           //Si no pudo realizar la lectura devuelve el Primer Sector de Escritura
-                 }
+     checkLecSD = 1;
+     // Intenta leer los datos del sector como maximo 5 veces:
+     for (x=0;x<5;x++){
+         //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
+         checkLecSD = SD_Read_Block(bufferSectorInicio, infoPrimerSector);
+         //checkLecSD = 0, significa que la lectura fue exitosa:
+         if (checkLecSD==0) {
+            //Almacena el datos en la variable sectorInicioSD:
+            *ptrPrimerSectorSD = bufferSectorInicio[3];                      //LSB
+            *(ptrPrimerSectorSD+1) = bufferSectorInicio[2];
+            *(ptrPrimerSectorSD+2) = bufferSectorInicio[1];
+            *(ptrPrimerSectorSD+3) = bufferSectorInicio[0];                  //MSB
+            break;
+            Delay_ms(5);
+         } else {
+            primerSectorSD = PSE;                                           //Si no pudo realizar la lectura devuelve el Primer Sector de Escritura
          }
+     }
 
 
      return primerSectorSD;
@@ -834,6 +834,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
         for (x=0;x<6;x++){
             tramaAcelSeg[2507+x] = tiempoAcel[x];
         }
+        TEST = ~TEST;
     }
     
     //Envia la trama aceleracion por RS485:
