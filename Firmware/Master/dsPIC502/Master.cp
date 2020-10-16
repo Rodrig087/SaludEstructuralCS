@@ -659,7 +659,7 @@ void ConfiguracionPrincipal(){
  IPC7bits.INT2IP = 0x01;
 
 
- T2CON = 0x0020;
+ T2CON = 0x20;
  T2CON.TON = 0;
  T2IE_bit = 1;
  T2IF_bit = 0;
@@ -1142,6 +1142,7 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
  T2CON.TON = 1;
+ TMR2 = 0;
  banRSI = 1;
  i_rs485 = 0;
  }

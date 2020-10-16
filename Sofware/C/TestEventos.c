@@ -1,5 +1,5 @@
 //Compilar:
-//gcc InspeccionarEvento.c -o inspeccionarevento -lbcm2835 -lwiringPi -lm 
+//gcc TestEventos.c -o testeventos -lbcm2835 -lwiringPi -lm 
 
 
 #include <stdio.h>
@@ -10,6 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+
+#include <sys/time.h>
 
 //Declaracion de constantes
 #define P1 0																	//Pin 11 GPIO
@@ -33,11 +35,13 @@ unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
 
-int direccionNodo,sectorReq;
+int direccionNodo,sectorReq, duracionSeg;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
-unsigned short banSolicitud, contSolicitud;
+unsigned short banSolicitud, contSolicitud, contSegundos;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
+
+struct timeval  tv1, tv2;
 
 //Declaracion de funciones
 int ConfiguracionPrincipal();
@@ -55,9 +59,12 @@ int main(int argc, char *argv[]) {
 	x = 0;
 	banSolicitud = 0;
 	contSolicitud = 0;
+	contSegundos = 0;
 	
 	direccionNodo = (short)(atoi(argv[1]));
 	sectorReq = atoi(argv[2]);
+	duracionSeg = (short)(atoi(argv[3]));
+	
 	//Asociacion de los punteros a las variables:
     ptrSectorReq = (unsigned char *) & sectorReq;
 	
@@ -76,13 +83,14 @@ int main(int argc, char *argv[]) {
 	ConfiguracionPrincipal();
 	printf("Inspeccionando sector: %d\n", sectorReq);
 	
+	gettimeofday(&tv1, NULL);
+	
 	while(contSolicitud<6){
 		
 		if (banSolicitud==0){
 			banSolicitud = 1;
 			//Envia la solicitud al nodo:
 			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-			contSolicitud++;
 		}
 		
 	}
@@ -169,7 +177,7 @@ void ObtenerOperacion(){
 	//printf("Funcion: %X\n", funcionSPI);
 	//printf("Subfuncion: %X\n", subFuncionSPI);
 	//printf("Numero de bytes: %d\n", numBytesSPI);
-	delay(50);
+	delay(25); //Este retraso es muy importante
 	
 	switch (funcionSPI){                                                                     
           //Funciones de tiempo:
@@ -254,18 +262,8 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 	
 	//Verifica los datos de cabecera:
 	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
-		
-		//Imprime la hora y fecha recuperada de la trama de datos:
-		printf("| ");
-		printf("%0.2d:", pyloadRS485[2513-3]);			//hh
-		printf("%0.2d:", pyloadRS485[2513-2]);			//mm
-		printf("%0.2d ", pyloadRS485[2513-1]);			//ss
-		printf("%0.2d/", pyloadRS485[2513-6]);			//aa
-		printf("%0.2d/", pyloadRS485[2513-5]);			//mm
-		printf("%0.2d ", pyloadRS485[2513-4]);			//dd
-		printf("| ");
 				
-		//Imprime los primeros datos de aceleracion:
+		//Calcula los primeros datos de aceleracion:
 		for (x=0;x<3;x++){
 			xData[x] = pyloadRS485[x+8];	
 			yData[x] = pyloadRS485[x+11];	
@@ -299,15 +297,31 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 		}
 		zAceleracion = zValue * (9.8/pow(2,18));	
 				
-		printf("X: ");
-		printf("%2.8f ", xAceleracion);
-		printf("Y: ");
-		printf("%2.8f ", yAceleracion);
-		printf("Z: ");
-		printf("%2.8f ", zAceleracion); 
-		printf("|\n"); 
+		//if (contSegundos==duracionSeg-1){
+			
+			//Imprime la hora y fecha recuperada de la trama de datos:
+			printf("| ");
+			printf("%0.2d:", pyloadRS485[2513-3]);			//hh
+			printf("%0.2d:", pyloadRS485[2513-2]);			//mm
+			printf("%0.2d ", pyloadRS485[2513-1]);			//ss
+			printf("%0.2d/", pyloadRS485[2513-6]);			//aa
+			printf("%0.2d/", pyloadRS485[2513-5]);			//mm
+			printf("%0.2d ", pyloadRS485[2513-4]);			//dd
+			printf("| ");
+			//Imprime los primeros datos de aceleracion:
+			printf("X: ");
+			printf("%2.8f ", xAceleracion);
+			printf("Y: ");
+			printf("%2.8f ", yAceleracion);
+			printf("Z: ");
+			printf("%2.8f ", zAceleracion); 
+			printf("|\n");
+			
+		//}
 		
-		exit(-1);
+		contSegundos++;
+		sectorReq = sectorReq + 5;
+		contSolicitud = 0;
 		
 	} else {
 		
@@ -325,8 +339,26 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 			printf("%X ", pyloadRS485[1]);			
 			printf("%X\n", pyloadRS485[2]);			
 		}
+		
+		contSolicitud++;
+		sectorReq = sectorReq + 1;
+		
+	}
+	
+	if ((contSegundos==duracionSeg)||(contSolicitud==5)){
+		gettimeofday(&tv2, NULL);
+		printf ("Tiempo total = %d segundos\n",(int) (tv2.tv_sec - tv1.tv_sec));
 		exit(-1);
 	}
+	
+	
+	printf("Inspeccionando sector: %d\n", sectorReq);
+	pyloadNodo[0] = subFuncionNodo;
+	pyloadNodo[1] = *ptrSectorReq;
+	pyloadNodo[2] = *(ptrSectorReq+1);
+	pyloadNodo[3] = *(ptrSectorReq+2);
+	pyloadNodo[4] = *(ptrSectorReq+3);
+	banSolicitud = 0;
 	
 }
 

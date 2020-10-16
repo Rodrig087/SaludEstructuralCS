@@ -247,7 +247,7 @@ void ConfiguracionPrincipal(){
      IPC7bits.INT2IP = 0x01;                                                    //Prioridad en la interrupocion externa INT2
      
      //Configuracion del TMR2 con un tiempo de 100ms
-     T2CON = 0x0020;
+     T2CON = 0x20;                                                              //Prescalador
      T2CON.TON = 0;                                                             //Apaga el Timer2
      T2IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR2
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR2
@@ -745,6 +745,7 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
            T2CON.TON = 1;                                                       //Inicia el TimeOut
+           TMR2 = 0;
            banRSI = 1;
            i_rs485 = 0;
         }

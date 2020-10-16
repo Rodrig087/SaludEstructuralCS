@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 			
 			contador++;
 			printf("\n");
-			delay (1000);
+			delay (100);
 	
 	}
 

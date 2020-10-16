@@ -10,7 +10,7 @@ hint: 0	1004	interrupt handler (int_2 at 0x004E)	Master.c
 hint: 0	1004	interrupt handler (Timer2Int at 0x0022)	Master.c
 hint: 0	1004	interrupt handler (urx_1 at 0x002A)	Master.c
 hint: 0	1004	interrupt handler (urx_2 at 0x0050)	Master.c
-diagnostics: 786	123	Compiled Successfully	Master.c
+diagnostics: 787	123	Compiled Successfully	Master.c
 warning: 172	1519	Logical expression is always: 'False'	Master.c
 hint: 77	1164	Variable 'value' has been eliminated by optimizer	Master.c
 hint: 130	1164	Variable 'valueRead' has been eliminated by optimizer	Master.c
@@ -26,8 +26,8 @@ hint: 22	1164	Variable 'ptrnumDatos' has been eliminated by optimizer	Master.c
 diagnostics: 0	127	All files Compiled in 140 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
 hint: 0	1144	Static RAM (bytes): 2970   Dynamic RAM (bytes): 25702	Static RAM (bytes): 2970   Dynamic RAM (bytes): 25702
-hint: 0	1144	Used ROM (bytes): 7030 (4%)  Free ROM (bytes): 169078 (96%)	Used ROM (bytes): 7030 (4%)  Free ROM (bytes): 169078 (96%)
+hint: 0	1144	Used ROM (bytes): 7032 (4%)  Free ROM (bytes): 169076 (96%)	Used ROM (bytes): 7032 (4%)  Free ROM (bytes): 169076 (96%)
 diagnostics: 0	125	Project Linked Successfully	Master.mcpds
-diagnostics: 0	128	Linked in 219 ms	 
+diagnostics: 0	128	Linked in 203 ms	 
 diagnostics: 0	129	Project 'Master.mcpds' completed: 515 ms	 
-diagnostics: 0	103	Finished successfully: 14 oct. 2020, 00:52:59	Master.mcpds
+diagnostics: 0	103	Finished successfully: 15 oct. 2020, 22:16:36	Master.mcpds
