@@ -250,7 +250,8 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 		printf("%0.2d ", pyloadRS485[9]);
 		printf("%0.2d:", pyloadRS485[10]);
 		printf("%0.2d:", pyloadRS485[11]);
-		printf("%0.2d\n", pyloadRS485[12]);
+		printf("%0.2d ", pyloadRS485[12]);
+		printf("%d\n", (3600*pyloadRS485[10])+(60*pyloadRS485[11])+(pyloadRS485[12]));
 		exit(-1);
 	} else {
 		if (pyloadRS485[1]==0xEE){

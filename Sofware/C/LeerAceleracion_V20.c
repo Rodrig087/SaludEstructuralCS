@@ -45,6 +45,10 @@ unsigned char pyloadNodo[10];
 FILE *fp;
 
 struct timeval  tv1, tv2;
+double tiempoEjecucion, velocidadTransmision;
+unsigned long totalBytesTransmitidos;
+
+
 
 //Declaracion de funciones
 int ConfiguracionPrincipal();
@@ -87,8 +91,6 @@ int main(int argc, char *argv[]) {
 	//Configuracion principal:
 	ConfiguracionPrincipal();
 	printf("Inspeccionando sector: %d\n", sectorReq);
-	
-	gettimeofday(&tv1, NULL);
 	
 	while(contSolicitud<6){
 		
@@ -143,7 +145,7 @@ int ConfiguracionPrincipal(){
 	pinMode(TEST, OUTPUT);
 	wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
 	
-	
+	gettimeofday(&tv1, NULL);
 	//printf("Configuracion completa\n");
 	
 }
@@ -266,7 +268,7 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 	
 	//Verifica los datos de cabecera:
 	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
-				
+						
 		//Calcula los primeros datos de aceleracion:
 		for (x=0;x<3;x++){
 			xData[x] = pyloadRS485[x+8];	
@@ -300,7 +302,10 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 			zValue = -1*(((~zValue)+1)& 0x7FFFF);
 		}
 		zAceleracion = zValue * (9.8/pow(2,18));	
-			
+
+		//Imprime el segundo actual:
+		printf("Segundo: %d\n", contSegundos);
+		
 		//Imprime la hora y fecha recuperada de la trama de datos:
 		printf("| ");
 		printf("%0.2d:", pyloadRS485[2513-3]);			//hh
@@ -339,10 +344,7 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 			}
 			
 		} else {
-			printf("No se pudo realizar la lectura. Revise el sector seleccionado.\n");
-			printf("%X ", pyloadRS485[0]);			
-			printf("%X ", pyloadRS485[1]);			
-			printf("%X\n", pyloadRS485[2]);			
+			printf("No se pudo realizar la lectura. Revise el sector seleccionado.\n");			
 		}
 		
 		contSolicitud++;
@@ -352,14 +354,26 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 	
 	if ((contSegundos==duracionSeg)||(contSolicitud==5)){
 		gettimeofday(&tv2, NULL);
-		printf ("Tiempo total = %d segundos\n",(int) (tv2.tv_sec - tv1.tv_sec));
+		tiempoEjecucion = (double)(tv2.tv_sec - tv1.tv_sec)+((double)(tv2.tv_usec - tv1.tv_usec)/1000000);
+		totalBytesTransmitidos = (contSegundos + contSolicitud) *2513;
+		velocidadTransmision = (double)totalBytesTransmitidos / tiempoEjecucion / 1000 * 8;
+		//printf ("\nS1 = %d S2 = %d", tv1.tv_sec, tv2.tv_sec);
+		//printf ("\nuS1 = %d uS2 = %d", tv1.tv_usec, tv2.tv_usec);
+		//printf ("\nTiempo total = %d segundos",(int)(tv2.tv_sec - tv1.tv_sec));
+		//printf ("\nTiempo total = %f segundos",(double)(tv2.tv_usec - tv1.tv_usec)/1000000);
+		//printf ("\nTiempo total = %0.3f segundos\n\n",(double)(tv2.tv_sec - tv1.tv_sec)+((double)(tv2.tv_usec - tv1.tv_usec)/1000000));
+		
+		printf ("\nTiempo de descarga = %0.3f segundos", tiempoEjecucion);
+		printf ("\nTotal de bytes descargados = %d bytes", totalBytesTransmitidos);
+		printf ("\nVelocidad de descarga promedio = %0.3f Kbps\n\n", velocidadTransmision);
+		
 		//Cierra el archivo binario:
 		fclose (fp);
 		exit(-1);
 	}
 	
 	
-	printf("Inspeccionando sector: %d\n", sectorReq);
+	printf("\nInspeccionando sector: %d\n", sectorReq);
 	pyloadNodo[0] = subFuncionNodo;
 	pyloadNodo[1] = *ptrSectorReq;
 	pyloadNodo[2] = *(ptrSectorReq+1);
@@ -390,7 +404,7 @@ void CrearArchivo(unsigned short idConc, unsigned short idNodo, unsigned short d
 	//Realiza la concatenacion para obtner el nombre del archivo:			
 	strcpy(nombreArchivo, "/home/pi/Resultados/");
 	sprintf(idArchivo, "C%0.2dN%0.2d_", idConc, idNodo); 
-	sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d%0.2d%0.2d%0.2d_", tiempoNodo[0], tiempoNodo[1], tiempoNodo[2], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5]);
+	sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d-%0.2d%0.2d%0.2d_", tiempoNodo[0], tiempoNodo[1], tiempoNodo[2], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5]);
 	sprintf(duracionEventoStr, "%0.3d", duracionEvento); 
 	strcpy(ext, ".dat");
 	strcat(nombreArchivo, idArchivo);
@@ -418,15 +432,18 @@ void GuardarTrama(unsigned char* pyloadRS485_2){
 	
 	//prueba
 	printf("Contenido de la trama guardada: ");
+	printf("| ");
 	printf("%0.2d_", tramaAceleracion[0]);
 	printf("%0.2d_", tramaAceleracion[10]);
 	printf("%0.2d ", tramaAceleracion[20]);
+	printf(" | ");
 	printf("%0.2d/", tramaAceleracion[2500]);			//hh
 	printf("%0.2d/", tramaAceleracion[2501]);			//mm
 	printf("%0.2d ", tramaAceleracion[2502]);			//dd
 	printf("%0.2d:", tramaAceleracion[2503]);			//hh
 	printf("%0.2d:", tramaAceleracion[2504]);			//mm
-	printf("%0.2d\n", tramaAceleracion[2505]);		//ss
+	printf("%0.2d", tramaAceleracion[2505]);			//ss
+	printf(" |\n");
 		
 	//Guarda la trama en el archivo binario:
 	if (fp!=NULL){
