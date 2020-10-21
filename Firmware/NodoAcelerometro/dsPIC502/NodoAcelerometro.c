@@ -1004,6 +1004,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
+     T2CON.TON = 0;                                                             //Apaga el Timer2
 
      //Limpia estas banderas para restablecer la comunicacion por RS485:
      banRSI = 0;

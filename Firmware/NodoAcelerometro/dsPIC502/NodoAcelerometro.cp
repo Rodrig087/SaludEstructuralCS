@@ -1444,6 +1444,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
  T2IF_bit = 0;
+ T2CON.TON = 0;
 
 
  banRSI = 0;

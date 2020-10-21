@@ -17,9 +17,9 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 2                                                                //Direccion del nodo
+#define IDNODO 1                                                                //Direccion del nodo
 #define SIZESD 8                                                                //Capacidad de la SD (GB)
-#define DELTASECTOR 97952                                                       //Desface donde empiezan los datos del sector a partir del PSF
+#define DELTASECTOR 97952                                                       //Desface donde empiezan los datos del sector a partir del PSF (sector 100000)
 
 ////////////////////////////////////////////// Declaracion de variables y costantes ///////////////////////////////////////////////////////
 //Constantes:
@@ -496,24 +496,24 @@ unsigned long UbicarPrimerSectorEscrito(){
 
      ptrPrimerSectorSD = (unsigned char *) & primerSectorSD;
 
-         checkLecSD = 1;
-         // Intenta leer los datos del sector como maximo 5 veces:
-         for (x=0;x<5;x++){
-                 //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
-                 checkLecSD = SD_Read_Block(bufferSectorInicio, infoPrimerSector);
-                 //checkLecSD = 0, significa que la lectura fue exitosa:
-                 if (checkLecSD==0) {
-                        //Almacena el datos en la variable sectorInicioSD:
-                        *ptrPrimerSectorSD = bufferSectorInicio[3];                      //LSB
-                        *(ptrPrimerSectorSD+1) = bufferSectorInicio[2];
-                        *(ptrPrimerSectorSD+2) = bufferSectorInicio[1];
-                        *(ptrPrimerSectorSD+3) = bufferSectorInicio[0];                  //MSB
-                        break;
-                        Delay_ms(5);
-                 } else {
-                        primerSectorSD = PSE;                                           //Si no pudo realizar la lectura devuelve el Primer Sector de Escritura
-                 }
+     checkLecSD = 1;
+     // Intenta leer los datos del sector como maximo 5 veces:
+     for (x=0;x<5;x++){
+         //Lee los datos del sector donde se almaceno el dato del ultimo sector escrito:
+         checkLecSD = SD_Read_Block(bufferSectorInicio, infoPrimerSector);
+         //checkLecSD = 0, significa que la lectura fue exitosa:
+         if (checkLecSD==0) {
+            //Almacena el datos en la variable sectorInicioSD:
+            *ptrPrimerSectorSD = bufferSectorInicio[3];                      //LSB
+            *(ptrPrimerSectorSD+1) = bufferSectorInicio[2];
+            *(ptrPrimerSectorSD+2) = bufferSectorInicio[1];
+            *(ptrPrimerSectorSD+3) = bufferSectorInicio[0];                  //MSB
+            break;
+            Delay_ms(5);
+         } else {
+            primerSectorSD = PSE;                                           //Si no pudo realizar la lectura devuelve el Primer Sector de Escritura
          }
+     }
 
 
      return primerSectorSD;
@@ -687,13 +687,17 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
 //Funcion para recuperar un segundo de datos de aceleracion
 void RecuperarTramaAceleracion(unsigned long sectorReq){
 
-    unsigned char tramaAcelSeg[2510];                                           //Trama para almacenar los datos del vector de aceleracion
+    unsigned char tramaAcelSeg[2515];                                           //Trama para almacenar los datos del vector de aceleracion
     unsigned char bufferSectorReq[512];                                         //Trama para recuperar el buffer leido
     unsigned short tiempoAcel[6];                                               //Trama de tiempo del vector de aceleracion
     unsigned long contSector;
+    unsigned int numDatosTramaAcel;
+    unsigned short banLecturaCorrecta;
 
     tramaAcelSeg[0] = 0xD3;                                                     //Subfuncion
     contSector = 0;
+    banLecturaCorrecta = 0;
+    numDatosTramaAcel = 2513;
 
     //Lee el primer sector:
     checkLecSD = 1;
@@ -705,87 +709,136 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
             for (y=0;y<6;y++){
                 tiempoAcel[y] = bufferSectorReq[y+6];
             }
+            //Recupera los datos de cabecera:
+            for (y=0;y<6;y++){
+                tramaAcelSeg[y+1] = bufferSectorReq[y];
+            }
             //Recupera los primeros 500 bytes de aceleracion:
             for (y=0;y<500;y++){
-                tramaAcelSeg[y+1] = bufferSectorReq[y+12];
+                tramaAcelSeg[y+7] = bufferSectorReq[y+12];
             }
+            banLecturaCorrecta = 1;
             contSector++;
             break;
+        } else {
+            //Indica el error E3: Error al leer la SD
+            tramaAcelSeg[1] = 0xEE;
+            tramaAcelSeg[2] = 0xE3;
+            numDatosTramaAcel = 3;
+            banLecturaCorrecta = 2;
         }
         Delay_us(10);
     }
 
     //Lee el segundo sector:
-    checkLecSD = 1;
-    // Intenta leer los datos del sector como maximo 5 veces:
-    for (x=0;x<5;x++){
-        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
-        if (checkLecSD==0) {
-            //Recupera los siguientes 512 bytes de aceleracion (500 - 1011):
-            for (y=0;y<512;y++){
-                tramaAcelSeg[y+501] = bufferSectorReq[y];
+    if (banLecturaCorrecta==1){
+        checkLecSD = 1;
+        // Intenta leer los datos del sector como maximo 5 veces:
+        for (x=0;x<5;x++){
+            checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+            if (checkLecSD==0) {
+                //Recupera los siguientes 512 bytes de aceleracion (500 - 1011):
+                for (y=0;y<512;y++){
+                    tramaAcelSeg[y+507] = bufferSectorReq[y];
+                }
+                banLecturaCorrecta = 1;
+                contSector++;
+                break;
+            } else {
+                //Indica el error E3: Error al leer la SD
+                tramaAcelSeg[1] = 0xEE;
+                tramaAcelSeg[2] = 0xE3;
+                numDatosTramaAcel = 3;
+                banLecturaCorrecta = 2;
             }
-            contSector++;
-            break;
+            Delay_us(10);
         }
-        Delay_us(10);
     }
 
     //Lee el tercer sector:
-    checkLecSD = 1;
-    // Intenta leer los datos del sector como maximo 5 veces:
-    for (x=0;x<5;x++){
-        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
-        if (checkLecSD==0) {
-            //Recupera los siguientes 512 bytes de aceleracion (1012 - 1523):
-            for (y=0;y<512;y++){
-                tramaAcelSeg[y+1013] = bufferSectorReq[y];
+    if (banLecturaCorrecta==1){
+        checkLecSD = 1;
+        // Intenta leer los datos del sector como maximo 5 veces:
+        for (x=0;x<5;x++){
+            checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+            if (checkLecSD==0) {
+                //Recupera los siguientes 512 bytes de aceleracion (1012 - 1523):
+                for (y=0;y<512;y++){
+                    tramaAcelSeg[y+1019] = bufferSectorReq[y];
+                }
+                banLecturaCorrecta = 1;
+                contSector++;
+                break;
+            } else {
+                //Indica el error E3: Error al leer la SD
+                tramaAcelSeg[1] = 0xEE;
+                tramaAcelSeg[2] = 0xE3;
+                numDatosTramaAcel = 3;
+                banLecturaCorrecta = 2;
             }
-            contSector++;
-            break;
+            Delay_us(10);
         }
-        Delay_us(10);
     }
 
     //Lee el cuarto sector:
-    checkLecSD = 1;
-    // Intenta leer los datos del sector como maximo 5 veces:
-    for (x=0;x<5;x++){
-        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
-        if (checkLecSD==0) {
-            //Recupera los siguientes 512 bytes de aceleracion (1524 - 2035):
-            for (y=0;y<512;y++){
-                tramaAcelSeg[y+1525] = bufferSectorReq[y];
+    if (banLecturaCorrecta==1){
+        checkLecSD = 1;
+        // Intenta leer los datos del sector como maximo 5 veces:
+        for (x=0;x<5;x++){
+            checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+            if (checkLecSD==0) {
+                //Recupera los siguientes 512 bytes de aceleracion (1524 - 2035):
+                for (y=0;y<512;y++){
+                    tramaAcelSeg[y+1531] = bufferSectorReq[y];
+                }
+                banLecturaCorrecta = 1;
+                contSector++;
+                break;
+            } else {
+                //Indica el error E3: Error al leer la SD
+                tramaAcelSeg[1] = 0xEE;
+                tramaAcelSeg[2] = 0xE3;
+                numDatosTramaAcel = 3;
+                banLecturaCorrecta = 2;
             }
-            contSector++;
-            break;
+            Delay_us(10);
         }
-        Delay_us(10);
     }
 
     //Lee el quinto sector:
-    checkLecSD = 1;
-    // Intenta leer los datos del sector como maximo 5 veces:
-    for (x=0;x<5;x++){
-        checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
-        if (checkLecSD==0) {
-            //Recupera los ultimos 464 bytes de aceleracion (2036 - 2499):
-            for (y=0;y<464;y++){
-                tramaAcelSeg[y+2037] = bufferSectorReq[y];
+    if (banLecturaCorrecta==1){
+        checkLecSD = 1;
+        // Intenta leer los datos del sector como maximo 5 veces:
+        for (x=0;x<5;x++){
+            checkLecSD = SD_Read_Block(bufferSectorReq, (sectorReq+contSector));
+            if (checkLecSD==0) {
+                //Recupera los ultimos 464 bytes de aceleracion (2036 - 2499):
+                for (y=0;y<464;y++){
+                    tramaAcelSeg[y+2043] = bufferSectorReq[y];
+                }
+                banLecturaCorrecta = 1;
+                break;
+            } else {
+                //Indica el error E3: Error al leer la SD
+                tramaAcelSeg[1] = 0xEE;
+                tramaAcelSeg[2] = 0xE3;
+                numDatosTramaAcel = 3;
+                banLecturaCorrecta = 2;
             }
-            contSector++;
-            break;
+            Delay_us(10);
         }
-        Delay_us(10);
     }
 
     //Agrega la trama de tiempo al final de la trama de aceleracion (Para conincidir con el formato de datos anterior):
-    for (x=0;x<6;x++){
-    tramaAcelSeg[2501+x] = tiempoAcel[x];
+    if (banLecturaCorrecta==1){
+        for (x=0;x<6;x++){
+            tramaAcelSeg[2507+x] = tiempoAcel[x];
+        }
+        TEST = ~TEST;
     }
 
     //Envia la trama aceleracion por RS485:
-    EnviarTramaRS485(1, IDNODO, 0xF3, 2507, tramaAcelSeg);
+    EnviarTramaRS485(1, IDNODO, 0xF3, numDatosTramaAcel, tramaAcelSeg);
 
 }
 //*****************************************************************************************************************************************
@@ -951,6 +1004,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
+     T2CON.TON = 0;                                                             //Apaga el Timer2
 
      //Limpia estas banderas para restablecer la comunicacion por RS485:
      banRSI = 0;

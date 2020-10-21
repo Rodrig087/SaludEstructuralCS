@@ -659,11 +659,11 @@ void ConfiguracionPrincipal(){
  IPC7bits.INT2IP = 0x01;
 
 
- T2CON = 0x20;
+ T2CON = 0x30;
  T2CON.TON = 0;
  T2IE_bit = 1;
  T2IF_bit = 0;
- PR2 = 62500;
+ PR2 = 46875;
  IPC1bits.T2IP = 0x02;
 
 
@@ -907,14 +907,13 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  } else {
  outputPyloadRS485[0] = tramaSolicitudNodo[1];
  }
-
  banRSI = 0;
  banRSC = 0;
  i_rs485 = 0;
-
  banRespuestaPi = 1;
 
  EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
+ T2CON.TON = 1;
  }
 
 
@@ -1017,9 +1016,21 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
  T2IF_bit = 0;
  T2CON.TON = 0;
-#line 617 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
+
  INT_SINC = ~INT_SINC;
-#line 626 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
+
+
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+
+
+ numDatosRS485 = 3;
+ inputPyloadRS485[0] = 0xD3;
+ inputPyloadRS485[1] = 0xEE;
+ inputPyloadRS485[2] = 0xE4;
+ InterrupcionP1(0xB3,0xD3,3);
+
 }
 
 
@@ -1141,7 +1152,7 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
- T2CON.TON = 1;
+
  TMR2 = 0;
  banRSI = 1;
  i_rs485 = 0;

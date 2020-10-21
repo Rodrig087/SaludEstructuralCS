@@ -1127,13 +1127,17 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
 
 void RecuperarTramaAceleracion(unsigned long sectorReq){
 
- unsigned char tramaAcelSeg[2510];
+ unsigned char tramaAcelSeg[2515];
  unsigned char bufferSectorReq[512];
  unsigned short tiempoAcel[6];
  unsigned long contSector;
+ unsigned int numDatosTramaAcel;
+ unsigned short banLecturaCorrecta;
 
  tramaAcelSeg[0] = 0xD3;
  contSector = 0;
+ banLecturaCorrecta = 0;
+ numDatosTramaAcel = 2513;
 
 
  checkLecSD = 1;
@@ -1146,16 +1150,28 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  tiempoAcel[y] = bufferSectorReq[y+6];
  }
 
+ for (y=0;y<6;y++){
+ tramaAcelSeg[y+1] = bufferSectorReq[y];
+ }
+
  for (y=0;y<500;y++){
- tramaAcelSeg[y+1] = bufferSectorReq[y+12];
+ tramaAcelSeg[y+7] = bufferSectorReq[y+12];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1163,15 +1179,24 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<512;y++){
- tramaAcelSeg[y+501] = bufferSectorReq[y];
+ tramaAcelSeg[y+507] = bufferSectorReq[y];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
+ }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1179,15 +1204,24 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<512;y++){
- tramaAcelSeg[y+1013] = bufferSectorReq[y];
+ tramaAcelSeg[y+1019] = bufferSectorReq[y];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
+ }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1195,15 +1229,24 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<512;y++){
- tramaAcelSeg[y+1525] = bufferSectorReq[y];
+ tramaAcelSeg[y+1531] = bufferSectorReq[y];
  }
+ banLecturaCorrecta = 1;
  contSector++;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
+ }
 
 
+ if (banLecturaCorrecta==1){
  checkLecSD = 1;
 
  for (x=0;x<5;x++){
@@ -1211,21 +1254,31 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  if (checkLecSD==0) {
 
  for (y=0;y<464;y++){
- tramaAcelSeg[y+2037] = bufferSectorReq[y];
+ tramaAcelSeg[y+2043] = bufferSectorReq[y];
  }
- contSector++;
+ banLecturaCorrecta = 1;
  break;
+ } else {
+
+ tramaAcelSeg[1] = 0xEE;
+ tramaAcelSeg[2] = 0xE3;
+ numDatosTramaAcel = 3;
+ banLecturaCorrecta = 2;
  }
  Delay_us(10);
  }
-
-
- for (x=0;x<6;x++){
- tramaAcelSeg[2501+x] = tiempoAcel[x];
  }
 
 
- EnviarTramaRS485(1,  2 , 0xF3, 2507, tramaAcelSeg);
+ if (banLecturaCorrecta==1){
+ for (x=0;x<6;x++){
+ tramaAcelSeg[2507+x] = tiempoAcel[x];
+ }
+ TEST = ~TEST;
+ }
+
+
+ EnviarTramaRS485(1,  2 , 0xF3, numDatosTramaAcel, tramaAcelSeg);
 
 }
 
@@ -1391,6 +1444,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
  T2IF_bit = 0;
+ T2CON.TON = 0;
 
 
  banRSI = 0;

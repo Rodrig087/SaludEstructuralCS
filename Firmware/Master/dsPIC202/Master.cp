@@ -583,6 +583,7 @@ void main() {
 
  while(1){
  asm CLRWDT;
+ Delay_ms(100);
  }
 
 }
@@ -658,11 +659,11 @@ void ConfiguracionPrincipal(){
  IPC7bits.INT2IP = 0x01;
 
 
- T2CON = 0x0020;
+ T2CON = 0x30;
  T2CON.TON = 0;
  T2IE_bit = 1;
  T2IF_bit = 0;
- PR2 = 62500;
+ PR2 = 46875;
  IPC1bits.T2IP = 0x02;
 
 
@@ -906,9 +907,13 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  } else {
  outputPyloadRS485[0] = tramaSolicitudNodo[1];
  }
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
  banRespuestaPi = 1;
 
  EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
+ T2CON.TON = 1;
  }
 
 
@@ -1010,11 +1015,21 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
  T2IF_bit = 0;
+ T2CON.TON = 0;
+
+ INT_SINC = ~INT_SINC;
 
 
  banRSI = 0;
  banRSC = 0;
  i_rs485 = 0;
+
+
+ numDatosRS485 = 3;
+ inputPyloadRS485[0] = 0xD3;
+ inputPyloadRS485[1] = 0xEE;
+ inputPyloadRS485[2] = 0xE4;
+ InterrupcionP1(0xB3,0xD3,3);
 
 }
 
@@ -1129,17 +1144,16 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  i_rs485++;
  } else {
  T2CON.TON = 0;
-
  banRSI = 0;
  banRSC = 1;
-#line 734 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC202/Master.c"
  }
  }
 
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
- T2CON.TON = 1;
+
+ TMR2 = 0;
  banRSI = 1;
  i_rs485 = 0;
  }
@@ -1170,12 +1184,8 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  case 0xF1:
  InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
  break;
- case 0xF2:
-
- break;
  case 0xF3:
  InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
-
  break;
  }
 

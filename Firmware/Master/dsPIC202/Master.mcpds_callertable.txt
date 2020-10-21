@@ -84,3 +84,4 @@ spi_1
 	AjustarTiempoSistema
 	InterrupcionP1
 Timer2Int
+	InterrupcionP1

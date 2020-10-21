@@ -37,7 +37,7 @@ unsigned short banPrueba;
 
 int direccionNodo,sectorReq, duracionSeg;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
-unsigned short banSolicitud, contSolicitud, contSegundos;
+unsigned short banSolicitud, contSolicitud, contSegundos, contTimeOut;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
 
@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
 	banSolicitud = 0;
 	contSolicitud = 0;
 	contSegundos = 0;
+	contTimeOut = 0;
 	
 	direccionNodo = (short)(atoi(argv[1]));
 	sectorReq = atoi(argv[2]);
@@ -209,7 +210,7 @@ void ObtenerOperacion(){
 //C:0xA8	F:0xF8
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
-	//printf("Enviando solicitud al nodo: %d\n", direccion);
+	printf("Enviando solicitud al nodo: %d\n", direccion);
 		
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
@@ -338,9 +339,12 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 		if (pyloadRS485[1]==0xEE){
 			if (pyloadRS485[2]==0xE3){
 				printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
+				sectorReq = sectorReq + 1;
 			}
 			if (pyloadRS485[2]==0xE4){
 				printf("Error %X: Timeout expiro al recuperar la trama RS485\n", pyloadRS485[2]);
+				delay(200);
+				contTimeOut++;
 			}
 			
 		} else {
@@ -348,7 +352,6 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 		}
 		
 		contSolicitud++;
-		sectorReq = sectorReq + 1;
 		
 	}
 	
@@ -357,15 +360,11 @@ void ImprimirLecturaEvento(unsigned char* pyloadRS485){
 		tiempoEjecucion = (double)(tv2.tv_sec - tv1.tv_sec)+((double)(tv2.tv_usec - tv1.tv_usec)/1000000);
 		totalBytesTransmitidos = (contSegundos + contSolicitud) *2513;
 		velocidadTransmision = (double)totalBytesTransmitidos / tiempoEjecucion / 1000 * 8;
-		//printf ("\nS1 = %d S2 = %d", tv1.tv_sec, tv2.tv_sec);
-		//printf ("\nuS1 = %d uS2 = %d", tv1.tv_usec, tv2.tv_usec);
-		//printf ("\nTiempo total = %d segundos",(int)(tv2.tv_sec - tv1.tv_sec));
-		//printf ("\nTiempo total = %f segundos",(double)(tv2.tv_usec - tv1.tv_usec)/1000000);
-		//printf ("\nTiempo total = %0.3f segundos\n\n",(double)(tv2.tv_sec - tv1.tv_sec)+((double)(tv2.tv_usec - tv1.tv_usec)/1000000));
-		
+				
 		printf ("\nTiempo de descarga = %0.3f segundos", tiempoEjecucion);
 		printf ("\nTotal de bytes descargados = %d bytes", totalBytesTransmitidos);
-		printf ("\nVelocidad de descarga promedio = %0.3f Kbps\n\n", velocidadTransmision);
+		printf ("\nVelocidad de descarga promedio = %0.3f Kbps\n", velocidadTransmision);
+		printf ("\nNumero de TimeOust detectados = %d \n\n", contTimeOut);
 		
 		//Cierra el archivo binario:
 		fclose (fp);

@@ -246,12 +246,12 @@ void ConfiguracionPrincipal(){
      IPC5bits.INT1IP = 0x02;                                                    //Prioridad en la interrupocion externa INT1
      IPC7bits.INT2IP = 0x01;                                                    //Prioridad en la interrupocion externa INT2
      
-     //Configuracion del TMR2 con un tiempo de 100ms
-     T2CON = 0x20;                                                              //Prescalador
+     //Configuracion del TMR2 con un tiempo de 300ms
+     T2CON = 0x30;                                                              //Prescalador
      T2CON.TON = 0;                                                             //Apaga el Timer2
      T2IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR2
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR2
-     PR2 = 62500;                                                               //Carga el preload para un tiempo de 100ms
+     PR2 = 46875;                                                               //Carga el preload para un tiempo de 300ms
      IPC1bits.T2IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR2
      
      //Habilitacion de interrupciones
@@ -495,14 +495,13 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         } else {
             outputPyloadRS485[0] = tramaSolicitudNodo[1];
         }
-        //prueba
         banRSI = 0;
         banRSC = 0;
         i_rs485 = 0;
-        //fin prueba
         banRespuestaPi = 1;
         //Reenvia la solicitud al nodo por RS485:
         EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
+        T2CON.TON = 1;                                                          //Inicia el TimeOut
      }
 
      //(C:0xAA   F:0xFA)
@@ -605,24 +604,21 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
      T2CON.TON = 0;                                                             //Apaga el Timer
-     
+
+     INT_SINC = ~INT_SINC;//TEST
+
      //Limpia estas banderas para restablecer la comunicacion por RS485:
-     /*
      banRSI = 0;
      banRSC = 0;
      i_rs485 = 0;
-     */
-     
-     //pruebas
-     INT_SINC = ~INT_SINC;//TEST
-     /*
+
+     //Envia el codigo de error de TimeOut a la RPi:
      numDatosRS485 = 3;
      inputPyloadRS485[0] = 0xD3;
      inputPyloadRS485[1] = 0xEE;
      inputPyloadRS485[2] = 0xE4;
-     */
-     //InterrupcionP1(0xB3,0xD3,3);
-     //fin pruebas
+     InterrupcionP1(0xB3,0xD3,3);
+
 }
 //*****************************************************************************************************************************************
 
@@ -744,7 +740,7 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           T2CON.TON = 1;                                                       //Inicia el TimeOut
+           //T2CON.TON = 1;                                                       //Inicia el TimeOut
            TMR2 = 0;
            banRSI = 1;
            i_rs485 = 0;
