@@ -1,6 +1,5 @@
 //Compilar:
-//gcc LeerAceleracion_V2.c -o /home/pi/Ejecutables/leeraceleracion -lbcm2835 -lwiringPi 
-//gcc LeerAceleracion_V3.c -o leeraceleracion -lbcm2835 -lwiringPi 
+//gcc CalcularSector_V0.c -o calcularsector -lbcm2835 -lwiringPi 
 
 #define _XOPEN_SOURCE
 #include <stdio.h>
@@ -20,6 +19,7 @@
 #define TEST 29 																//Pin 40 GPIO																						
 #define TIEMPO_SPI 10
 #define FreqSPI 2000000
+#define IDConcentrador 1
 
 //Declaracion de variables
 unsigned int i, x;
@@ -35,10 +35,10 @@ unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
 
-int IDConcentrador, direccionNodo, horaReq, fechaReq, duracionSeg, sectorReq;
+int direccionNodo, horaReq, fechaReq, duracionSeg, sectorReq;
 int horaSector, fechaSector;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
-unsigned short banInformacion, banInspeccion, banSolicitud, contInspeccion, contAceleracion;
+unsigned short banInformacion, banInspeccion, banSolicitud, contSolicitud, contInspeccion, contAceleracion;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
 unsigned short banNewFile;
@@ -55,129 +55,115 @@ long deltaSector;
 
 FILE *fp;
 
+//variables para recuperar sectores clave:
+unsigned long PSF;																//Primer Sector Fisico
+unsigned long PSE;																//Primer Sector Escrito
+unsigned long PSEC;																//Pimer Sector Escrito en el Ciclo actual
+unsigned long USE;																//Ultimo Sector Escrito
+unsigned char *ptrPSF;                                                      	//Puntero primer sector fisico
+unsigned char *ptrPSE;                                                      	//Puntero primer sector de escritura
+unsigned char *ptrPSEC;                                                     	//Puntero primer sector escrito en el ciclo actual 
+unsigned char *ptrUSE;                                                      	//Puntero ultimo sector escrito
+unsigned short banPSE, banPSEC, banUSE;											//Banderas para recuperar el tiempo de cada sector
+
+//Variables para calcular el tiempo de los sectores:
+struct tm dateReq;
+struct tm datePSE;
+struct tm datePSEC;
+struct tm dateUSE;
+char dateReqStr[20];
+char datePSEStr[20];
+char datePSECStr[20];
+char dateUSEStr[20];
+char buffReqUNIX[15];
+char buffPSEUNIX[15];
+char buffPSECUNIX[15];
+char buffUSEUNIX[15];
+long ReqUNIX, PSEUNIX, PSECUNIX, USEUNIX;
+
+
 //Declaracion de funciones
 int ConfiguracionPrincipal();
 void ObtenerOperacion();														                                                 //C:0xA0    F:0xF0
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload);	     //C:0xA8	F:0xF8
 void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485);
-long InformacionSectores(unsigned char* pyloadRS485);
-void InspeccionarSector(unsigned char* pyloadRS485);							                     //C:0xAA	F:0xFA
+void InformacionSectores(unsigned char* pyloadRS485);
+void InspeccionarSector(unsigned char* pyloadRS485);							                     
 void CalcularSector();
-void ImprimirDatosSector(unsigned char* pyloadRS485);
-void GuardarTrama(unsigned short banNewFile, unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485);
+//void ImprimirDatosSector(unsigned char* pyloadRS485);
+//void GuardarTrama(unsigned short banNewFile, unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485);
 
 int main(int argc, char *argv[]) {
 
 	//printf("Iniciando...\n");
 	
 	//Guarda los parametros de entrada:
-	IDConcentrador = (short)(atoi(argv[1]));
-	direccionNodo = (short)(atoi(argv[2]));
+	//IDConcentrador = (short)(atoi(argv[1]));
+	direccionNodo = (short)(atoi(argv[1]));
+	fechaReq = atoi(argv[2]);
 	horaReq = atoi(argv[3]);
-	fechaReq = atoi(argv[4]);
-	duracionSeg = (short)(atoi(argv[5])); 
-	
-	//Provisional
-	//sectorReq = atoi(argv[6]);
+	//duracionSeg = (short)(atoi(argv[4])); 
   
 	//Inicializa las variables:
 	i = 0;
 	x = 0;
 	banInspeccion = 0;
 	banSolicitud = 0;
+	contSolicitud = 0;
 	contAceleracion = 0;
 	banNewFile = 0;
 	sectorReq  = 0;
+	
+	banInformacion = 0;
+	banPSE = 0;
+	banPSEC = 0;
+	banUSE = 0;
 	
 	horaSector = 0;
 	fechaSector = 0;
 	
 	funcionNodo = 0xF3;
-	numDatosNodo = 5;
 		
-	//Llena el pyload con el dato del sector requerido:
+	//Asociacion de los punteros a las variables:
     ptrSectorReq = (unsigned char *) & sectorReq;
-		
+	
+	//Calcula el tiempo requerido en formato aa/mm/dd hh:mm:ss:
+	sprintf(dateReqStr, "%d/%d/%d %d:%d:%d", (fechaReq/10000), ((fechaReq%10000)/100), ((fechaReq%10000)%100), (horaReq/3600), ((horaReq%3600)/60), ((horaReq%3600)%60));
+	printf("Tiempo requerido: %s\n", dateReqStr);	
+	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
-		
-	//Recupera el primer sector del dia:
-	banInformacion = 0;
-	subFuncionNodo = 0xD1;
-	pyloadNodo[0] = subFuncionNodo;
-	EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-	while(banInformacion==0);                                                        //Espera hasta que reciba el sector requerido
 	
-	//Inspecciona el sector recuperado:
-	contInspeccion = 0;
-	banInspeccion = 0;
-	subFuncionNodo = 0xD2;
-	pyloadNodo[0] = subFuncionNodo;
-	pyloadNodo[1] = *ptrSectorReq;
-	pyloadNodo[2] = *(ptrSectorReq+1);
-	pyloadNodo[3] = *(ptrSectorReq+2);
-	pyloadNodo[4] = *(ptrSectorReq+3);
-	while((contInspeccion<6)&&(banInspeccion!=2)){		
-		if (banInspeccion==0){
-			banInspeccion = 1;
-			//Envia la solicitud al nodo:
-			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-			contInspeccion++;
-		}
-	}	
-		
-	//Calcula el sector que tiene los datos de la hora y fecha requeridos:
-	CalcularSector();
-	
-	//Inspecciona de nuevo el sector:
-	contInspeccion = 0;
-	banInspeccion = 0;
-	subFuncionNodo = 0xD2;
-	pyloadNodo[0] = subFuncionNodo;
-	pyloadNodo[1] = *ptrSectorReq;
-	pyloadNodo[2] = *(ptrSectorReq+1);
-	pyloadNodo[3] = *(ptrSectorReq+2);
-	pyloadNodo[4] = *(ptrSectorReq+3);
-	while((contInspeccion<6)&&(banInspeccion!=2)){		
-		if (banInspeccion==0){
-			banInspeccion = 1;
-			//Envia la solicitud al nodo:
-			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-			contInspeccion++;
-		}
-	}
-		
-	//Recupera la trama de aceleracion
-	subFuncionNodo = 0xD3;
-	pyloadNodo[0] = subFuncionNodo;
-	pyloadNodo[1] = *ptrSectorReq;
-	pyloadNodo[2] = *(ptrSectorReq+1);
-	pyloadNodo[3] = *(ptrSectorReq+2);
-	pyloadNodo[4] = *(ptrSectorReq+3);
-	while(contAceleracion<duracionSeg){
-		if (banSolicitud==0){	
-			if (contAceleracion==1){
-				banNewFile = 1;
-			}
-			if (contAceleracion==duracionSeg-1){
-				banNewFile = 2;
-			}
-			banSolicitud = 1;
-			printf("\nLectura: %d\n", contAceleracion);
-			//Envia la solicitud al nodo:
-			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-			//Incrementa el sector:
-			sectorReq = sectorReq + 5;
+	//Recupera la informacion de los sectores de la SD:
+		if (banInformacion==0){
+			banInformacion = 1;
+			subFuncionNodo = 0xD1;
+			numDatosNodo = 1;
 			pyloadNodo[0] = subFuncionNodo;
-			pyloadNodo[1] = *ptrSectorReq;
-			pyloadNodo[2] = *(ptrSectorReq+1);
-			pyloadNodo[3] = *(ptrSectorReq+2);
-			pyloadNodo[4] = *(ptrSectorReq+3);
-			//Incrementa el contador de solicitudes:
-			contAceleracion++;
+			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
 		}
+	
+	while (banInspeccion!=2){
+		
+		while(contSolicitud<6){
+			
+			//Envia una solicitud de inspeccion del sector:
+			if (banInspeccion==1){
+				printf("Entro\n");
+				banInspeccion = 0;
+				EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
+			}
+			//Sale del bucle:
+			if (banInspeccion==2){
+				break;
+			}
+		
+		}
+		
 	}
 	
+	CalcularSector();
+		
 	sleep(1);
 	bcm2835_spi_end();
 	bcm2835_close();
@@ -220,9 +206,8 @@ int ConfiguracionPrincipal(){
 	pinMode(MCLR, OUTPUT);
 	pinMode(TEST, OUTPUT);
 	wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
-	
-	
-	printf("Configuracion completa\n");
+
+	//printf("Configuracion completa\n");
 	
 }
 //**************************************************************************************************************************************
@@ -257,9 +242,10 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	printf("Funcion: %X\n", funcionSPI);
-	printf("Subfuncion: %X\n", subFuncionSPI);
-	printf("Numero de bytes: %d\n", numBytesSPI);
+	//printf("Funcion: %X\n", funcionSPI);
+	//printf("Subfuncion: %X\n", subFuncionSPI);
+	//printf("Numero de bytes: %d\n", numBytesSPI);
+	delay(25); //**Este retardo es muy importante**
 	
 	switch (funcionSPI){                                                                     
 		  //Funciones de lectura de sectores:
@@ -267,21 +253,13 @@ void ObtenerOperacion(){
 			   //Informacion de sectores:
 			   if (subFuncionSPI==0xD1){
 				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
-				   sectorReq = InformacionSectores(tramaPyloadRS485);
+				   InformacionSectores(tramaPyloadRS485);
 			   }
-		  
 			   //Inspeccion de sector:
 			   if (subFuncionSPI==0xD2){
 				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
 				   InspeccionarSector(tramaPyloadRS485);
-			   }
-		  
-		       //Lectura de datos de aceleracion:
-			   if (subFuncionSPI==0xD3){
-				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
-				   ImprimirDatosSector(tramaPyloadRS485);
-				   GuardarTrama(banNewFile, IDConcentrador, direccionNodo, duracionSeg, tramaPyloadRS485);
-			   }		   
+			   }			   
                break;
           default:
                printf("Error: Operacion invalida\n");  
@@ -294,8 +272,7 @@ void ObtenerOperacion(){
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
 	printf("\nEnviando solicitud al nodo...\n");
-	printf("Dir: %d, Funcion: %X, #Datos: %d, Subfuncion: %X, Sector: %d\n", direccion, funcion, numDatos, pyload[0], sectorReq);
-		
+			
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
@@ -340,24 +317,15 @@ void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485)
 //**************************************************************************************************************************************
 //Procesamiento pyload trama RS485:
 
-long InformacionSectores(unsigned char* pyloadRS485){
-	
-	unsigned char *ptrPSF;                                                      //Puntero primer sector fisico
-	unsigned char *ptrPSE;                                                      //Puntero primer sector de escritura
-	unsigned char *ptrPSEC;                                                     //Puntero primer sector escrito en el ciclo actual 
-	unsigned char *ptrSA;                                                       //Puntero sector actual
-	
-	unsigned long PSF;
-	unsigned long PSE;
-	unsigned long PSEC;
-	unsigned long SA;
-	
+void InformacionSectores(unsigned char* pyloadRS485){
+		
 	//Asociacion de los punteros a las variables:	
 	ptrPSF = (unsigned char *) & PSF;
 	ptrPSE = (unsigned char *) & PSE;
 	ptrPSEC = (unsigned char *) & PSEC;
-	ptrSA = (unsigned char *) & SA;
+	ptrUSE = (unsigned char *) & USE;
 	
+	//Recuperacion de datos del pyload:
 	*ptrPSF = pyloadRS485[1];                                                  //LSB PSF
 	*(ptrPSF+1) = pyloadRS485[2];
 	*(ptrPSF+2) = pyloadRS485[3];
@@ -370,78 +338,161 @@ long InformacionSectores(unsigned char* pyloadRS485){
 	*(ptrPSEC+1) = pyloadRS485[10];
 	*(ptrPSEC+2) = pyloadRS485[11];
 	*(ptrPSEC+3) = pyloadRS485[12];                                            //MSB PSEC
-	*ptrSA = pyloadRS485[13];                                                  //LSB SA
-	*(ptrSA+1) = pyloadRS485[14];
-	*(ptrSA+2) = pyloadRS485[15];
-	*(ptrSA+3) = pyloadRS485[16];                                              //MSB SA
+	*ptrUSE = pyloadRS485[13];                                                  //LSB USE
+	*(ptrUSE+1) = pyloadRS485[14];
+	*(ptrUSE+2) = pyloadRS485[15];
+	*(ptrUSE+3) = pyloadRS485[16];                                              //MSB USE
+	
+	USE = USE-5;															   //Calcula el ultimo sector escrito
 	
 	printf("Primer sector fisico: %d\n", PSF);
 	printf("Primer sector de escritura: %d\n", PSE);
 	printf("Primer sector escrito en el ciclo actual: %d\n", PSEC);
-	printf("Sector actual: %d\n", SA);
+	printf("Ultimo sector escrito: %d\n", USE);
 	
-	banInformacion = 1;
-	
-	return PSEC+1;     //**Por lo general el primer sector guarda mal la fecha por lo que es mejor saltar al siguiente
-	
+	banPSE = 1; //Activa la bandera para recuperar el tiempo del sector PSE
+	subFuncionNodo = 0xD2;
+	numDatosNodo = 5;
+	sectorReq = PSE;
+	pyloadNodo[0] = subFuncionNodo;
+	pyloadNodo[1] = *ptrSectorReq;
+	pyloadNodo[2] = *(ptrSectorReq+1);
+	pyloadNodo[3] = *(ptrSectorReq+2);
+	pyloadNodo[4] = *(ptrSectorReq+3);
+	banInspeccion = 1;
+		
 }
 
 void InspeccionarSector(unsigned char* pyloadRS485){
-		
-	//Verifica los datos de cabecera:
 	
+	printf("Inspeccionando sector: %d\n", sectorReq);
+	
+	//Verifica los datos de cabecera:
 	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
-		tiempoSector[0] = pyloadRS485[9];
-		tiempoSector[1] = pyloadRS485[8];
-		tiempoSector[2] = pyloadRS485[7];
-		tiempoSector[3] = pyloadRS485[10];
-		tiempoSector[4] = pyloadRS485[11];
-		tiempoSector[5] = pyloadRS485[12];
-		sprintf(tiempoSecStr, "%d/%d/%d %d:%d:%d", tiempoSector[0], tiempoSector[1], tiempoSector[2], tiempoSector[3], tiempoSector[4], tiempoSector[5]);
-		printf("\n");
-		printf("Sector inspeccionado: %d\n", sectorReq); 
+		
+		printf("Sector: %d\n", sectorReq); 
 		printf("Tiempo: ");
-		printf(tiempoSecStr);
-		printf("\n");
-		banInspeccion = 2;
-	} else {
-		if (contInspeccion==5){
-			if (pyloadRS485[1]==0xEE){
-				if (pyloadRS485[2]==0xE1){ 
-					printf("Error %X: Sector fuera de rango\n", pyloadRS485[2]);
-				} 
-				if (pyloadRS485[2]==0xE2){
-					printf("Error %X: Sector sin datos\n", pyloadRS485[2]);
-				}
-				if (pyloadRS485[2]==0xE3){
-					printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
-				}
-				exit(-1);
-			}
+		printf("%0.2d/", pyloadRS485[7]);
+		printf("%0.2d/", pyloadRS485[8]);
+		printf("%0.2d ", pyloadRS485[9]);
+		printf("%0.2d:", pyloadRS485[10]);
+		printf("%0.2d:", pyloadRS485[11]);
+		printf("%0.2d ", pyloadRS485[12]);
+		printf("%d\n", (3600*pyloadRS485[10])+(60*pyloadRS485[11])+(pyloadRS485[12]));
+		
+		if (banUSE==1){
+			banPSE = 0;
+			banPSEC = 0;
+			banUSE = 0;
+			banInspeccion = 2;
+			sprintf(dateUSEStr, "%d/%d/%d %d:%d:%d", pyloadRS485[7], pyloadRS485[8], pyloadRS485[9], pyloadRS485[10], pyloadRS485[11], pyloadRS485[12]);
+			printf("Tiempo USE: %s\n", dateUSEStr);
 		}
-		//Incrementa el sector:
-		sectorReq++;
-		pyloadNodo[0] = subFuncionNodo;
-		pyloadNodo[1] = *ptrSectorReq;
-		pyloadNodo[2] = *(ptrSectorReq+1);
-		pyloadNodo[3] = *(ptrSectorReq+2);
-		pyloadNodo[4] = *(ptrSectorReq+3);
-		banInspeccion = 0;
+		if (banPSEC==1){
+			banPSE = 0;
+			banPSEC = 0;
+			banUSE = 1;
+			sectorReq = USE;
+			sprintf(datePSECStr, "%d/%d/%d %d:%d:%d", pyloadRS485[7], pyloadRS485[8], pyloadRS485[9], pyloadRS485[10], pyloadRS485[11], pyloadRS485[12]);
+			printf("Tiempo PSEC: %s\n", datePSECStr);
+		}
+		if (banPSE==1){
+			banPSE = 0;
+			banPSEC = 1;
+			banUSE = 0;
+			sectorReq = PSEC;
+			sprintf(datePSEStr, "%d/%d/%d %d:%d:%d", pyloadRS485[7], pyloadRS485[8], pyloadRS485[9], pyloadRS485[10], pyloadRS485[11], pyloadRS485[12]);
+			printf("Tiempo PSE: %s\n", datePSEStr);
+		}
+		
+		
+		
+		contSolicitud = 0;
+			
+	} else {
+		if (pyloadRS485[1]==0xEE){
+			if (pyloadRS485[2]==0xE1){ 
+				printf("Error %X: Sector fuera de rango\n", pyloadRS485[2]);
+				sectorReq++;
+			} 
+			if (pyloadRS485[2]==0xE2){
+				printf("Error %X: Sector sin datos\n", pyloadRS485[2]);
+				sectorReq++;
+			}
+			if (pyloadRS485[2]==0xE3){
+				printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
+				sectorReq++;
+			}
+			if (pyloadRS485[2]==0xE4){
+				printf("Error %X: Timeout expiro al recuperar la trama RS485\n", pyloadRS485[2]);
+				delay(200);
+			}
+		} else {
+			printf("No se pudo realizar la lectura. Revise el sector seleccionado.\n");
+		}
+		
+		contSolicitud++;
+		
+	}
+	
+	if (contSolicitud==5){
+		exit(-1);
 	}
 		
+	//Incrementa el sector:
+	pyloadNodo[0] = subFuncionNodo;
+	pyloadNodo[1] = *ptrSectorReq;
+	pyloadNodo[2] = *(ptrSectorReq+1);
+	pyloadNodo[3] = *(ptrSectorReq+2);
+	pyloadNodo[4] = *(ptrSectorReq+3);
+	banInspeccion = 1;
+	
 }
+
 
 void CalcularSector(){
 	
-	printf("\nCalculando el sector de datos de aceleracion..\n");
-	sprintf(tiempoReqStr, "%d/%d/%d %d:%d:%d", (fechaReq/10000), ((fechaReq%10000)/100), ((fechaReq%10000)%100), (horaReq/3600), ((horaReq%3600)/60), ((horaReq%3600)%60));
-	
-	strptime(tiempoReqStr, "%y/%m/%d %H:%M:%S", &dateReq);
-	strptime(tiempoSecStr, "%y/%m/%d %H:%M:%S", &dateSec);
+	//Calcula el tiempo UNIX:
+	strptime(dateReqStr, "%y/%m/%d %H:%M:%S", &dateReq);
+	strptime(datePSEStr, "%y/%m/%d %H:%M:%S", &datePSE);
+	strptime(datePSECStr, "%y/%m/%d %H:%M:%S", &datePSEC);
+	strptime(dateUSEStr, "%y/%m/%d %H:%M:%S", &dateUSE);
 	
 	strftime(buffReqUNIX, sizeof(buffReqUNIX), "%s", &dateReq);
-	strftime(buffSecUNIX, sizeof(buffSecUNIX), "%s", &dateSec);
+	strftime(buffPSEUNIX, sizeof(buffPSEUNIX), "%s", &datePSE);
+	strftime(buffPSECUNIX, sizeof(buffPSECUNIX), "%s", &datePSEC);
+	strftime(buffUSEUNIX, sizeof(buffUSEUNIX), "%s", &dateUSE);
 	
+	ReqUNIX = atoi(buffReqUNIX);
+	PSEUNIX = atoi(buffPSEUNIX);
+	PSECUNIX = atoi(buffPSECUNIX);
+	USEUNIX = atoi(buffUSEUNIX);
+	
+	printf("\nTiempo UNIX requerido: %d\n", ReqUNIX);
+	printf("Tiempo UNIX PSE: %d\n", PSEUNIX);
+	printf("Tiempo UNIX PSEC: %d\n", PSECUNIX);
+	printf("Tiempo UNIX USE: %d\n", USEUNIX);
+	
+	
+	if ((ReqUNIX<PSEUNIX)||(ReqUNIX>USEUNIX)){
+		printf("\nEl tiempo requerido esta fuera de rango:\n");
+	} else {
+		if ((ReqUNIX>=PSEUNIX)&&(ReqUNIX<=PSECUNIX)){
+			deltaTiempo = ReqUNIX - PSEUNIX;
+			deltaSector = deltaTiempo * 5;
+			sectorReq = PSE + deltaSector - 2;
+		}
+		if ((ReqUNIX>PSECUNIX)&&(ReqUNIX<=USEUNIX)){
+			deltaTiempo = ReqUNIX - PSECUNIX;
+			deltaSector = deltaTiempo * 5;
+			sectorReq = PSEC + deltaSector - 2;
+		}
+		
+		printf("Sector Requerido: %d\n", sectorReq);
+	}
+	
+
+	/*
 	deltaTiempo = atoi(buffReqUNIX) - atoi(buffSecUNIX);
 	deltaSector = deltaTiempo * 5;
 	sectorReq = sectorReq + deltaSector - 2;
@@ -455,10 +506,11 @@ void CalcularSector(){
 	printf("Delta tiempo: %d\n" , deltaTiempo);
 	printf("Delta sector: %d\n" , deltaSector);
 	printf("Sector calculado: %d\n", sectorReq); 
-
+	*/
+	
 }
 
-
+/*
 //Funcion para imprimir informacion relevante de las tramas recuperadas:
 void ImprimirDatosSector(unsigned char* pyloadRS485){
 	
@@ -530,74 +582,7 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 	printf("|\n"); 
 		
 }
-
-//Funcion para crear el archivo binario que almacenara los datos:
-void GuardarTrama(unsigned short banNewFile, unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485){
-		
-	unsigned int outFwrite;
-	unsigned char tramaAceleracion[2506];
-	
-	//banNewFile = 0;
-	
-	//Crea el archivo binario:
-	if (banNewFile==0){
-		
-		//Variables para manejo del archivo binario:
-		char tiempoNodo[6];
-		char nombreArchivo[50];
-		char idArchivo[8];
-		char tiempoNodoStr[13];
-		char duracionEventoStr[4];
-		char ext[5];
-	
-				
-		//Extrae el tiempo de la trama pyload:	
-		tiempoNodo[0] = pyloadRS485[2501];                                    //dd
-		tiempoNodo[1] = pyloadRS485[2502];                                    //mm
-		tiempoNodo[2] = pyloadRS485[2503];                                    //aa
-		tiempoNodo[3] = pyloadRS485[2504];                                    //hh
-		tiempoNodo[4] = pyloadRS485[2505];                                    //mm
-		tiempoNodo[5] = pyloadRS485[2506];                                    //ss		
-		//Realiza la concatenacion para obtner el nombre del archivo:			
-		strcpy(nombreArchivo, "/home/pi/Resultados/");
-		sprintf(idArchivo, "C%0.2dN%0.2d_", idConc, idNodo); 
-		sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d%0.2d%0.2d%0.2d_", tiempoNodo[2], tiempoNodo[1], tiempoNodo[0], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5]);
-		sprintf(duracionEventoStr, "%0.3d", duracionEvento); 
-		strcpy(ext, ".dat");
-		strcat(nombreArchivo, idArchivo);
-		strcat(nombreArchivo, tiempoNodoStr);
-		strcat(nombreArchivo, duracionEventoStr);
-		strcat(nombreArchivo, ext);
-		printf("Se ha creado el archivo: %s\n", nombreArchivo); 
-		//Crea el archivo binario:
-		fp = fopen (nombreArchivo, "ab+");
-		
-	}
-	
-	//Llena la trama de aceleracion con lo valores del pyload:
-	for (x=0;x<2506;x++){
-		tramaAceleracion[x] = pyloadRS485[x+1];
-	}
-	
-	//Guarda la trama en el archivo binario:
-	if (fp!=NULL){
-		do{
-		outFwrite = fwrite(tramaAceleracion, sizeof(char), 2506, fp);
-		} while (outFwrite!=2506);
-		fflush(fp);
-	}
-
-	//Cierra el archivo binario:
-	if (banNewFile==2){
-		
-		fclose (fp);
-		
-	}
-	
-	banSolicitud = 0;
-	
-}
-
+*/
 
 //**************************************************************************************************************************************
 
