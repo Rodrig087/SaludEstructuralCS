@@ -1006,11 +1006,12 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
      T2CON.TON = 0;                                                             //Apaga el Timer2
 
+     /*
      //Limpia estas banderas para restablecer la comunicacion por RS485:
      banRSI = 0;
      banRSC = 0;
      i_rs485 = 0;
-
+     */
 }
 //*****************************************************************************************************************************************
 
@@ -1030,7 +1031,6 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
-           T2CON.TON = 0;                                                       //Apaga el Timer2
            banRSI = 0;                                                          //Limpia la bandera de inicio de trama
            banRSC = 1;                                                          //Activa la bandera de trama completa
         }
@@ -1039,7 +1039,6 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
      //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           T2CON.TON = 1;                                                       //Enciende el Timer2
            banRSI = 1;
            i_rs485 = 0;
         }

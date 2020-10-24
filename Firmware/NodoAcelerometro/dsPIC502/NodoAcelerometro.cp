@@ -1479,7 +1479,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
- T2CON.TON = 1;
+
  banRSI = 1;
  i_rs485 = 0;
  }

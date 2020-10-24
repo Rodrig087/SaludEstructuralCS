@@ -1039,7 +1039,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
      //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           T2CON.TON = 1;                                                       //Enciende el Timer2
+           //T2CON.TON = 1;                                                       //Enciende el Timer2
            banRSI = 1;
            i_rs485 = 0;
         }

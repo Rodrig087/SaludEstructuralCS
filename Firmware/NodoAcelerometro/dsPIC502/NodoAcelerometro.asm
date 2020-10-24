@@ -4856,8 +4856,6 @@ L__urx_1371:
 	BRA Z	L__urx_1537
 	GOTO	L_urx_1292
 L__urx_1537:
-;NodoAcelerometro.c,1042 :: 		T2CON.TON = 1;                                                       //Enciende el Timer2
-	BSET	T2CON, #15
 ;NodoAcelerometro.c,1043 :: 		banRSI = 1;
 	MOV	#lo_addr(_banRSI), W1
 	MOV.B	#1, W0

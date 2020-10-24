@@ -1445,12 +1445,7 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
  T2IF_bit = 0;
  T2CON.TON = 0;
-
-
- banRSI = 0;
- banRSC = 0;
- i_rs485 = 0;
-
+#line 1015 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502_V2/NodoAcelerometro.c"
 }
 
 
@@ -1470,7 +1465,6 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
- T2CON.TON = 0;
  banRSI = 0;
  banRSC = 1;
  }
@@ -1479,7 +1473,6 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
- T2CON.TON = 1;
  banRSI = 1;
  i_rs485 = 0;
  }
