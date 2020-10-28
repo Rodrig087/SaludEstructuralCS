@@ -60,26 +60,32 @@ unsigned long PSF;																//Primer Sector Fisico
 unsigned long PSE;																//Primer Sector Escrito
 unsigned long PSEC;																//Pimer Sector Escrito en el Ciclo actual
 unsigned long USE;																//Ultimo Sector Escrito
+unsigned long PSC;																//Primer Sector Calculado
 unsigned char *ptrPSF;                                                      	//Puntero primer sector fisico
+unsigned char *ptrPSC;                                                      	//Puntero primer sector calculado
 unsigned char *ptrPSE;                                                      	//Puntero primer sector de escritura
 unsigned char *ptrPSEC;                                                     	//Puntero primer sector escrito en el ciclo actual 
 unsigned char *ptrUSE;                                                      	//Puntero ultimo sector escrito
-unsigned short banPSE, banPSEC, banUSE, banPSC;									//Banderas para recuperar el tiempo de cada sector
+unsigned short banPSE, banPSEC, banUSE, banPSC, banSSC;							//Banderas para recuperar el tiempo de cada sector
+unsigned short banBusquedaCompleta, banCalculoCompleto;
 
 //Variables para calcular el tiempo de los sectores:
 struct tm dateReq;
 struct tm datePSE;
 struct tm datePSEC;
 struct tm dateUSE;
+struct tm datePSC;
 char dateReqStr[20];
 char datePSEStr[20];
 char datePSECStr[20];
 char dateUSEStr[20];
+char datePSCStr[20];
 char buffReqUNIX[15];
 char buffPSEUNIX[15];
 char buffPSECUNIX[15];
 char buffUSEUNIX[15];
-long ReqUNIX, PSEUNIX, PSECUNIX, USEUNIX;
+char buffPSCUNIX[15];
+long ReqUNIX, PSEUNIX, PSECUNIX, USEUNIX, PSCUNIX;
 
 
 //Declaracion de funciones
@@ -118,7 +124,11 @@ int main(int argc, char *argv[]) {
 	banPSE = 0;
 	banPSEC = 0;
 	banUSE = 0;
+	
 	banPSC = 0;
+	banSSC = 0;
+	banBusquedaCompleta = 0;
+	banCalculoCompleto = 0;
 	
 	horaSector = 0;
 	fechaSector = 0;
@@ -136,31 +146,24 @@ int main(int argc, char *argv[]) {
 	ConfiguracionPrincipal();
 	
 	//Recupera la informacion de los sectores de la SD:
-		if (banInformacion==0){
-			banInformacion = 1;
-			subFuncionNodo = 0xD1;
-			numDatosNodo = 1;
-			pyloadNodo[0] = subFuncionNodo;
-			EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-		}
+	if (banInformacion==0){
+		banInformacion = 1;
+		subFuncionNodo = 0xD1;
+		numDatosNodo = 1;
+		pyloadNodo[0] = subFuncionNodo;
+		EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
+	}
 	
-	while (banInspeccion!=2){
-		
-		while(contSolicitud<6){
-			
-			if (banInspeccion==2){
-				break;
-			}
+	while (banBusquedaCompleta!=1){
+		while((contSolicitud<6)&&(banBusquedaCompleta==0)){
 			//Envia una solicitud de inspeccion del sector:
 			if (banInspeccion==1){
 				printf("\nBusqueda:\n");
 				//Sale del bucle: **REVISAR: Aveces no funciona esta parte
 				banInspeccion = 0;
 				EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-			}
-						
+			}			
 		}
-		
 	}
 	
 	//Calcula el sector deseado:
@@ -168,11 +171,14 @@ int main(int argc, char *argv[]) {
 	
 	//Comprueba el sector calculado:
 	contSolicitud = 0;
-	while(contSolicitud<6){
-		if (banInspeccion==1){
+	
+	while (banCalculoCompleto!=1){
+		while((contSolicitud<6)&&(banCalculoCompleto==0)){
+			if (banInspeccion==1){
 				printf("\nComprobacion:\n");
 				banInspeccion = 0;
 				EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
+			}
 		}
 	}
 			
@@ -303,7 +309,7 @@ void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsig
 	bcm2835_spi_transfer(0xF8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
-	printf("termino solicitud al nodo...\n");
+	//printf("termino solicitud al nodo...\n");
 	
 }
 
@@ -355,7 +361,13 @@ void InformacionSectores(unsigned char* pyloadRS485){
 	*(ptrUSE+2) = pyloadRS485[15];
 	*(ptrUSE+3) = pyloadRS485[16];                                              //MSB USE
 	
-	USE = USE-5;															   //Calcula el ultimo sector escrito
+	//Situacion especial cuando PSEC = USE:
+	if (PSEC = USE){
+		PSEC = PSEC-5;
+	}
+	
+	//Calcula el ultimo sector escrito
+	USE = USE-5;															   
 	
 	printf("Primer sector fisico: %d\n", PSF);
 	printf("Primer sector de escritura: %d\n", PSE);
@@ -381,20 +393,43 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 		
 	//Verifica los datos de cabecera:
 	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
-				
-		printf("Sector: %d\n", sectorReq); 
-		printf("Tiempo: ");
-		printf("%0.2d/", pyloadRS485[7]);
-		printf("%0.2d/", pyloadRS485[8]);
-		printf("%0.2d ", pyloadRS485[9]);
-		printf("%0.2d:", pyloadRS485[10]);
-		printf("%0.2d:", pyloadRS485[11]);
-		printf("%0.2d ", pyloadRS485[12]);
-		printf("seg: %d\n", (3600*pyloadRS485[10])+(60*pyloadRS485[11])+(pyloadRS485[12]));
-		
-		if (banPSC==1){
+		//Comprobacion:
+		if (banSSC==1){
+			banSSC = 0;
+			printf("\nSector Calculado: %d\n", sectorReq); 
+			printf("Tiempo Sector Calculado: ");
+			printf("%0.2d/", pyloadRS485[7]);
+			printf("%0.2d/", pyloadRS485[8]);
+			printf("%0.2d ", pyloadRS485[9]);
+			printf("%0.2d:", pyloadRS485[10]);
+			printf("%0.2d:", pyloadRS485[11]);
+			printf("%0.2d ", pyloadRS485[12]);
+			printf("seg: %d\n", (3600*pyloadRS485[10])+(60*pyloadRS485[11])+(pyloadRS485[12]));
+			banCalculoCompleto = 1;
 			exit(-1);
 		}
+		if (banPSC==1){
+			banPSC = 0;
+			PSC = sectorReq;
+			sprintf(datePSCStr, "%d/%d/%d %d:%d:%d", pyloadRS485[7], pyloadRS485[8], pyloadRS485[9], pyloadRS485[10], pyloadRS485[11], pyloadRS485[12]);
+			strptime(datePSCStr, "%y/%m/%d %H:%M:%S", &datePSC);
+			strftime(buffPSCUNIX, sizeof(buffPSCUNIX), "%s", &datePSC);
+			PSCUNIX = atoi(buffPSCUNIX);
+			
+			if (ReqUNIX==PSCUNIX){
+				printf("\nSector Calculado: %d\n", sectorReq);
+				printf("Tiempo Sector Calculado: %s", datePSCStr);
+				printf(" seg: %d\n", (3600*pyloadRS485[10])+(60*pyloadRS485[11])+(pyloadRS485[12]));
+				exit(-1);
+			} else {
+				printf("Tiempo Primer Sector Calculado: %s\n", datePSCStr);
+				deltaTiempo = ReqUNIX - PSCUNIX;
+				deltaSector = deltaTiempo * 5;
+				sectorReq = PSC + deltaSector;	
+				banSSC = 1;
+			}	
+		}
+		//Busqueda:
 		if (banUSE==1){
 			banPSE = 0;
 			banPSEC = 0;
@@ -402,8 +437,7 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 			sprintf(dateUSEStr, "%d/%d/%d %d:%d:%d", pyloadRS485[7], pyloadRS485[8], pyloadRS485[9], pyloadRS485[10], pyloadRS485[11], pyloadRS485[12]);
 			printf("Tiempo USE: %s\n", dateUSEStr);
 			//Cambia estos valores para salir del bucle de busqueda:
-			banInspeccion = 2;
-			//contSolicitud = 6;
+			banBusquedaCompleta = 1;
 		}
 		if (banPSEC==1){
 			banPSE = 0;
@@ -425,6 +459,7 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 		contSolicitud = 0;
 					
 	} else {
+		
 		if (pyloadRS485[1]==0xEE){
 			if (pyloadRS485[2]==0xE1){ 
 				printf("Error %X: Sector fuera de rango\n", pyloadRS485[2]);
@@ -447,12 +482,13 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 		}
 		
 		contSolicitud++;
+		if (contSolicitud==5){
+			exit(-1);
+		}
 		
 	}
 	
-	if (contSolicitud==5){
-		exit(-1);
-	}
+	
 		
 	//Guarda el sector en el pyload de peticion:
 	pyloadNodo[0] = subFuncionNodo;
@@ -461,6 +497,7 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 	pyloadNodo[3] = *(ptrSectorReq+2);
 	pyloadNodo[4] = *(ptrSectorReq+3);
 	banInspeccion = 1;	
+	
 }
 
 
@@ -489,13 +526,15 @@ void CalcularSector(){
 	
 	
 	if ((ReqUNIX<PSEUNIX)||(ReqUNIX>USEUNIX)){
-		printf("\nEl tiempo requerido esta fuera de rango:\n");
+		printf("\nEl tiempo requerido esta fuera de rango\n");
+		exit(-1);
 	} else {
 		if ((ReqUNIX>=PSEUNIX)&&(ReqUNIX<=PSECUNIX)){
 			deltaTiempo = ReqUNIX - PSEUNIX;
 			deltaSector = deltaTiempo * 5;
 			sectorReq = PSE + deltaSector;	//En la version anterior resto 2 posiciones a este sector
 		}
+		//Busca el sector a partir de la ultima vez que se 
 		if ((ReqUNIX>PSECUNIX)&&(ReqUNIX<=USEUNIX)){
 			deltaTiempo = ReqUNIX - PSECUNIX;
 			deltaSector = deltaTiempo * 5;
@@ -508,101 +547,12 @@ void CalcularSector(){
 		pyloadNodo[2] = *(ptrSectorReq+1);
 		pyloadNodo[3] = *(ptrSectorReq+2);
 		pyloadNodo[4] = *(ptrSectorReq+3);
-		printf("Sector Requerido: %d\n", sectorReq);
+		printf("Sector Calculado: %d\n", sectorReq);
 	}
 	
 
-	/*
-	deltaTiempo = atoi(buffReqUNIX) - atoi(buffSecUNIX);
-	deltaSector = deltaTiempo * 5;
-	sectorReq = sectorReq + deltaSector - 2;
-	
-	printf("Tiempo requerido: ");
-	printf(tiempoReqStr);
-	printf("\n");
-	printf("Tiempo del sector: ");
-	printf(tiempoSecStr);
-	printf("\n");
-	printf("Delta tiempo: %d\n" , deltaTiempo);
-	printf("Delta sector: %d\n" , deltaSector);
-	printf("Sector calculado: %d\n", sectorReq); 
-	*/
-	
 }
 
-/*
-//Funcion para imprimir informacion relevante de las tramas recuperadas:
-void ImprimirDatosSector(unsigned char* pyloadRS485){
-	
-	unsigned short xData[3];
-	unsigned short yData[3];
-	unsigned short zData[3];
-	
-	int xValue;
-	int yValue;
-	int zValue;
-	double xAceleracion;
-	double yAceleracion;
-	double zAceleracion;
-		
-	//Verifica los datos de cabecera:
-	printf("Imprimiendo datos...\n");
-	
-	//Imprime la hora y fecha recuperada de la trama de datos:
-	printf("Datos de la trama:\n");
-	printf("| ");
-	printf("%0.2d:", pyloadRS485[2507-3]);			//hh
-	printf("%0.2d:", pyloadRS485[2507-2]);			//mm
-	printf("%0.2d ", pyloadRS485[2507-1]);			//ss
-	printf("%0.2d/", pyloadRS485[2507-6]);			//aa
-	printf("%0.2d/", pyloadRS485[2507-5]);			//mm
-	printf("%0.2d ", pyloadRS485[2507-4]);			//dd
-	printf("| ");
-	
-	//Imprime los primeros datos de aceleracion:
-	for (x=0;x<3;x++){
-		xData[x] = pyloadRS485[x+2];	
-		yData[x] = pyloadRS485[x+5];	
-		zData[x] = pyloadRS485[x+8];	
-	}
-	
-	//Calculo aceleracion eje x:
-	xValue = ((xData[0]<<12)&0xFF000)+((xData[1]<<4)&0xFF0)+((xData[2]>>4)&0xF);
-	// Apply two complement
-	if (xValue >= 0x80000) {
-		xValue = xValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-		xValue = -1*(((~xValue)+1)& 0x7FFFF);
-	}
-	xAceleracion = xValue * (9.8/pow(2,18));
-	
-	//Calculo aceleracion eje y:
-	yValue = ((yData[0]<<12)&0xFF000)+((yData[1]<<4)&0xFF0)+((yData[2]>>4)&0xF);
-	// Apply two complement
-	if (yValue >= 0x80000) {
-		yValue = yValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-		yValue = -1*(((~yValue)+1)& 0x7FFFF);
-	}
-	yAceleracion = yValue * (9.8/pow(2,18));
-	
-	//Calculo aceleracion eje z:
-	zValue = ((zData[0]<<12)&0xFF000)+((zData[1]<<4)&0xFF0)+((zData[2]>>4)&0xF);
-	// Apply two complement
-	if (zValue >= 0x80000) {
-		zValue = zValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-		zValue = -1*(((~zValue)+1)& 0x7FFFF);
-	}
-	zAceleracion = zValue * (9.8/pow(2,18));	
-			
-	printf("X: ");
-	printf("%2.8f ", xAceleracion);
-	printf("Y: ");
-	printf("%2.8f ", yAceleracion);
-	printf("Z: ");
-	printf("%2.8f ", zAceleracion); 
-	printf("|\n"); 
-		
-}
-*/
 
 //**************************************************************************************************************************************
 
