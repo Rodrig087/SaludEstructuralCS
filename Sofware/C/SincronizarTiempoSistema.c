@@ -33,6 +33,7 @@ unsigned int tiempoFinal;
 unsigned int duracionPrueba;
 unsigned short banPrueba;
 int fuenteTiempo;
+unsigned short errorSinc;
 
 //Declaracion de funciones
 int ConfiguracionPrincipal();
@@ -51,6 +52,8 @@ int main(int argc, char *argv[]) {
 	i = 0;
 	x = 0;
 	fuenteTiempo = atoi(argv[1]);
+	
+	errorSinc = 0;
 	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
@@ -105,7 +108,7 @@ int ConfiguracionPrincipal(){
 	pinMode(TEST, OUTPUT);
 	wiringPiISR (P1, INT_EDGE_RISING, ObtenerOperacion);
 		
-	printf("Configuracion completa\n");
+	//printf("Configuracion completa\n");
 	
 }
 //**************************************************************************************************************************************
@@ -140,9 +143,9 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	printf("Funcion: %X\n", funcionSPI);
-	printf("Subfuncion: %X\n", subFuncionSPI);
-	printf("Numero de bytes: %d\n", numBytesSPI);
+	//printf("Funcion: %X\n", funcionSPI);
+	//printf("Subfuncion: %X\n", subFuncionSPI);
+	//printf("Numero de bytes: %d\n", numBytesSPI);
 	
 	switch (funcionSPI){                                                                     
           case 0xB1:
@@ -176,7 +179,7 @@ void ObtenerOperacion(){
 void EnviarTiempoLocal(){
 	
 	//Obtiene la hora y la fecha del sistema:
-	printf("Hora local: ");
+	printf("Enviando hora local...\n");
 	time_t t;
 	struct tm *tm;
 	t=time(NULL);
@@ -238,9 +241,10 @@ void ObtenerTiempoMaster(){
 					break;
 			case 2:
 					printf("RTC ");
-					break;
+					break;			
 			default:
-					printf("%d ",fuenteTiempoPic);
+					errorSinc = fuenteTiempoPic;
+					printf("E%d ", errorSinc);
 					break;
 	}
 		
@@ -250,6 +254,20 @@ void ObtenerTiempoMaster(){
 	printf("%0.2d:",tiempoPIC[3]);		//hh
 	printf("%0.2d:",tiempoPIC[4]);		//mm
 	printf("%0.2d\n",tiempoPIC[5]);		//ss
+	
+	if (errorSinc!=0){
+		switch (errorSinc){
+				case 5: 
+						printf("**Error 5: Problemas al recuperar la trama GPRMC del GPS\n");
+						break;
+				case 6:
+						printf("**Error 6: La hora del GPS es invalida\n");
+						break;
+				case 7:
+						printf("**Error 7: El GPS tarda en responder\n");
+						break;			
+		}
+	}
 		
 	//Configura el tiempo local si se escogio la opcion GPS:
 	if (fuenteTiempoPic==1){
@@ -284,6 +302,7 @@ void ObtenerReferenciaTiempo(unsigned short referencia){
 
 void SetRelojLocal(unsigned char* tramaTiempo){
 	
+	printf("Sincronizando hora local...\n");
 	char datePIC[22];
 	char comando[40];	
 	//Configura el reloj interno de la RPi con la hora recuperada del PIC:

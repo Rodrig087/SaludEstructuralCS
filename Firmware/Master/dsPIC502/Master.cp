@@ -460,6 +460,7 @@ unsigned char byteGPS, banGPSI, banGPSC;
 unsigned short banSetGPS;
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
+unsigned short contTimeout1;
 
 
 unsigned short tiempo[6];
@@ -546,6 +547,7 @@ void main() {
  banGPSI = 0;
  banGPSC = 0;
  banSetGPS = 0;
+ contTimeout1 = 0;
 
 
  banSetReloj = 0;
@@ -657,6 +659,14 @@ void ConfiguracionPrincipal(){
  INT2IF_bit = 0;
  IPC5bits.INT1IP = 0x02;
  IPC7bits.INT2IP = 0x01;
+
+
+ T1CON = 0x30;
+ T1CON.TON = 0;
+ T1IE_bit = 1;
+ T1IF_bit = 0;
+ PR1 = 46875;
+ IPC0bits.T1IP = 0x02;
 
 
  T2CON = 0x30;
@@ -830,6 +840,9 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  banGPSI = 1;
  banGPSC = 0;
  U1MODE.UARTEN = 1;
+
+ T1CON.TON = 1;
+ TMR1 = 0;
  } else {
 
  horaSistema = RecuperarHoraRTC();
@@ -913,7 +926,9 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  banRespuestaPi = 1;
 
  EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
+
  T2CON.TON = 1;
+ TMR2 = 0;
  }
 
 
@@ -1002,9 +1017,33 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
  banSyncReloj = 0;
  banSetReloj = 1;
 
+
  if ((banRespuestaPi==1)||(horaSistema<5)){
  InterrupcionP1(0xB1,0xD1,6);
  }
+ }
+
+}
+
+
+
+
+void Timer1Int() org IVT_ADDR_T1INTERRUPT{
+
+ T1IF_bit = 0;
+ contTimeout1++;
+
+
+ if (contTimeout1==4){
+ T1CON.TON = 0;
+ TMR1 = 0;
+ contTimeout1 = 0;
+
+ horaSistema = RecuperarHoraRTC();
+ fechaSistema = RecuperarFechaRTC();
+ AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ fuenteReloj = 7;
+ InterrupcionP1(0xB1,0xD1,6);
  }
 
 }
@@ -1016,6 +1055,7 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
  T2IF_bit = 0;
  T2CON.TON = 0;
+ TMR2 = 0;
 
  INT_SINC = ~INT_SINC;
 
@@ -1066,6 +1106,9 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  i_gps++;
  }
  if ((banGPSI==2)&&(i_gps==6)){
+
+ T1CON.TON = 0;
+ TMR1 = 0;
 
  if (tramaGPS[1]=='G'&&tramaGPS[2]=='P'&&tramaGPS[3]=='R'&&tramaGPS[4]=='M'&&tramaGPS[5]=='C'){
  banGPSI = 3;
@@ -1143,7 +1186,6 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
- T2CON.TON = 0;
  banRSI = 0;
  banRSC = 1;
  }
@@ -1152,8 +1194,6 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
-
- TMR2 = 0;
  banRSI = 1;
  i_rs485 = 0;
  }
@@ -1163,6 +1203,9 @@ void urx_2() org IVT_ADDR_U2RXINTERRUPT {
  i_rs485++;
  }
  if ((banRSI==1)&&(i_rs485==5)){
+
+ T2CON.TON = 0;
+ TMR2 = 0;
 
  if (tramaCabeceraRS485[1]==direccionRS485){
  funcionRS485 = tramaCabeceraRS485[2];

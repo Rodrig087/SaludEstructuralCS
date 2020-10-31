@@ -2612,6 +2612,7 @@ con_cm2con_bit
 con_cm3con_bit
 con_cm4con_bit
 configuracionprincipal
+conttimeout1
 corcon
 corconbits
 cosc
@@ -13377,6 +13378,7 @@ tgen
 tgen_bit
 tiempo
 tiemporpi
+timer1int
 timer2int
 tmr1
 tmr1_0

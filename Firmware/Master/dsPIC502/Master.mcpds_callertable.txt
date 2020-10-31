@@ -85,3 +85,8 @@ spi_1
 	InterrupcionP1
 Timer2Int
 	InterrupcionP1
+Timer1Int
+	RecuperarHoraRTC
+	RecuperarFechaRTC
+	AjustarTiempoSistema
+	InterrupcionP1
