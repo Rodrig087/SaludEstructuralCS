@@ -282,10 +282,11 @@ void ConfiguracionPrincipal(){
      if ((funcionSPI==0xB1)&&(subFuncionSPI==0xD1)){
         //Llena el pyload de salida:
         outputPyloadRS485[0] = 0xD1;
-        for (x=1;x<7;x++){
-            outputPyloadRS485[x] = tiempo[x-1];
+        for (x=1;x<7;x++){                                                      //Subfuncion
+            outputPyloadRS485[x] = tiempo[x-1];                                 //Trama de tiempo
         }
-        EnviarTramaRS485(2, 255, 0xF1, 7, outputPyloadRS485);                   //Envia la hora local a los nodos
+        outputPyloadRS485[7] = fuenteReloj;                                     //Fuente de reloj
+        EnviarTramaRS485(2, 255, 0xF1, 8, outputPyloadRS485);                   //Envia la hora local a los nodos
      }
      
      if (banRespuestaPi==1){
@@ -393,7 +394,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         fuenteReloj = 0;                                                        //Fuente de reloj = RED
         banSetReloj = 1;                                                        //Activa esta bandera para usar la hora/fecha recuperada
         banRespuestaPi = 1;                                                     //Activa esta bandera para enviar una respuesta a la RPi
-        InterrupcionP1(0xB1,0xD1,6);                                            //Envia la hora local a la RPi y a los nodos
+        InterrupcionP1(0xB1,0xD1,8);                                            //Envia la hora local a la RPi y a los nodos
      }
 
      //(C:0xA5   F:0xF5)
@@ -427,7 +428,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
             //Recupera el tiempo del GPS:
             banGPSI = 1;                                                        //Activa la bandera de inicio de trama  del GPS
             banGPSC = 0;                                                        //Limpia la bandera de trama completa
-            U1MODE.UARTEN = 1;                                                  //Inicializa el UART1 con una velocidad de 115200 baudios
+            U1MODE.UARTEN = 1;                                                  //Inicializa el UART1
             //Inicia el Timeout 1:
             T1CON.TON = 1;
             TMR1 = 0;
@@ -437,7 +438,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
             fechaSistema = RecuperarFechaRTC();                                 //Recupera la fecha del RTC
             AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);            //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
             fuenteReloj = 2;                                                    //Fuente de reloj = RTC
-            InterrupcionP1(0xB1,0xD1,6);                                        //Envia la hora local a la RPi
+            InterrupcionP1(0xB1,0xD1,8);                                        //Envia la hora local a la RPi
         }
      }  
          
@@ -569,7 +570,10 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
         //Recupera el tiempo del GPS:
         banGPSI = 1;                                                            //Activa la bandera de inicio de trama  del GPS
         banGPSC = 0;                                                            //Limpia la bandera de trama completa
-        U1MODE.UARTEN = 1;                                                      //Inicializa el UART1 con una velocidad de 115200 baudios
+        U1MODE.UARTEN = 1;                                                      //Inicializa el UART1
+        //Inicia el Timeout 1:
+        T1CON.TON = 1;
+        TMR1 = 0;
      }
 
 }
@@ -599,7 +603,7 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
          INT_SINC4 = 0;
 
          //Realiza el retraso necesario para sincronizar el RTC con el PPS (Consultar Datasheet del DS3234)
-         Delay_ms(500);
+         Delay_ms(499);
          DS3234_setDate(horaSistema, fechaSistema);                             //Configura la hora en el RTC con la hora recuperada de la RPi
          
          banSyncReloj = 0;
@@ -607,7 +611,7 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
          
          //Sincroniza el tiempo de los nodos cuando se envia una solicitud desde la Rpi o a las 0 horas:
          if ((banRespuestaPi==1)||(horaSistema<5)){                             //**Puede que la hora del sistema se haya incrementado al llegar hasta aqui
-            InterrupcionP1(0xB1,0xD1,6);                                        //Envia la hora local a la RPi y a los nodos
+            InterrupcionP1(0xB1,0xD1,8);                                        //Envia la hora local a la RPi y a los nodos
          }
      }
      
@@ -631,7 +635,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
         fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
         AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
         fuenteReloj = 7;                                                     //**Indica que se obtuvo la hora del RTC
-        InterrupcionP1(0xB1,0xD1,6);                                         //Envia la hora local a la RPi y a los nodos
+        InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos
      }
 
 }
@@ -710,7 +714,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
            fuenteReloj = 5;                                                     //**Fuente de reloj = RTC
-           InterrupcionP1(0xB1,0xD1,6);                                         //Envia la hora local a la RPi y a los nodos                                                   //Envia la hora local a la RPi
+           InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos                                                   //Envia la hora local a la RPi
            banGPSI = 0;
            banGPSC = 0;
            i_gps = 0;
@@ -745,7 +749,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
            fuenteReloj = 6;                                                     //**Indica que se obtuvo la hora del RTC
-           InterrupcionP1(0xB1,0xD1,6);                                         //Envia la hora local a la RPi y a los nodos
+           InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos
         }
 
         banGPSI = 0;

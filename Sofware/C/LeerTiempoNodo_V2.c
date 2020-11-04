@@ -1,6 +1,6 @@
 //Compilar:
 //gcc LeerTiempoNodo.c -o /home/pi/Ejecutables/leertiemponodo -lbcm2835 -lwiringPi 
-//gcc LeerTiempoNodo.c -o leertiemponodo -lbcm2835 -lwiringPi 
+//gcc LeerTiempoNodo_V2.c -o leertiemponodo -lbcm2835 -lwiringPi 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +27,8 @@ unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
 unsigned char tramaPyloadRS485[512];
 
-short fuenteTiempoPic;
+short fuenteTiempoConcentrador;
+short fuenteTiempoNodo;
 
 unsigned int tiempoInicial;
 unsigned int tiempoFinal;
@@ -53,6 +54,9 @@ int main(int argc, char *argv[]) {
 	i = 0;
 	x = 0;
 	direccionNodo = (short)(atoi(argv[1]));
+	
+	fuenteTiempoConcentrador = 2;
+	fuenteTiempoNodo = 2;
 	
 	//Configuracion principal:
 	ConfiguracionPrincipal();
@@ -214,7 +218,7 @@ void ObtenerTiempoMaster(){
 	bcm2835_spi_transfer(0xA5);                                                 //Envia el delimitador de final de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
-	fuenteTiempoPic = bcm2835_spi_transfer(0x00);								//Recibe el byte que indica la fuente de tiempo del PIC
+	fuenteTiempoConcentrador = bcm2835_spi_transfer(0x00);						//Recibe el byte que indica la fuente de tiempo del Concentrador
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
 	for (i=0;i<6;i++){
@@ -222,21 +226,27 @@ void ObtenerTiempoMaster(){
         tiempoPIC[i] = buffer;													//Guarda la hora y fecha devuelta por el dsPIC
         bcm2835_delayMicroseconds(TIEMPO_SPI);
     }
-
+	
 	bcm2835_spi_transfer(0xF5);                                                 //Envia el delimitador de final de trama
     bcm2835_delayMicroseconds(TIEMPO_SPI);
 	
-	if (fuenteTiempoPic==0){
-		printf("RTC ");
+	if (fuenteTiempoConcentrador==0){
+		printf("RPi ");
 	} 
-	if (fuenteTiempoPic==1){
+	if (fuenteTiempoConcentrador==1){
 		printf("GPS ");
 	}
-	if (fuenteTiempoPic==5){
-		printf("GPS*");
+	if (fuenteTiempoConcentrador==2){
+		printf("RTC ");
 	}
-	if (fuenteTiempoPic==6){
-		printf("GPS**");
+	if (fuenteTiempoConcentrador==5){
+		printf("RTC_E5 ");
+	}
+	if (fuenteTiempoConcentrador==6){
+		printf("RTC_E6 ");
+	}
+	if (fuenteTiempoConcentrador==7){
+		printf("RTC_E7 ");
 	}
 	
 	printf("%0.2d/",tiempoPIC[0]);		//aa
@@ -283,6 +293,27 @@ void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485)
 void ImprimirTiempoNodo(unsigned char* pyloadRS485){
 	
 	printf("Tiempo Nodo %d: ", direccionNodo);
+	
+	fuenteTiempoNodo = pyloadRS485[7];
+	
+	if (fuenteTiempoNodo==0){
+		printf("RPi ");
+	} 
+	if (fuenteTiempoNodo==1){
+		printf("GPS ");
+	}
+	if (fuenteTiempoNodo==2){
+		printf("RTC ");
+	} 
+	if (fuenteTiempoNodo==5){
+		printf("RTC_E5 ");
+	}
+	if (fuenteTiempoNodo==6){
+		printf("RTC_E6 ");
+	}
+	if (fuenteTiempoNodo==7){
+		printf("RTC_E7 ");
+	}
 	
 	printf("%0.2d/", pyloadRS485[1]);
 	printf("%0.2d/", pyloadRS485[2]);

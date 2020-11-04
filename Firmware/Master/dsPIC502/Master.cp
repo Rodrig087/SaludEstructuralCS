@@ -697,7 +697,8 @@ void ConfiguracionPrincipal(){
  for (x=1;x<7;x++){
  outputPyloadRS485[x] = tiempo[x-1];
  }
- EnviarTramaRS485(2, 255, 0xF1, 7, outputPyloadRS485);
+ outputPyloadRS485[7] = fuenteReloj;
+ EnviarTramaRS485(2, 255, 0xF1, 8, outputPyloadRS485);
  }
 
  if (banRespuestaPi==1){
@@ -805,7 +806,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  fuenteReloj = 0;
  banSetReloj = 1;
  banRespuestaPi = 1;
- InterrupcionP1(0xB1,0xD1,6);
+ InterrupcionP1(0xB1,0xD1,8);
  }
 
 
@@ -849,7 +850,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  fuenteReloj = 2;
- InterrupcionP1(0xB1,0xD1,6);
+ InterrupcionP1(0xB1,0xD1,8);
  }
  }
 
@@ -982,6 +983,9 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
  banGPSI = 1;
  banGPSC = 0;
  U1MODE.UARTEN = 1;
+
+ T1CON.TON = 1;
+ TMR1 = 0;
  }
 
 }
@@ -1011,7 +1015,7 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
  INT_SINC4 = 0;
 
 
- Delay_ms(500);
+ Delay_ms(499);
  DS3234_setDate(horaSistema, fechaSistema);
 
  banSyncReloj = 0;
@@ -1019,7 +1023,7 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
 
 
  if ((banRespuestaPi==1)||(horaSistema<5)){
- InterrupcionP1(0xB1,0xD1,6);
+ InterrupcionP1(0xB1,0xD1,8);
  }
  }
 
@@ -1043,7 +1047,7 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  fuenteReloj = 7;
- InterrupcionP1(0xB1,0xD1,6);
+ InterrupcionP1(0xB1,0xD1,8);
  }
 
 }
@@ -1122,7 +1126,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  fuenteReloj = 5;
- InterrupcionP1(0xB1,0xD1,6);
+ InterrupcionP1(0xB1,0xD1,8);
  banGPSI = 0;
  banGPSC = 0;
  i_gps = 0;
@@ -1157,7 +1161,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  fechaSistema = RecuperarFechaRTC();
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
  fuenteReloj = 6;
- InterrupcionP1(0xB1,0xD1,6);
+ InterrupcionP1(0xB1,0xD1,8);
  }
 
  banGPSI = 0;

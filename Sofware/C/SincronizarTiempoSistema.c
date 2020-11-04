@@ -179,7 +179,7 @@ void ObtenerOperacion(){
 void EnviarTiempoLocal(){
 	
 	//Obtiene la hora y la fecha del sistema:
-	printf("Enviando hora local...\n");
+	printf("Hora local enviada: ");
 	time_t t;
 	struct tm *tm;
 	t=time(NULL);

@@ -26,7 +26,7 @@ unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
 unsigned char tramaPyloadRS485[515];
 
-short fuenteTiempoPic;
+short fuenteTiempoNodo;
 
 unsigned int tiempoInicial;
 unsigned int tiempoFinal;
@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
 	x = 0;
 	banSolicitud = 0;
 	contSolicitud = 0;
+	fuenteTiempoNodo = 2;
 	
 	direccionNodo = (short)(atoi(argv[1]));
 	sectorReq = atoi(argv[2]);
@@ -245,6 +246,25 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
 		printf("Sector: %d\n", sectorReq); 
 		printf("Tiempo: ");
+		fuenteTiempoNodo = pyloadRS485[13];
+		if (fuenteTiempoNodo==0){
+			printf("RPi ");
+		} 
+		if (fuenteTiempoNodo==1){
+			printf("GPS ");
+		}
+		if (fuenteTiempoNodo==2){
+			printf("RTC ");
+		} 
+		if (fuenteTiempoNodo==5){
+			printf("RTC_E5 ");
+		}
+		if (fuenteTiempoNodo==6){
+			printf("RTC_E6 ");
+		}
+		if (fuenteTiempoNodo==7){
+			printf("RTC_E7 ");
+		}
 		printf("%0.2d/", pyloadRS485[7]);
 		printf("%0.2d/", pyloadRS485[8]);
 		printf("%0.2d ", pyloadRS485[9]);
@@ -284,7 +304,10 @@ void ImprimirDatosSector(unsigned char* pyloadRS485){
 
 //**************************************************************************************************************************************
 
-
+/*
+Nota: Esta funcion lee unicamente el primer sector donde estan los datos de cabecera (6bytes de cabecera y 6 bytes de tiempo)
+y los primeros datos de aceleracion incluido el primer byte que indica la fuente de reloj
+*/
 
 
 

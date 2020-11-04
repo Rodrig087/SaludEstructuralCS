@@ -766,10 +766,25 @@ void GuardarTrama(unsigned char* pyloadRS485_2){
 	
 	//prueba
 	printf("Contenido de la trama guardada: ");
-	printf("| ");
-	printf("%0.2d_", tramaAceleracion[0]);
-	printf("%0.2d_", tramaAceleracion[10]);
-	printf("%0.2d ", tramaAceleracion[20]);
+	printf("| Fuente de reloj: ");
+	if (tramaAceleracion[0]==0){
+		printf("RPi");
+	} 
+	if (tramaAceleracion[0]==1){
+		printf("GPS");
+	}
+	if (tramaAceleracion[0]==2){
+		printf("RTC");
+	}
+	if (tramaAceleracion[0]==5){
+		printf("RTC_E5");
+	}
+	if (tramaAceleracion[0]==6){
+		printf("RTC_E6");
+	}
+	if (tramaAceleracion[0]==7){
+		printf("RTC_E7");
+	}
 	printf(" | ");
 	printf("%0.2d/", tramaAceleracion[2500]);			//hh
 	printf("%0.2d/", tramaAceleracion[2501]);			//mm

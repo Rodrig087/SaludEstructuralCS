@@ -487,6 +487,7 @@ unsigned short inicioSistema;
 
 unsigned short tiempo[6];
 unsigned short banSetReloj;
+unsigned short fuenteReloj;
 unsigned long horaSistema, fechaSistema;
 
 
@@ -580,6 +581,7 @@ void main() {
  banSetReloj = 0;
  horaSistema = 0;
  fechaSistema = 0;
+ fuenteReloj = 2;
 
 
  banCiclo = 0;
@@ -775,7 +777,7 @@ void Muestrear(){
 
  banCiclo = 2;
 
- tramaAceleracion[0] = contCiclos;
+ tramaAceleracion[0] = fuenteReloj;
  numFIFO = ADXL355_read_byte( 0x05 );
  numSetsFIFO = (numFIFO)/3;
 
@@ -1088,32 +1090,32 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
 
  if (checkLecSD==0) {
 
+ numDatosSec = 14;
  for (y=0;y<numDatosSec;y++){
  tramaDatosSec[y+1] = bufferSectorReq[y];
  }
- numDatosSec = 13;
  break;
  } else {
 
+ numDatosSec = 3;
  tramaDatosSec[1] = 0xEE;
  tramaDatosSec[2] = 0xE3;
- numDatosSec = 3;
  }
  Delay_us(10);
  }
  } else {
 
+ numDatosSec = 3;
  tramaDatosSec[1] = 0xEE;
  tramaDatosSec[2] = 0xE2;
- numDatosSec = 3;
  }
 
  } else {
 
 
+ numDatosSec = 3;
  tramaDatosSec[1] = 0xEE;
  tramaDatosSec[2] = 0xE1;
- numDatosSec = 3;
 
  }
 
@@ -1517,6 +1519,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  horaSistema = RecuperarHoraRPI(tiempo);
  fechaSistema = RecuperarFechaRPI(tiempo);
+ fuenteReloj = inputPyloadRS485[7];
  banSetReloj = 1;
  }
 
@@ -1526,7 +1529,8 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  for (x=0;x<6;x++){
  outputPyloadRS485[x+1] = tiempo[x];
  }
- EnviarTramaRS485(1,  1 , 0xF1, 7, outputPyloadRS485);
+ outputPyloadRS485[7] = fuenteReloj;
+ EnviarTramaRS485(1,  1 , 0xF1, 8, outputPyloadRS485);
  }
  break;
 
