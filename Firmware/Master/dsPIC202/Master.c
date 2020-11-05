@@ -48,6 +48,7 @@ unsigned char byteGPS, banGPSI, banGPSC;
 unsigned short banSetGPS;
 unsigned char tramaGPS[70];
 unsigned char datosGPS[13];
+unsigned short contTimeout1;
 
 //Variables para manejo del tiempo:
 unsigned short tiempo[6];                                                       //Vector de datos de tiempo del sistema
@@ -134,6 +135,7 @@ void main() {
      banGPSI = 0;
      banGPSC = 0;
      banSetGPS = 0;
+         contTimeout1 = 0;
 
      //Tiempo:
      banSetReloj = 0;
@@ -246,6 +248,14 @@ void ConfiguracionPrincipal(){
      IPC5bits.INT1IP = 0x02;                                                    //Prioridad en la interrupocion externa INT1
      IPC7bits.INT2IP = 0x01;                                                    //Prioridad en la interrupocion externa INT2
 
+     //Configuracion del TMR1 con un tiempo de 300ms
+     T1CON = 0x30;                                                              //Prescalador
+     T1CON.TON = 0;                                                             //Apaga el Timer1
+     T1IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR1
+     T1IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR1
+     PR1 = 46875;                                                               //Carga el preload para un tiempo de 300ms
+     IPC0bits.T1IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR1
+
      //Configuracion del TMR2 con un tiempo de 300ms
      T2CON = 0x30;                                                              //Prescalador
      T2CON.TON = 0;                                                             //Apaga el Timer2
@@ -272,10 +282,11 @@ void ConfiguracionPrincipal(){
      if ((funcionSPI==0xB1)&&(subFuncionSPI==0xD1)){
         //Llena el pyload de salida:
         outputPyloadRS485[0] = 0xD1;
-        for (x=1;x<7;x++){
-            outputPyloadRS485[x] = tiempo[x-1];
+        for (x=1;x<7;x++){                                                      //Subfuncion
+            outputPyloadRS485[x] = tiempo[x-1];                                 //Trama de tiempo
         }
-        EnviarTramaRS485(2, 255, 0xF1, 7, outputPyloadRS485);                   //Envia la hora local a los nodos
+        outputPyloadRS485[7] = fuenteReloj;                                     //Fuente de reloj
+        EnviarTramaRS485(2, 255, 0xF1, 8, outputPyloadRS485);                   //Envia la hora local a los nodos
      }
 
      if (banRespuestaPi==1){
@@ -383,7 +394,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         fuenteReloj = 0;                                                        //Fuente de reloj = RED
         banSetReloj = 1;                                                        //Activa esta bandera para usar la hora/fecha recuperada
         banRespuestaPi = 1;                                                     //Activa esta bandera para enviar una respuesta a la RPi
-        InterrupcionP1(0xB1,0xD1,6);                                            //Envia la hora local a la RPi y a los nodos
+        InterrupcionP1(0xB1,0xD1,8);                                            //Envia la hora local a la RPi y a los nodos
      }
 
      //(C:0xA5   F:0xF5)
@@ -417,14 +428,17 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
             //Recupera el tiempo del GPS:
             banGPSI = 1;                                                        //Activa la bandera de inicio de trama  del GPS
             banGPSC = 0;                                                        //Limpia la bandera de trama completa
-            U1MODE.UARTEN = 1;                                                  //Inicializa el UART1 con una velocidad de 115200 baudios
+            U1MODE.UARTEN = 1;                                                  //Inicializa el UART1
+            //Inicia el Timeout 1:
+            T1CON.TON = 1;
+            TMR1 = 0;
         } else {
             //Recupera el tiempo del RTC:
             horaSistema = RecuperarHoraRTC();                                   //Recupera la hora del RTC
             fechaSistema = RecuperarFechaRTC();                                 //Recupera la fecha del RTC
             AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);            //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas
             fuenteReloj = 2;                                                    //Fuente de reloj = RTC
-            InterrupcionP1(0xB1,0xD1,6);                                        //Envia la hora local a la RPi
+            InterrupcionP1(0xB1,0xD1,8);                                        //Envia la hora local a la RPi
         }
      }
 
@@ -501,7 +515,9 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         banRespuestaPi = 1;
         //Reenvia la solicitud al nodo por RS485:
         EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
-        T2CON.TON = 1;                                                          //Inicia el TimeOut
+        //Inicia el Timeout 2:
+        T2CON.TON = 1;
+        TMR2 = 0;
      }
 
      //(C:0xAA   F:0xFA)
@@ -550,11 +566,14 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
      //Sincroniza el reloj local con el GPS cada hora:
      if ((horaSistema!=0)&&(horaSistema%3600==0)){
-        banRespuestaPi = 1;
+        banRespuestaPi = 0;                                                     //No envia respuesta a la RPi
         //Recupera el tiempo del GPS:
         banGPSI = 1;                                                            //Activa la bandera de inicio de trama  del GPS
         banGPSC = 0;                                                            //Limpia la bandera de trama completa
-        U1MODE.UARTEN = 1;                                                      //Inicializa el UART1 con una velocidad de 115200 baudios
+        U1MODE.UARTEN = 1;                                                      //Inicializa el UART1
+        //Inicia el Timeout 1:
+        T1CON.TON = 1;
+        TMR1 = 0;
      }
 
 }
@@ -584,26 +603,50 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
          INT_SINC4 = 0;
 
          //Realiza el retraso necesario para sincronizar el RTC con el PPS (Consultar Datasheet del DS3234)
-         Delay_ms(500);
+         Delay_ms(499);
          DS3234_setDate(horaSistema, fechaSistema);                             //Configura la hora en el RTC con la hora recuperada de la RPi
 
          banSyncReloj = 0;
          banSetReloj = 1;                                                       //Activa esta bandera para continuar trabajando con el pulso SQW
-         //Sincroniza el tiempo de los nodos cuando se envia una solicitud desde la Rpi o a las 0 horas:
-         if ((banRespuestaPi==1)||(horaSistema<5)){                             //**Puede que la hora del sistema se haya incrementado al llegar hasta aqui
-            InterrupcionP1(0xB1,0xD1,6);                                        //Envia la hora local a la RPi y a los nodos
-         }
+
+         //Sincroniza el tiempo de los nodos cada hora:
+         InterrupcionP1(0xB1,0xD1,8);                                           //Envia la hora local a la RPi y a los nodos
+
      }
 
 }
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
-//Interrupcion por desbordamiento del Timer2
+//Timeout de 4*300ms para el UART1:
+void Timer1Int() org IVT_ADDR_T1INTERRUPT{
+
+     T1IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer1
+     contTimeout1++;                                                            //Incrementa el contador de Timeout
+
+     //Despues de 4 desbordamientos apaga el Timer2 y recupera la hora del RTC:
+     if (contTimeout1==4){
+        T1CON.TON = 0;
+        TMR1 = 0;
+        contTimeout1 = 0;
+        //Recupera la hora del RTC:
+        horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
+        fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
+        AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
+        fuenteReloj = 7;                                                        //**Indica que se obtuvo la hora del RTC
+        InterrupcionP1(0xB1,0xD1,8);                                            //Envia la hora local a la RPi y a los nodos
+     }
+
+}
+//*****************************************************************************************************************************************
+
+//*****************************************************************************************************************************************
+//Timeout de 300ms para el UART2:
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
      T2CON.TON = 0;                                                             //Apaga el Timer
+     TMR2 = 0;
 
      INT_SINC = ~INT_SINC;//TEST
 
@@ -654,6 +697,9 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
         i_gps++;
      }
      if ((banGPSI==2)&&(i_gps==6)){
+        //Detiene el Timeout 1:
+        T1CON.TON = 0;
+        TMR1 = 0;
         //Comprueba la cabecera GPRMC:
         if (tramaGPS[1]=='G'&&tramaGPS[2]=='P'&&tramaGPS[3]=='R'&&tramaGPS[4]=='M'&&tramaGPS[5]=='C'){
            banGPSI = 3;
@@ -667,7 +713,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
            fuenteReloj = 5;                                                     //**Fuente de reloj = RTC
-           InterrupcionP1(0xB1,0xD1,6);                                         //Envia la hora local a la RPi y a los nodos                                                   //Envia la hora local a la RPi
+           InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos                                                   //Envia la hora local a la RPi
            banGPSI = 0;
            banGPSC = 0;
            i_gps = 0;
@@ -702,7 +748,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
            AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
            fuenteReloj = 6;                                                     //**Indica que se obtuvo la hora del RTC
-           InterrupcionP1(0xB1,0xD1,6);                                         //Envia la hora local a la RPi y a los nodos
+           InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos
         }
 
         banGPSI = 0;
@@ -731,7 +777,6 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
            inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
-           T2CON.TON = 0;                                                       //Detiene el TimeOut
            banRSI = 0;                                                          //Limpia la bandera de inicio de trama
            banRSC = 1;                                                          //Activa la bandera de trama completa
         }
@@ -740,8 +785,6 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
      //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           //T2CON.TON = 1;                                                       //Inicia el TimeOut
-           TMR2 = 0;
            banRSI = 1;
            i_rs485 = 0;
         }
@@ -751,6 +794,9 @@ void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
         i_rs485++;
      }
      if ((banRSI==1)&&(i_rs485==5)){
+        //Detiene el Timeout 2:
+        T2CON.TON = 0;
+        TMR2 = 0;
         //Comprueba la direccion del nodo solicitado:
         if (tramaCabeceraRS485[1]==direccionRS485){
            funcionRS485 = tramaCabeceraRS485[2];

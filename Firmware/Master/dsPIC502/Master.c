@@ -610,7 +610,7 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
          banSetReloj = 1;                                                       //Activa esta bandera para continuar trabajando con el pulso SQW
          
          //Sincroniza el tiempo de los nodos cada hora:
-         InterrupcionP1(0xB1,0xD1,8);                                        //Envia la hora local a la RPi y a los nodos
+         InterrupcionP1(0xB1,0xD1,8);                                           //Envia la hora local a la RPi y a los nodos
 
      }
      

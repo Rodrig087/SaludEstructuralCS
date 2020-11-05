@@ -47,6 +47,7 @@ unsigned short inicioSistema;
 //Variables para manejo del tiempo:
 unsigned short tiempo[6];                                                       //Vector de datos de tiempo del sistema
 unsigned short banSetReloj;
+unsigned short fuenteReloj;                                                     //Indica la fuente de reloj: 1=GPS, 2=RTC, 3=RPi
 unsigned long horaSistema, fechaSistema;
 
 //Variables para manejo del acelerometro:
@@ -140,6 +141,7 @@ void main() {
      banSetReloj = 0;
      horaSistema = 0;
      fechaSistema = 0;
+     fuenteReloj = 2;
 
      //Acelerometro:
      banCiclo = 0;
@@ -335,7 +337,7 @@ void Muestrear(){
 
          banCiclo = 2;                                                          //Limpia la bandera de ciclo completo
 
-         tramaAceleracion[0] = contCiclos;                                      //LLena el primer elemento de la tramaCompleta con el contador de ciclos
+         tramaAceleracion[0] = fuenteReloj;                                     //LLena el primer elemento de la tramaCompleta con la fuente de reloj
          numFIFO = ADXL355_read_byte(FIFO_ENTRIES);
          numSetsFIFO = (numFIFO)/3;                                             //Lee el numero de sets disponibles en el FIFO
 
@@ -648,32 +650,32 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
                  //checkLecSD = 0, significa que la lectura fue exitosa:
                  if (checkLecSD==0) {
                     //Almacena el datos en la variable sectorInicioSD:
+                    numDatosSec = 14;
                     for (y=0;y<numDatosSec;y++){
                         tramaDatosSec[y+1] = bufferSectorReq[y];
                     }
-                    numDatosSec = 13;
                     break;
                 } else {
                     //Indica el error E3: Error al leer la SD
+                    numDatosSec = 3;
                     tramaDatosSec[1] = 0xEE;
                     tramaDatosSec[2] = 0xE3;
-                    numDatosSec = 3;
                 }
                 Delay_us(10);
             }
         } else {
             //Indica el error E2: Sector vacio
+            numDatosSec = 3;
             tramaDatosSec[1] = 0xEE;
             tramaDatosSec[2] = 0xE2;
-            numDatosSec = 3;
         }
 
     } else {
 
         //Indica el error E1: Sector fuera de rango
+        numDatosSec = 3;
         tramaDatosSec[1] = 0xEE;
         tramaDatosSec[2] = 0xE1;
-        numDatosSec = 3;
 
     }
 
@@ -1006,12 +1008,11 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
      T2CON.TON = 0;                                                             //Apaga el Timer2
 
-     /*
      //Limpia estas banderas para restablecer la comunicacion por RS485:
      banRSI = 0;
      banRSC = 0;
      i_rs485 = 0;
-     */
+
 }
 //*****************************************************************************************************************************************
 
@@ -1031,6 +1032,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
+           T2CON.TON = 0;                                                       //Apaga el Timer2
            banRSI = 0;                                                          //Limpia la bandera de inicio de trama
            banRSC = 1;                                                          //Activa la bandera de trama completa
         }
@@ -1039,6 +1041,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
      //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
+           //T2CON.TON = 1;                                                       //Enciende el Timer2
            banRSI = 1;
            i_rs485 = 0;
         }
@@ -1076,6 +1079,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                         }
                         horaSistema = RecuperarHoraRPI(tiempo);                      //Recupera la hora de la RPi
                         fechaSistema = RecuperarFechaRPI(tiempo);                    //Recupera la fecha de la RPi
+                        fuenteReloj =  inputPyloadRS485[7];                          //Recupera la fuente de reloj
                         banSetReloj = 1;                                             //Activa la bandera para indicar que se establecio la hora y fecha
                     }
                     //Envia la hora local al Master:
@@ -1085,7 +1089,8 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                         for (x=0;x<6;x++){
                             outputPyloadRS485[x+1] = tiempo[x];
                         }
-                        EnviarTramaRS485(1, IDNODO, 0xF1, 7, outputPyloadRS485);     //Envia la hora local al Master
+                        outputPyloadRS485[7] = fuenteReloj;
+                        EnviarTramaRS485(1, IDNODO, 0xF1, 8, outputPyloadRS485);     //Envia la hora local al Master
                     }
                     break;
 

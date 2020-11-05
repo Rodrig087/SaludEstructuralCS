@@ -3472,7 +3472,7 @@ L_int_2161:
 	MOV	#lo_addr(_banSetReloj), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;Master.c,613 :: 		InterrupcionP1(0xB1,0xD1,8);                                        //Envia la hora local a la RPi y a los nodos
+;Master.c,613 :: 		InterrupcionP1(0xB1,0xD1,8);                                           //Envia la hora local a la RPi y a los nodos
 	MOV	#8, W12
 	MOV.B	#209, W11
 	MOV.B	#177, W10
