@@ -978,7 +978,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
 
  if ((horaSistema!=0)&&(horaSistema%3600==0)){
- banRespuestaPi = 1;
+ banRespuestaPi = 0;
 
  banGPSI = 1;
  banGPSC = 0;
@@ -1022,9 +1022,8 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
  banSetReloj = 1;
 
 
- if ((banRespuestaPi==1)||(horaSistema<5)){
  InterrupcionP1(0xB1,0xD1,8);
- }
+
  }
 
 }

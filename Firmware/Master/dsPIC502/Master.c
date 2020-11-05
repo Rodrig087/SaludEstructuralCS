@@ -566,7 +566,7 @@ void int_1() org IVT_ADDR_INT1INTERRUPT {
 
      //Sincroniza el reloj local con el GPS cada hora:
      if ((horaSistema!=0)&&(horaSistema%3600==0)){
-        banRespuestaPi = 1;                                                     
+        banRespuestaPi = 0;                                                     //No envia respuesta a la RPi
         //Recupera el tiempo del GPS:
         banGPSI = 1;                                                            //Activa la bandera de inicio de trama  del GPS
         banGPSC = 0;                                                            //Limpia la bandera de trama completa
@@ -609,10 +609,9 @@ void int_2() org IVT_ADDR_INT2INTERRUPT {
          banSyncReloj = 0;
          banSetReloj = 1;                                                       //Activa esta bandera para continuar trabajando con el pulso SQW
          
-         //Sincroniza el tiempo de los nodos cuando se envia una solicitud desde la Rpi o a las 0 horas:
-         if ((banRespuestaPi==1)||(horaSistema<5)){                             //**Puede que la hora del sistema se haya incrementado al llegar hasta aqui
-            InterrupcionP1(0xB1,0xD1,8);                                        //Envia la hora local a la RPi y a los nodos
-         }
+         //Sincroniza el tiempo de los nodos cada hora:
+         InterrupcionP1(0xB1,0xD1,8);                                        //Envia la hora local a la RPi y a los nodos
+
      }
      
 }
@@ -631,11 +630,11 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
         TMR1 = 0;
         contTimeout1 = 0;
         //Recupera la hora del RTC:
-        horaSistema = RecuperarHoraRTC();                                    //Recupera la hora del RTC
-        fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
-        AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
-        fuenteReloj = 7;                                                     //**Indica que se obtuvo la hora del RTC
-        InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos
+        horaSistema = RecuperarHoraRTC();                                       //Recupera la hora del RTC
+        fechaSistema = RecuperarFechaRTC();                                     //Recupera la fecha del RTC
+        AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
+        fuenteReloj = 7;                                                        //**Indica que se obtuvo la hora del RTC
+        InterrupcionP1(0xB1,0xD1,8);                                            //Envia la hora local a la RPi y a los nodos
      }
 
 }
