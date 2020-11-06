@@ -79,6 +79,7 @@ unsigned short subFuncionRS485;                                                 
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};   //Trama de 10 elementos para probar la comunicacion RS485
 unsigned char *ptrsectorReq;                                                    //Puntero sector requerido
 unsigned long sectorReq;                                                        //Variable para recuperar el sector requerido
+unsigned short contTMR2;
 
 //Variables para manejo del SD:
 unsigned long PSF;                                                              //Primer Sector Fisico
@@ -163,6 +164,7 @@ void main() {
      numDatosRS485 = 0;
      ptrnumDatosRS485 = (unsigned char *) & numDatosRS485;
      ptrsectorReq = (unsigned char *) & sectorReq;
+     contTMR2 = 0;
 
      //SD:
      PSEC = 0;
@@ -303,12 +305,12 @@ void ConfiguracionPrincipal(){
      PR1 = 62500;                                                               //Car ga el preload para un tiempo de 100ms
      IPC0bits.T1IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR1
 
-     //Configuracion del TMR2 con un tiempo de 100ms
-     T2CON = 0x0020;
+     //Configuracion del TMR2 con un tiempo de 300ms
+     T2CON = 0x0030;                                                            //Prescalador
      T2CON.TON = 0;                                                             //Apaga el Timer2
      T2IE_bit = 1;                                                              //Habilita la interrupción de desbordamiento TMR2
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion del TMR2
-     PR2 = 62500;                                                               //Carga el preload para un tiempo de 100ms
+     PR2 = 46875;                                                               //Carga el preload para un tiempo de 300ms
      IPC1bits.T2IP = 0x02;                                                      //Prioridad de la interrupcion por desbordamiento del TMR2
 
      //Configuracion del acelerometro:
@@ -332,6 +334,7 @@ void Muestrear(){
 
          ADXL355_write_byte(POWER_CTL, DRDY_OFF|MEASURING);                     //Coloca el ADXL en modo medicion
          T1CON.TON = 1;                                                         //Enciende el Timer1
+         TMR1 = 0;                                                              //Encera el Timer1
 
      } else if (banCiclo==1) {
 
@@ -363,6 +366,7 @@ void Muestrear(){
          contMuestras = 0;                                                      //Limpia el contador de muestras
          contFIFO = 0;                                                          //Limpia el contador de FIFOs
          T1CON.TON = 1;                                                         //Enciende el Timer1
+         TMR1 = 0;                                                              //Encera el Timer1
 
          //Guarda la trama completa de aceleracion en la SD:
          GuardarTramaSD(tiempo, tramaAceleracion);
@@ -1006,14 +1010,24 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
      T2IF_bit = 0;                                                              //Limpia la bandera de interrupcion por desbordamiento del Timer2
-     T2CON.TON = 0;                                                             //Apaga el Timer2
-
-     //Limpia estas banderas para restablecer la comunicacion por RS485:
-     banRSI = 0;
-     banRSC = 0;
-     i_rs485 = 0;
-
+     contTMR2++;                                                                //Incrementa el contador de TMR2
+     
+     //Despues de 1200ms apaga el TMR2 y vuelve a encender el UART1:
+     if (contTMR2==4){
+         T2CON.TON = 0;
+         TMR2 = 0;
+         contTMR2 = 0;
+         /*//Limpia estas banderas para restablecer la comunicacion por RS485:
+         banRSI = 0;
+         banRSC = 0;
+         i_rs485 = 0;*/
+         //Activa el UART1:
+         UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED); //**
+     }
+     
+     //**Parece que cuando se usa el UARTx_Init_Advanced el U1MODE.UARTEN = 1 no es suficiente para encender el UART
 }
+
 //*****************************************************************************************************************************************
 
 //*****************************************************************************************************************************************
@@ -1032,7 +1046,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            inputPyloadRS485[i_rs485] = byteRS485;
            i_rs485++;
         } else {
-           T2CON.TON = 0;                                                       //Apaga el Timer2
+           //T2CON.TON = 0;                                                       //Apaga el Timer2
            banRSI = 0;                                                          //Limpia la bandera de inicio de trama
            banRSC = 1;                                                          //Activa la bandera de trama completa
         }
@@ -1041,7 +1055,6 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
      //Recupera la cabecera de la trama RS485:                                  //Aqui deberia entrar primero cada vez que se recibe una trama nueva
      if ((banRSI==0)&&(banRSC==0)){
         if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
-           //T2CON.TON = 1;                                                       //Enciende el Timer2
            banRSI = 1;
            i_rs485 = 0;
         }
@@ -1062,6 +1075,10 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            banRSI = 0;
            banRSC = 0;
            i_rs485 = 0;
+           T2CON.TON = 1;                                                       //Enciende el Timer2
+           TMR2 = 0;                                                            //Encera el Timer2
+           contTMR2 = 0;
+           U1MODE.UARTEN = 0;                                                   //Desactiva el UART1
         }
      }
 

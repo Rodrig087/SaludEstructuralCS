@@ -519,6 +519,7 @@ unsigned short subFuncionRS485;
 unsigned char tramaPruebaRS485[10]= {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 unsigned char *ptrsectorReq;
 unsigned long sectorReq;
+unsigned short contTMR2;
 
 
 unsigned long PSF;
@@ -603,6 +604,7 @@ void main() {
  numDatosRS485 = 0;
  ptrnumDatosRS485 = (unsigned char *) & numDatosRS485;
  ptrsectorReq = (unsigned char *) & sectorReq;
+ contTMR2 = 0;
 
 
  PSEC = 0;
@@ -744,11 +746,11 @@ void ConfiguracionPrincipal(){
  IPC0bits.T1IP = 0x02;
 
 
- T2CON = 0x0020;
+ T2CON = 0x0030;
  T2CON.TON = 0;
  T2IE_bit = 1;
  T2IF_bit = 0;
- PR2 = 62500;
+ PR2 = 46875;
  IPC1bits.T2IP = 0x02;
 
 
@@ -772,6 +774,7 @@ void Muestrear(){
 
  ADXL355_write_byte( 0x2D ,  0x04 | 0x00 );
  T1CON.TON = 1;
+ TMR1 = 0;
 
  } else if (banCiclo==1) {
 
@@ -803,6 +806,7 @@ void Muestrear(){
  contMuestras = 0;
  contFIFO = 0;
  T1CON.TON = 1;
+ TMR1 = 0;
 
 
  GuardarTramaSD(tiempo, tramaAceleracion);
@@ -1446,14 +1450,20 @@ void Timer1Int() org IVT_ADDR_T1INTERRUPT{
 void Timer2Int() org IVT_ADDR_T2INTERRUPT{
 
  T2IF_bit = 0;
+ contTMR2++;
+
+
+ if (contTMR2==4){
  T2CON.TON = 0;
+ TMR2 = 0;
+ contTMR2 = 0;
+#line 1025 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+ UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
+ }
 
-
- banRSI = 0;
- banRSC = 0;
- i_rs485 = 0;
 
 }
+
 
 
 
@@ -1472,7 +1482,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  inputPyloadRS485[i_rs485] = byteRS485;
  i_rs485++;
  } else {
- T2CON.TON = 0;
+
  banRSI = 0;
  banRSC = 1;
  }
@@ -1481,7 +1491,6 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
  if ((banRSI==0)&&(banRSC==0)){
  if (byteRS485==0x3A){
-
  banRSI = 1;
  i_rs485 = 0;
  }
@@ -1502,6 +1511,10 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  banRSI = 0;
  banRSC = 0;
  i_rs485 = 0;
+ T2CON.TON = 1;
+ TMR2 = 0;
+ contTMR2 = 0;
+ U1MODE.UARTEN = 0;
  }
  }
 
