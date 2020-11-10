@@ -17,7 +17,7 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 1                                                                //Direccion del nodo
+#define IDNODO 2                                                                //Direccion del nodo
 #define SIZESD 8                                                                //Capacidad de la SD (GB)
 #define DELTASECTOR 97952                                                       //Desface donde empiezan los datos del sector a partir del PSF (sector 100000)
 
@@ -45,7 +45,7 @@ sbit MSRS485_Direction at TRISB12_bit;
 unsigned short inicioSistema;
 
 //Variables para manejo del tiempo:
-unsigned short tiempo[6];                                                       //Vector de datos de tiempo del sistema
+unsigned short tiempo[6] = {0, 0, 0, 0, 0, 0};                                  //Vector de datos de tiempo del sistema
 unsigned short banSetReloj;
 unsigned short fuenteReloj;                                                     //Indica la fuente de reloj: 1=GPS, 2=RTC, 3=RPi
 unsigned long horaSistema, fechaSistema;
@@ -1017,10 +1017,10 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
          T2CON.TON = 0;
          TMR2 = 0;
          contTMR2 = 0;
-         /*//Limpia estas banderas para restablecer la comunicacion por RS485:
+         //Limpia estas banderas para restablecer la comunicacion por RS485:
          banRSI = 0;
          banRSC = 0;
-         i_rs485 = 0;*/
+         i_rs485 = 0;
          //Activa el UART1:
          UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED); //**
      }

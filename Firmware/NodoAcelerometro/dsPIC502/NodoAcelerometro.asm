@@ -3116,7 +3116,7 @@ L_InformacionSectores155:
 ;NodoAcelerometro.c,621 :: 		EnviarTramaRS485(1, IDNODO, 0xF3, 17, tramaInfoSec);
 	MOV	#17, W13
 	MOV.B	#243, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	PUSH	W2
 	CALL	_EnviarTramaRS485
@@ -3327,7 +3327,7 @@ L_InspeccionarSector173:
 	PUSH	W10
 	MOV	[W14+528], W13
 	MOV.B	#243, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	PUSH	W0
 	CALL	_EnviarTramaRS485
@@ -4055,7 +4055,7 @@ L_RecuperarTramaAceleracion234:
 	PUSH.D	W10
 	MOV	[W0], W13
 	MOV.B	#243, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	PUSH	W1
 	CALL	_EnviarTramaRS485
@@ -4781,6 +4781,17 @@ L__Timer2Int533:
 	MOV	#lo_addr(_contTMR2), W1
 	CLR	W0
 	MOV.B	W0, [W1]
+;NodoAcelerometro.c,1021 :: 		banRSI = 0;
+	MOV	#lo_addr(_banRSI), W1
+	CLR	W0
+	MOV.B	W0, [W1]
+;NodoAcelerometro.c,1022 :: 		banRSC = 0;
+	MOV	#lo_addr(_banRSC), W1
+	CLR	W0
+	MOV.B	W0, [W1]
+;NodoAcelerometro.c,1023 :: 		i_rs485 = 0;
+	CLR	W0
+	MOV	W0, _i_rs485
 ;NodoAcelerometro.c,1025 :: 		UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED); //**
 	CLR	W13
 	CLR	W12
@@ -4945,7 +4956,7 @@ L__urx_1370:
 ;NodoAcelerometro.c,1068 :: 		if ((tramaCabeceraRS485[1]==IDNODO)||(tramaCabeceraRS485[1]==255)){
 	MOV	#lo_addr(_tramaCabeceraRS485+1), W0
 	MOV.B	[W0], W0
-	CP.B	W0, #1
+	CP.B	W0, #2
 	BRA NZ	L__urx_1544
 	GOTO	L__urx_1378
 L__urx_1544:
@@ -5120,7 +5131,7 @@ L_urx_1314:
 ;NodoAcelerometro.c,1110 :: 		EnviarTramaRS485(1, IDNODO, 0xF1, 8, outputPyloadRS485);     //Envia la hora local al Master
 	MOV	#8, W13
 	MOV.B	#241, W12
-	MOV.B	#1, W11
+	MOV.B	#2, W11
 	MOV.B	#1, W10
 	MOV	#lo_addr(_outputPyloadRS485), W0
 	PUSH	W0

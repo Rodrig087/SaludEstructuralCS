@@ -2340,6 +2340,7 @@ contciclos
 contfifo
 contmuestras
 conttimer1
+conttmr2
 corcon
 corconbits
 cos

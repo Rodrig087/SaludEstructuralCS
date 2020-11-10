@@ -93,6 +93,7 @@ urx_1
 		SD_Read_Block
 		EnviarTramaRS485
 Timer2Int
+	UART1_Init_Advanced
 Timer1Int
 	ADXL355_read_byte
 	ADXL355_read_FIFO

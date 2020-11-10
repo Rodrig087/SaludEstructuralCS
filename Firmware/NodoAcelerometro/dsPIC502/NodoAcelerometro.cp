@@ -485,7 +485,7 @@ sbit MSRS485_Direction at TRISB12_bit;
 unsigned short inicioSistema;
 
 
-unsigned short tiempo[6];
+unsigned short tiempo[6] = {0, 0, 0, 0, 0, 0};
 unsigned short banSetReloj;
 unsigned short fuenteReloj;
 unsigned long horaSistema, fechaSistema;
@@ -1058,7 +1058,7 @@ void InformacionSectores(){
  tramaInfoSec[15] = *(ptrSA+2);
  tramaInfoSec[16] = *(ptrSA+3);
 
- EnviarTramaRS485(1,  1 , 0xF3, 17, tramaInfoSec);
+ EnviarTramaRS485(1,  2 , 0xF3, 17, tramaInfoSec);
 
 }
 
@@ -1124,7 +1124,7 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
  }
 
  banInsSec = 0;
- EnviarTramaRS485(1,  1 , 0xF3, numDatosSec, tramaDatosSec);
+ EnviarTramaRS485(1,  2 , 0xF3, numDatosSec, tramaDatosSec);
 
 }
 
@@ -1284,7 +1284,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
  }
 
 
- EnviarTramaRS485(1,  1 , 0xF3, numDatosTramaAcel, tramaAcelSeg);
+ EnviarTramaRS485(1,  2 , 0xF3, numDatosTramaAcel, tramaAcelSeg);
 
 }
 
@@ -1457,7 +1457,11 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
  T2CON.TON = 0;
  TMR2 = 0;
  contTMR2 = 0;
-#line 1025 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/NodoAcelerometro/dsPIC502/NodoAcelerometro.c"
+
+ banRSI = 0;
+ banRSC = 0;
+ i_rs485 = 0;
+
  UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED);
  }
 
@@ -1501,7 +1505,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  }
  if ((banRSI==1)&&(i_rs485==5)){
 
- if ((tramaCabeceraRS485[1]== 1 )||(tramaCabeceraRS485[1]==255)){
+ if ((tramaCabeceraRS485[1]== 2 )||(tramaCabeceraRS485[1]==255)){
  funcionRS485 = tramaCabeceraRS485[2];
  *(ptrnumDatosRS485) = tramaCabeceraRS485[3];
  *(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];
@@ -1543,7 +1547,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  outputPyloadRS485[x+1] = tiempo[x];
  }
  outputPyloadRS485[7] = fuenteReloj;
- EnviarTramaRS485(1,  1 , 0xF1, 8, outputPyloadRS485);
+ EnviarTramaRS485(1,  2 , 0xF1, 8, outputPyloadRS485);
  }
  break;
 

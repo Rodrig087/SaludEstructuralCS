@@ -28,8 +28,6 @@ unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
 unsigned char tramaPyloadRS485[2600];
 
-short fuenteTiempoPic;
-
 unsigned int tiempoInicial;
 unsigned int tiempoFinal;
 unsigned int duracionPrueba;
@@ -201,6 +199,7 @@ int main(int argc, char *argv[]) {
 	numDatosNodo = 5;
 	pyloadNodo[0] = subFuncionNodo;
 	contSolicitud = 0;
+	gettimeofday(&tv1, NULL);
 	if (banCalculoCompleto==1){
 		while(contSolicitud<6){
 			if (banSolicitud==0){
@@ -315,6 +314,7 @@ void ObtenerOperacion(){
                break;
           default:
                printf("Error: Operacion invalida\n");  
+			   exit (-1);
                break;
     }
 		
@@ -513,6 +513,7 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 			}
 		} else {
 			printf("No se pudo realizar la lectura. Revise el sector seleccionado.\n");
+			exit(-1);
 		}
 		
 		contSolicitud++;
@@ -599,6 +600,8 @@ void RecuperarEvento(unsigned char* pyloadRS485){
 	double yAceleracion;
 	double zAceleracion;
 	
+	char fuenteTiempoNodo[10];
+	
 	//printf("Imprimiendo datos de la trama...\n");
 	
 	//Verifica los datos de cabecera:
@@ -641,14 +644,41 @@ void RecuperarEvento(unsigned char* pyloadRS485){
 		//Imprime el segundo actual:
 		printf("Segundo: %d\n", contSegundos);
 		
+		//Extrae la fuente de reloj:
+		switch (pyloadRS485[7]){                                                                     
+			  //Funciones de lectura de sectores:
+			  case 0:
+				   strcpy(fuenteTiempoNodo,"RPi");   
+				   break;
+			  case 1:
+				   strcpy(fuenteTiempoNodo,"GPS");   
+				   break;
+			  case 2:
+				   strcpy(fuenteTiempoNodo,"RTC");   
+				   break;
+			  case 5:
+				   strcpy(fuenteTiempoNodo,"RTC_E5");   
+				   break;
+			  case 6:
+				   strcpy(fuenteTiempoNodo,"RTC_E6");   
+				   break;
+			  case 7:
+				   strcpy(fuenteTiempoNodo,"RTC_E7");   
+				   break;
+			  default:
+				   strcpy(fuenteTiempoNodo,"indet");
+				   break;
+		}
+		
 		//Imprime la hora y fecha recuperada de la trama de datos:
 		printf("| ");
-		printf("%0.2d:", pyloadRS485[2513-3]);			//hh
-		printf("%0.2d:", pyloadRS485[2513-2]);			//mm
-		printf("%0.2d ", pyloadRS485[2513-1]);			//ss
+		printf("%s ", fuenteTiempoNodo);                //Fuente reloj nodo
 		printf("%0.2d/", pyloadRS485[2513-6]);			//aa
 		printf("%0.2d/", pyloadRS485[2513-5]);			//mm
 		printf("%0.2d ", pyloadRS485[2513-4]);			//dd
+		printf("%0.2d:", pyloadRS485[2513-3]);			//hh
+		printf("%0.2d:", pyloadRS485[2513-2]);			//mm
+		printf("%0.2d ", pyloadRS485[2513-1]);			//ss
 		printf("| ");
 		//Imprime los primeros datos de aceleracion:
 		printf("X: ");
@@ -722,12 +752,39 @@ void RecuperarEvento(unsigned char* pyloadRS485){
 
 void CrearArchivo(unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485){
 
+	char fuenteTiempoNodo[10];
 	char tiempoNodo[6];
 	char nombreArchivo[50];
 	char idArchivo[8];
-	char tiempoNodoStr[13];
+	char tiempoNodoStr[20];
 	char duracionEventoStr[4];
 	char ext[5];
+	
+	//Extrae la fuente de reloj:
+	switch (pyloadRS485[7]){                                                                     
+		  //Funciones de lectura de sectores:
+          case 0:
+			   strcpy(fuenteTiempoNodo,"RPi");   
+               break;
+		  case 1:
+			   strcpy(fuenteTiempoNodo,"GPS");   
+               break;
+		  case 2:
+			   strcpy(fuenteTiempoNodo,"RTC");   
+               break;
+	      case 5:
+			   strcpy(fuenteTiempoNodo,"RTC_E5");   
+               break;
+		  case 6:
+			   strcpy(fuenteTiempoNodo,"RTC_E6");   
+               break;
+		  case 7:
+			   strcpy(fuenteTiempoNodo,"RTC_E7");   
+               break;
+          default:
+               strcpy(fuenteTiempoNodo,"indet");
+               break;
+    }
 	
 	//Extrae el tiempo de la trama pyload:	
 	tiempoNodo[0] = pyloadRS485[2507];                                    //aa
@@ -740,7 +797,7 @@ void CrearArchivo(unsigned short idConc, unsigned short idNodo, unsigned short d
 	//Realiza la concatenacion para obtner el nombre del archivo:			
 	strcpy(nombreArchivo, "/home/pi/Resultados/");
 	sprintf(idArchivo, "C%0.2dN%0.2d_", idConc, idNodo); 
-	sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d-%0.2d%0.2d%0.2d_", tiempoNodo[0], tiempoNodo[1], tiempoNodo[2], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5]);
+	sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d-%0.2d%0.2d%0.2d-%s_", tiempoNodo[0], tiempoNodo[1], tiempoNodo[2], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5], fuenteTiempoNodo);
 	sprintf(duracionEventoStr, "%0.3d", duracionEvento); 
 	strcpy(ext, ".dat");
 	strcat(nombreArchivo, idArchivo);
@@ -758,33 +815,44 @@ void GuardarTrama(unsigned char* pyloadRS485_2){
 		
 	unsigned int outFwrite;
 	unsigned char tramaAceleracion[2506];
+	//char fuenteTiempoNodo[10];
 		
 	//Llena la trama de aceleracion con lo valores del pyload:
 	for (x=0;x<2506;x++){
 		tramaAceleracion[x] = pyloadRS485_2[x+7];
 	}
 	
+	/*
 	//prueba
 	printf("Contenido de la trama guardada: ");
 	printf("| Fuente de reloj: ");
 	if (tramaAceleracion[0]==0){
-		printf("RPi");
+		//printf("RPi");
+		strcpy(fuenteTiempoNodo,"RPi");
 	} 
 	if (tramaAceleracion[0]==1){
-		printf("GPS");
+		//printf("GPS");
+		strcpy(fuenteTiempoNodo,"GPS");
 	}
 	if (tramaAceleracion[0]==2){
-		printf("RTC");
+		//printf("RTC");
+		strcpy(fuenteTiempoNodo,"RTC");
 	}
 	if (tramaAceleracion[0]==5){
-		printf("RTC_E5");
+		//printf("RTC_E5");
+		strcpy(fuenteTiempoNodo,"RTC_E5");
 	}
 	if (tramaAceleracion[0]==6){
-		printf("RTC_E6");
+		//printf("RTC_E6");
+		strcpy(fuenteTiempoNodo,"RTC_E6");
 	}
 	if (tramaAceleracion[0]==7){
-		printf("RTC_E7");
+		//printf("RTC_E7");
+		strcpy(fuenteTiempoNodo,"RTC_E7");
 	}
+	
+	printf("%s", fuenteTiempoNodo);
+	
 	printf(" | ");
 	printf("%0.2d/", tramaAceleracion[2500]);			//hh
 	printf("%0.2d/", tramaAceleracion[2501]);			//mm
@@ -793,6 +861,7 @@ void GuardarTrama(unsigned char* pyloadRS485_2){
 	printf("%0.2d:", tramaAceleracion[2504]);			//mm
 	printf("%0.2d", tramaAceleracion[2505]);			//ss
 	printf(" |\n");
+	*/
 		
 	//Guarda la trama en el archivo binario:
 	if (fp!=NULL){
