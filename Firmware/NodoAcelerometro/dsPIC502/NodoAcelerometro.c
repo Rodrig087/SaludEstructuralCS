@@ -17,7 +17,7 @@ Configuracion: dsPIC33EP256MC202, XT=80MHz
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Credenciales:
-#define IDNODO 2                                                                //Direccion del nodo
+#define IDNODO 1                                                                //Direccion del nodo
 #define SIZESD 8                                                                //Capacidad de la SD (GB)
 #define DELTASECTOR 97952                                                       //Desface donde empiezan los datos del sector a partir del PSF (sector 100000)
 
@@ -71,7 +71,7 @@ unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
 unsigned char tramaCabeceraRS485[10];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
 unsigned char inputPyloadRS485[15];                                             //Vector para almacenar el pyload de entrada de la trama RS485
-unsigned char outputPyloadRS485[2600];                                          //Vector para almacenar el pyload de salida de la trama RS485
+unsigned char outputPyloadRS485[15];                                            //Vector para almacenar el pyload de salida de la trama RS485
 unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
 unsigned char *ptrnumDatosRS485;
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
@@ -618,6 +618,7 @@ void InformacionSectores(){
      tramaInfoSec[15] = *(ptrSA+2);
      tramaInfoSec[16] = *(ptrSA+3);                                             //MSB SA
      
+     delay_ms(10);
      EnviarTramaRS485(1, IDNODO, 0xF3, 17, tramaInfoSec);
 
 }
@@ -684,6 +685,7 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
     }
 
     banInsSec = 0;
+    delay_ms(10);
     EnviarTramaRS485(1, IDNODO, 0xF3, numDatosSec, tramaDatosSec);
 
 }
@@ -844,6 +846,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
     }
     
     //Envia la trama aceleracion por RS485:
+    delay_ms(10);
     EnviarTramaRS485(1, IDNODO, 0xF3, numDatosTramaAcel, tramaAcelSeg);
 
 }
@@ -1101,13 +1104,16 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     }
                     //Envia la hora local al Master:
                     if (subFuncionRS485==0xD2){
+
                         //Llena el pyload de salida:
                         outputPyloadRS485[0] = 0xD2;
                         for (x=0;x<6;x++){
                             outputPyloadRS485[x+1] = tiempo[x];
                         }
                         outputPyloadRS485[7] = fuenteReloj;
+                        delay_ms(10);
                         EnviarTramaRS485(1, IDNODO, 0xF1, 8, outputPyloadRS485);     //Envia la hora local al Master
+                        TEST = ~TEST;
                     }
                     break;
 

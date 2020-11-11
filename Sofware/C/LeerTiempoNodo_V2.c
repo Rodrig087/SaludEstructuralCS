@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 		ObtenerTiempoNodo(5);
 	}
 	
-	sleep(5);
+	sleep(1);
 	bcm2835_spi_end();
 	bcm2835_close();
  

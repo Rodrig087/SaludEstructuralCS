@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------------------------------------------------------
 Autor: Milton Munoz, email: miltonrodrigomunoz@gmail.com
 Fecha de creacion: 16/01/2020
-Configuracion: dsPIC33EP256MC502, XT=80MHz
+Configuracion: dsPIC33EP256MC202, XT=80MHz
 ---------------------------------------------------------------------------------------------------------------------------*/
 
 ////////////////////////////////////////////////////         Librerias         /////////////////////////////////////////////////////////////
@@ -45,7 +45,7 @@ sbit MSRS485_Direction at TRISB12_bit;
 unsigned short inicioSistema;
 
 //Variables para manejo del tiempo:
-unsigned short tiempo[6];                                                       //Vector de datos de tiempo del sistema
+unsigned short tiempo[6] = {0, 0, 0, 0, 0, 0};                                  //Vector de datos de tiempo del sistema
 unsigned short banSetReloj;
 unsigned short fuenteReloj;                                                     //Indica la fuente de reloj: 1=GPS, 2=RTC, 3=RPi
 unsigned long horaSistema, fechaSistema;
@@ -71,7 +71,7 @@ unsigned char byteRS485;
 unsigned int i_rs485;                                                           //Indice
 unsigned char tramaCabeceraRS485[10];                                            //Vector para almacenar los datos de cabecera de la trama RS485: [0x3A, Direccion, Funcion, NumeroDatos]
 unsigned char inputPyloadRS485[15];                                             //Vector para almacenar el pyload de entrada de la trama RS485
-unsigned char outputPyloadRS485[2600];                                          //Vector para almacenar el pyload de salida de la trama RS485
+unsigned char outputPyloadRS485[15];                                            //Vector para almacenar el pyload de salida de la trama RS485
 unsigned int numDatosRS485;                                                     //Numero de datos en el pyload de la trama RS485
 unsigned char *ptrnumDatosRS485;
 unsigned short funcionRS485;                                                    //Funcion requerida: 0xF1 = Muestrear, 0xF2 = Actualizar tiempo, 0xF3 = Probar comunicacion
@@ -268,8 +268,8 @@ void ConfiguracionPrincipal(){
      sd_CS_tris = 0;                                                            //CS SD
      MSRS485_Direction = 0;                                                     //MAX485 MS
      sd_detect_tris = 1;                                                        //Pin detection SD
-     //TRISB14_bit = 1;                                                           //Pin de interrupcion V1
-     TRISB13_bit = 1;                                                           //Pin de interrupcion V2
+     TRISB14_bit = 1;                                                           //Pin de interrupcion V1
+     //TRISB13_bit = 1;                                                           //Pin de interrupcion V2
 
      //Habilita las interrupciones globales:
      INTCON2.GIE = 1;                                                           //Habilita las interrupciones globales
@@ -618,6 +618,7 @@ void InformacionSectores(){
      tramaInfoSec[15] = *(ptrSA+2);
      tramaInfoSec[16] = *(ptrSA+3);                                             //MSB SA
 
+     delay_ms(10);
      EnviarTramaRS485(1, IDNODO, 0xF3, 17, tramaInfoSec);
 
 }
@@ -684,6 +685,7 @@ void InspeccionarSector(unsigned short estadoMuestreo, unsigned long sectorReq){
     }
 
     banInsSec = 0;
+    delay_ms(10);
     EnviarTramaRS485(1, IDNODO, 0xF3, numDatosSec, tramaDatosSec);
 
 }
@@ -844,6 +846,7 @@ void RecuperarTramaAceleracion(unsigned long sectorReq){
     }
 
     //Envia la trama aceleracion por RS485:
+    delay_ms(10);
     EnviarTramaRS485(1, IDNODO, 0xF3, numDatosTramaAcel, tramaAcelSeg);
 
 }
@@ -1017,10 +1020,10 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
          T2CON.TON = 0;
          TMR2 = 0;
          contTMR2 = 0;
-         /*//Limpia estas banderas para restablecer la comunicacion por RS485:
+         //Limpia estas banderas para restablecer la comunicacion por RS485:
          banRSI = 0;
          banRSC = 0;
-         i_rs485 = 0;*/
+         i_rs485 = 0;
          //Activa el UART1:
          UART1_Init_Advanced(2000000, _UART_8BIT_NOPARITY, _UART_ONE_STOPBIT, _UART_HI_SPEED); //**
      }
@@ -1101,13 +1104,16 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                     }
                     //Envia la hora local al Master:
                     if (subFuncionRS485==0xD2){
+
                         //Llena el pyload de salida:
                         outputPyloadRS485[0] = 0xD2;
                         for (x=0;x<6;x++){
                             outputPyloadRS485[x+1] = tiempo[x];
                         }
                         outputPyloadRS485[7] = fuenteReloj;
+                        delay_ms(10);
                         EnviarTramaRS485(1, IDNODO, 0xF1, 8, outputPyloadRS485);     //Envia la hora local al Master
+                        TEST = ~TEST;
                     }
                     break;
 

@@ -1,1 +1,8 @@
-<BREAKS/>
+<BREAKS>
+  <BP>
+    <UnitName>NodoAcelerometro.c</UnitName>
+    <Line>1105</Line>
+    <Enabled>True</Enabled>
+    <Type>0</Type>
+  </BP>
+</BREAKS>

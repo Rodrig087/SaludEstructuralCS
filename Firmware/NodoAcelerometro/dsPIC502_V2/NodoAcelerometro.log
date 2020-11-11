@@ -7,12 +7,12 @@ warning: 164	1503	Result is not defined in function: 'ADXL355_read_data'	adxl355
 warning: 186	1503	Result is not defined in function: ''	adxl355_spi.c
 warning: 187	1503	Result is not defined in function: 'ADXL355_read_FIFO'	adxl355_spi.c
 hint: 89	1163	Variable 'valueSet' has been declared, but not used	tiempo_rtc.c
-hint: 633	1163	Variable 'contadorSector' has been declared, but not used	NodoAcelerometro.c
+hint: 634	1163	Variable 'contadorSector' has been declared, but not used	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (int_1 at 0x003C)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (Timer1Int at 0x001A)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (Timer2Int at 0x0022)	NodoAcelerometro.c
 hint: 0	1004	interrupt handler (urx_1 at 0x002A)	NodoAcelerometro.c
-diagnostics: 1171	123	Compiled Successfully	NodoAcelerometro.c
+diagnostics: 1177	123	Compiled Successfully	NodoAcelerometro.c
 warning: 197	1519	Logical expression is always: 'True'	NodoAcelerometro.c
 warning: 207	1519	Logical expression is always: 'False'	NodoAcelerometro.c
 warning: 242	1519	Logical expression is always: 'False'	NodoAcelerometro.c
@@ -40,11 +40,11 @@ hint: 330	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 hint: 348	1164	Variable 'temp' has been eliminated by optimizer	sdcard.c
 diagnostics: 0	122	Compilation Started	spisd.h
 diagnostics: 49	123	Compiled Successfully	spiSD.c
-diagnostics: 0	127	All files Compiled in 469 ms	 
+diagnostics: 0	127	All files Compiled in 312 ms	 
 hint: 0	1144	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)	Used RX (bytes): 32 (100%)   Free RX (bytes): 0 (0%)
-hint: 0	1144	Static RAM (bytes): 5998   Dynamic RAM (bytes): 22674	Static RAM (bytes): 5998   Dynamic RAM (bytes): 22674
-hint: 0	1144	Used ROM (bytes): 8531 (5%)  Free ROM (bytes): 167577 (95%)	Used ROM (bytes): 8531 (5%)  Free ROM (bytes): 167577 (95%)
+hint: 0	1144	Static RAM (bytes): 3413   Dynamic RAM (bytes): 25258	Static RAM (bytes): 3413   Dynamic RAM (bytes): 25258
+hint: 0	1144	Used ROM (bytes): 8621 (5%)  Free ROM (bytes): 167487 (95%)	Used ROM (bytes): 8621 (5%)  Free ROM (bytes): 167487 (95%)
 diagnostics: 0	125	Project Linked Successfully	NodoAcelerometro.mcpds
-diagnostics: 0	128	Linked in 422 ms	 
-diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 1188 ms	 
-diagnostics: 0	103	Finished successfully: 09 nov. 2020, 11:28:08	NodoAcelerometro.mcpds
+diagnostics: 0	128	Linked in 219 ms	 
+diagnostics: 0	129	Project 'NodoAcelerometro.mcpds' completed: 687 ms	 
+diagnostics: 0	103	Finished successfully: 10 nov. 2020, 23:04:07	NodoAcelerometro.mcpds

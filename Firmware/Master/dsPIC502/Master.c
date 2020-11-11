@@ -446,15 +446,17 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //Rutina para enviar la solicitud de tiempo a los nodos:
      if ((banSPI7==0)&&(bufferSPI==0xA7)){
         banSPI7 = 1;
+        i = 0;
      }
      if ((banSPI7==1)&&(bufferSPI!=0xA7)&&(bufferSPI!=0xF7)){
-        direccionRS485 =  bufferSPI;                                            //Recupera la direccion del nodo solicitado
+        tramaSolicitudSPI[i] = bufferSPI;
      }
      if ((banSPI7==1)&&(bufferSPI==0xF7)){
-        banSPI7 = 0;
+        direccionRS485 =  tramaSolicitudSPI[i];
         outputPyloadRS485[0] = 0xD2;                                            //Llena el pyload de salidas con la subfuncion solicitada
-        banRespuestaPi = 1;
         EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);        //Envia la solicitud al nodo
+        banRespuestaPi = 1;
+        banSPI7 = 0;
      }
      
      //(C:0xA8   F:0xF8)

@@ -858,15 +858,17 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
  if ((banSPI7==0)&&(bufferSPI==0xA7)){
  banSPI7 = 1;
+ i = 0;
  }
  if ((banSPI7==1)&&(bufferSPI!=0xA7)&&(bufferSPI!=0xF7)){
- direccionRS485 = bufferSPI;
+ tramaSolicitudSPI[i] = bufferSPI;
  }
  if ((banSPI7==1)&&(bufferSPI==0xF7)){
- banSPI7 = 0;
+ direccionRS485 = tramaSolicitudSPI[i];
  outputPyloadRS485[0] = 0xD2;
- banRespuestaPi = 1;
  EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);
+ banRespuestaPi = 1;
+ banSPI7 = 0;
  }
 
 
