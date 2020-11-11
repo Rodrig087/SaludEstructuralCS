@@ -509,6 +509,7 @@ unsigned short banInicioMuestreo;
 void ConfiguracionPrincipal();
 void Muestrear();
 void InterrupcionP1(unsigned short funcionSPI, unsigned short subFuncionSPI, unsigned int numBytesSPI);
+void CambiarEstadoBandera(unsigned short bandera, unsigned short estado);
 
 
 
@@ -720,6 +721,68 @@ void ConfiguracionPrincipal(){
 
 
 
+void CambiarEstadoBandera(unsigned short bandera, unsigned short estado){
+
+ if (estado==1){
+
+ banSPI0 = 3;
+ banSPI1 = 3;
+ banSPI2 = 3;
+ banSPI4 = 3;
+ banSPI5 = 3;
+ banSPI6 = 3;
+ banSPI7 = 3;
+ banSPI8 = 3;
+ banSPIA = 3;
+
+ switch (bandera){
+ case 0:
+ banSPI0 = 1;
+ break;
+ case 1:
+ banSPI1 = 1;
+ break;
+ case 2:
+ banSPI2 = 1;
+ break;
+ case 4:
+ banSPI4 = 1;
+ break;
+ case 5:
+ banSPI5 = 1;
+ break;
+ case 6:
+ banSPI6 = 1;
+ break;
+ case 7:
+ banSPI7 = 1;
+ break;
+ case 8:
+ banSPI8 = 1;
+ break;
+ case 0x0A:
+ banSPIA = 1;
+ break;
+ }
+ }
+
+
+ if (estado==0){
+ banSPI0 = 0;
+ banSPI1 = 0;
+ banSPI2 = 0;
+ banSPI4 = 0;
+ banSPI5 = 0;
+ banSPI6 = 0;
+ banSPI7 = 0;
+ banSPI8 = 0;
+ banSPIA = 0;
+ }
+}
+
+
+
+
 
 
 
@@ -733,7 +796,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  if ((banSPI0==0)&&(bufferSPI==0xA0)) {
- banSPI0 = 1;
+ CambiarEstadoBandera(0,1);
  i = 1;
  SPI1BUF = tramaSolicitudSPI[0];
  }
@@ -742,7 +805,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  i++;
  }
  if ((banSPI0==1)&&(bufferSPI==0xF0)){
- banSPI0 = 0;
+ CambiarEstadoBandera(0,0);
  }
 
 
@@ -751,7 +814,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  if ((banSPI1==0)&&(bufferSPI==0xA1)){
- banSPI1 = 1;
+ CambiarEstadoBandera(1,1);
  i = 0;
  }
  if ((banSPI1==1)&&(bufferSPI!=0xA1)&&(bufferSPI!=0xF1)){
@@ -763,12 +826,12 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  outputPyloadRS485[0] = 0xD1;
  outputPyloadRS485[1] = tramaSolicitudSPI[1];
  EnviarTramaRS485(2, direccionRS485, 0xF2, 2, outputPyloadRS485);
- banSPI1 = 0;
+ CambiarEstadoBandera(1,0);
  }
 
 
  if ((banSPI2==0)&&(bufferSPI==0xA2)){
- banSPI2 = 1;
+ CambiarEstadoBandera(2,1);
  i = 0;
  }
  if ((banSPI2==1)&&(bufferSPI!=0xA2)&&(bufferSPI!=0xF2)){
@@ -778,7 +841,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  direccionRS485 = tramaSolicitudSPI[0];
  outputPyloadRS485[0] = 0xD2;
  EnviarTramaRS485(2, direccionRS485, 0xF2, 1, outputPyloadRS485);
- banSPI2 = 0;
+ CambiarEstadoBandera(2,0);
  }
 
 
@@ -788,7 +851,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  if ((banSPI4==0)&&(bufferSPI==0xA4)){
- banSPI4 = 1;
+ CambiarEstadoBandera(4,1);
  j = 0;
  }
  if ((banSPI4==1)&&(bufferSPI!=0xA4)&&(bufferSPI!=0xF4)){
@@ -796,7 +859,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  j++;
  }
  if ((banSPI4==1)&&(bufferSPI==0xF4)){
- banSPI4 = 0;
+ CambiarEstadoBandera(4,0);
  horaSistema = RecuperarHoraRPI(tiempoRPI);
  fechaSistema = RecuperarFechaRPI(tiempoRPI);
  DS3234_setDate(horaSistema, fechaSistema);
@@ -812,7 +875,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  if ((banSPI5==0)&&(bufferSPI==0xA5)){
- banSPI5 = 1;
+ CambiarEstadoBandera(5,1);
  j = 0;
  SPI1BUF = fuenteReloj;
  }
@@ -821,19 +884,19 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  j++;
  }
  if ((banSPI5==1)&&(bufferSPI==0xF5)){
- banSPI5 = 0;
+ CambiarEstadoBandera(5,0);
  }
 
 
 
  if ((banSPI6==0)&&(bufferSPI==0xA6)){
- banSPI6 = 1;
+ CambiarEstadoBandera(6,1);
  }
  if ((banSPI6==1)&&(bufferSPI!=0xA6)&&(bufferSPI!=0xF6)){
  referenciaTiempo = bufferSPI;
  }
  if ((banSPI6==1)&&(bufferSPI==0xF6)){
- banSPI6 = 0;
+ CambiarEstadoBandera(6,0);
  banSetReloj = 1;
  banRespuestaPi = 1;
  if (referenciaTiempo==1){
@@ -857,31 +920,24 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  if ((banSPI7==0)&&(bufferSPI==0xA7)){
- banSPI7 = 1;
+ CambiarEstadoBandera(7,1);
+ i = 0;
  }
  if ((banSPI7==1)&&(bufferSPI!=0xA7)&&(bufferSPI!=0xF7)){
- direccionRS485 = bufferSPI;
+ tramaSolicitudSPI[i] = bufferSPI;
  }
  if ((banSPI7==1)&&(bufferSPI==0xF7)){
- banSPI7 = 0;
+ direccionRS485 = tramaSolicitudSPI[i];
  outputPyloadRS485[0] = 0xD2;
- banRespuestaPi = 1;
  EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);
+ banRespuestaPi = 1;
+ CambiarEstadoBandera(7,0);
  }
 
 
 
  if ((banSPI8==0)&&(bufferSPI==0xA8)){
-
- banSPI0 = 2;
- banSPI1 = 2;
- banSPI2 = 2;
- banSPI4 = 2;
- banSPI5 = 2;
- banSPI6 = 2;
- banSPI7 = 2;
- banSPIA = 2;
- banSPI8 = 1;
+ CambiarEstadoBandera(8,1);
  i = 0;
  }
 
@@ -904,15 +960,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  }
 
  if ((banSPI8==2)&&(bufferSPI==0xF8)&&(i>numDatosRS485)){
- banSPI0 = 0;
- banSPI1 = 0;
- banSPI2 = 0;
- banSPI4 = 0;
- banSPI5 = 0;
- banSPI6 = 0;
- banSPI7 = 0;
- banSPIA = 0;
- banSPI8 = 0;
+ CambiarEstadoBandera(8,0);
 
  if (numDatosRS485>1){
  for (x=0;x<numDatosRS485;x++){
@@ -935,7 +983,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
 
  if ((banSPIA==0)&&(bufferSPI==0xAA)){
- banSPIA = 1;
+ CambiarEstadoBandera(0x0A,1);
  SPI1BUF = inputPyloadRS485[0];
  i = 1;
  }
@@ -944,7 +992,7 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
  i++;
  }
  if ((banSPIA==1)&&(bufferSPI==0xFA)){
- banSPIA = 0;
+ CambiarEstadoBandera(0x0A,0);
  }
 
 

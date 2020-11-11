@@ -1822,6 +1822,7 @@ cam_bit
 cam_pwmcon1_bit
 cam_pwmcon2_bit
 cam_pwmcon3_bit
+cambiarestadobandera
 cancap
 cancap
 cancap_bit

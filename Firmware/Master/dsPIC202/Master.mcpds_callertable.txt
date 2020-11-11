@@ -73,6 +73,7 @@ urx_1
 		atoi
 		_Multiply_32x32
 spi_1
+	CambiarEstadoBandera
 	EnviarTramaRS485
 	RecuperarHoraRPI
 		_Multiply_32x32

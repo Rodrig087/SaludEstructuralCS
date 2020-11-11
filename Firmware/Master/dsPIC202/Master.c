@@ -97,6 +97,7 @@ unsigned short banInicioMuestreo;
 void ConfiguracionPrincipal();
 void Muestrear();
 void InterrupcionP1(unsigned short funcionSPI, unsigned short subFuncionSPI, unsigned int numBytesSPI);
+void CambiarEstadoBandera(unsigned short bandera, unsigned short estado);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -306,6 +307,68 @@ void ConfiguracionPrincipal(){
 }
 //*****************************************************************************************************************************************
 
+//*****************************************************************************************************************************************
+//Funcion para cambiar el estado de las banderas:
+void CambiarEstadoBandera(unsigned short bandera, unsigned short estado){
+
+     if (estado==1){
+         //Cambia el estado de todas las baderas para evitar posibles interferencias
+         banSPI0 = 3;
+         banSPI1 = 3;
+         banSPI2 = 3;
+         banSPI4 = 3;
+         banSPI5 = 3;
+         banSPI6 = 3;
+         banSPI7 = 3;
+         banSPI8 = 3;
+         banSPIA = 3;
+         //Activa la bandera requerida:
+         switch (bandera){
+                case 0:
+                     banSPI0 = 1;
+                     break;
+                case 1:
+                     banSPI1 = 1;
+                     break;
+                case 2:
+                     banSPI2 = 1;
+                     break;
+                case 4:
+                     banSPI4 = 1;
+                     break;
+                case 5:
+                     banSPI5 = 1;
+                     break;
+                case 6:
+                     banSPI6 = 1;
+                     break;
+                case 7:
+                     banSPI7 = 1;
+                     break;
+                case 8:
+                     banSPI8 = 1;
+                     break;
+                case 0x0A:
+                     banSPIA = 1;
+                     break;
+         }
+     }
+
+     //Limpia todas las banderas de comunicacion SPI:
+     if (estado==0){
+         banSPI0 = 0;
+         banSPI1 = 0;
+         banSPI2 = 0;
+         banSPI4 = 0;
+         banSPI5 = 0;
+         banSPI6 = 0;
+         banSPI7 = 0;
+         banSPI8 = 0;
+         banSPIA = 0;
+     }
+}
+//*****************************************************************************************************************************************
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -321,7 +384,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //************************************************************************************************************************************
      //Rutina para enviar la peticion de operacion a la RPi  (C:0xA0   F:0xF0)
      if ((banSPI0==0)&&(bufferSPI==0xA0)) {
-        banSPI0 = 1;                                                            //Activa la bandera para enviar el tipo de operacion requerido a la RPi
+        CambiarEstadoBandera(0,1);                                              //Activa la bandera para enviar el tipo de operacion requerido a la RPi
         i = 1;
         SPI1BUF = tramaSolicitudSPI[0];                                         //Carga en el buffer la funcion requerida
      }
@@ -330,7 +393,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         i++;
      }
      if ((banSPI0==1)&&(bufferSPI==0xF0)){
-        banSPI0 = 0;                                                            //Limpia la bandera
+        CambiarEstadoBandera(0,0);                                              //Limpia las banderas
      }
      //************************************************************************************************************************************
 
@@ -339,7 +402,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
 
      //Rutina para iniciar el muestreo (C:0xA1   F:0xF1):
      if ((banSPI1==0)&&(bufferSPI==0xA1)){
-        banSPI1 = 1;
+        CambiarEstadoBandera(1,1);
         i = 0;
      }
      if ((banSPI1==1)&&(bufferSPI!=0xA1)&&(bufferSPI!=0xF1)){
@@ -351,12 +414,12 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         outputPyloadRS485[0] = 0xD1;                                            //Subfuncion iniciar muestreo
         outputPyloadRS485[1] = tramaSolicitudSPI[1];                            //Payload sobrescribir SD
         EnviarTramaRS485(2, direccionRS485, 0xF2, 2, outputPyloadRS485);        //Envia la solicitud al nodo
-        banSPI1 = 0;
+        CambiarEstadoBandera(1,0);                                              //Limpia la bandera
      }
 
      //Rutina para detener el muestreo (C:0xA2   F:0xF2):
      if ((banSPI2==0)&&(bufferSPI==0xA2)){
-        banSPI2 = 1;
+        CambiarEstadoBandera(2,1);
         i = 0;
      }
      if ((banSPI2==1)&&(bufferSPI!=0xA2)&&(bufferSPI!=0xF2)){
@@ -366,7 +429,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         direccionRS485 = tramaSolicitudSPI[0];
         outputPyloadRS485[0] = 0xD2;                                            //Subfuncion detener muestreo
         EnviarTramaRS485(2, direccionRS485, 0xF2, 1, outputPyloadRS485);        //Envia la solicitud al nodo
-        banSPI2 = 0;
+        CambiarEstadoBandera(2,0);                                              //Limpia las banderas
      }
      //************************************************************************************************************************************
 
@@ -376,7 +439,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //(C:0xA4   F:0xF4)
      //Rutina para obtener la hora de la RPi:
      if ((banSPI4==0)&&(bufferSPI==0xA4)){
-         banSPI4 = 1;
+         CambiarEstadoBandera(4,1);
          j = 0;
      }
      if ((banSPI4==1)&&(bufferSPI!=0xA4)&&(bufferSPI!=0xF4)){
@@ -384,7 +447,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         j++;
      }
      if ((banSPI4==1)&&(bufferSPI==0xF4)){
-        banSPI4 = 0;                                                            //Limpia la bandera
+        CambiarEstadoBandera(4,0);                                              //Limpia las banderas
         horaSistema = RecuperarHoraRPI(tiempoRPI);                              //Recupera la hora de la RPi
         fechaSistema = RecuperarFechaRPI(tiempoRPI);                            //Recupera la fecha de la RPi
         DS3234_setDate(horaSistema, fechaSistema);                              //Configura la hora en el RTC
@@ -400,7 +463,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //(C:0xA5   F:0xF5)
      //Rutina para enviar la hora local a la RPi:
      if ((banSPI5==0)&&(bufferSPI==0xA5)){
-        banSPI5 = 1;
+        CambiarEstadoBandera(5,1);
         j = 0;
         SPI1BUF = fuenteReloj;                                                  //Envia el indicador de fuente de reloj (0:RTC, 1:GPS)
      }
@@ -409,19 +472,19 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         j++;
      }
      if ((banSPI5==1)&&(bufferSPI==0xF5)){
-        banSPI5 = 0;
+        CambiarEstadoBandera(5,0);                                              //Limpia las banderas
      }
 
      //(C:0xA6   F:0xF6)
      //Rutina para obtener la referencia de tiempo (1=GPS, 2=RTC):
      if ((banSPI6==0)&&(bufferSPI==0xA6)){
-        banSPI6 = 1;
+        CambiarEstadoBandera(6,1);
      }
      if ((banSPI6==1)&&(bufferSPI!=0xA6)&&(bufferSPI!=0xF6)){
         referenciaTiempo =  bufferSPI;                                          //Recupera la opcion de referencia de tiempo solicitada
      }
      if ((banSPI6==1)&&(bufferSPI==0xF6)){
-        banSPI6 = 0;
+        CambiarEstadoBandera(6,0);                                              //Limpia las banderas
         banSetReloj = 1;                                                        //Activa esta bandera para usar la hora/fecha recuperada
         banRespuestaPi = 1;                                                     //Activa esta bandera para enviar una respuesta a la RPi
         if (referenciaTiempo==1){
@@ -445,31 +508,24 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //(C:0xA7   F:0xF7)
      //Rutina para enviar la solicitud de tiempo a los nodos:
      if ((banSPI7==0)&&(bufferSPI==0xA7)){
-        banSPI7 = 1;
+        CambiarEstadoBandera(7,1);
+        i = 0;
      }
      if ((banSPI7==1)&&(bufferSPI!=0xA7)&&(bufferSPI!=0xF7)){
-        direccionRS485 =  bufferSPI;                                            //Recupera la direccion del nodo solicitado
+        tramaSolicitudSPI[i] = bufferSPI;
      }
      if ((banSPI7==1)&&(bufferSPI==0xF7)){
-        banSPI7 = 0;
+        direccionRS485 =  tramaSolicitudSPI[i];
         outputPyloadRS485[0] = 0xD2;                                            //Llena el pyload de salidas con la subfuncion solicitada
-        banRespuestaPi = 1;
         EnviarTramaRS485(2, direccionRS485, 0xF1, 1, outputPyloadRS485);        //Envia la solicitud al nodo
+        banRespuestaPi = 1;
+        CambiarEstadoBandera(7,0);                                              //Limpia las banderas
      }
 
      //(C:0xA8   F:0xF8)
      //Rutina de reenvio de instrucciones a los nodos (C:0xA8   F:0xF8):
      if ((banSPI8==0)&&(bufferSPI==0xA8)){
-        //Cambia el estado de las otras banderas para evitar interferencias:
-        banSPI0 = 2;
-        banSPI1 = 2;
-        banSPI2 = 2;
-        banSPI4 = 2;
-        banSPI5 = 2;
-        banSPI6 = 2;
-        banSPI7 = 2;
-        banSPIA = 2;
-        banSPI8 = 1;                                                            //Activa la bandera para recuperar los datos de cabecera
+        CambiarEstadoBandera(8,1);
         i = 0;
      }
      //Recupera la cabecera de datos (cabecera, direccion, funcion, #datos):
@@ -492,15 +548,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      }
      //Procesa la solicitud:
      if ((banSPI8==2)&&(bufferSPI==0xF8)&&(i>numDatosRS485)){
-        banSPI0 = 0;
-        banSPI1 = 0;
-        banSPI2 = 0;
-        banSPI4 = 0;
-        banSPI5 = 0;
-        banSPI6 = 0;
-        banSPI7 = 0;
-        banSPIA = 0;
-        banSPI8 = 0;
+        CambiarEstadoBandera(8,0);                                              //Limpia las banderas
         //Llena la trama outputPyloadRS485 con los datos de solicitud:
         if (numDatosRS485>1){
             for (x=0;x<numDatosRS485;x++){
@@ -523,7 +571,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //(C:0xAA   F:0xFA)
      //Rutina para enviar el contenido del pyload de la trama RS485 a la RPi:
      if ((banSPIA==0)&&(bufferSPI==0xAA)){
-        banSPIA = 1;
+        CambiarEstadoBandera(0x0A,1);
         SPI1BUF = inputPyloadRS485[0];
         i = 1;
      }
@@ -532,7 +580,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         i++;
      }
      if ((banSPIA==1)&&(bufferSPI==0xFA)){
-        banSPIA = 0;
+        CambiarEstadoBandera(0x0A,0);                                           //Limpia las banderas
      }
 
      //************************************************************************************************************************************
