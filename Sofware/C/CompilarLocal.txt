@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo "Iniciando compilacion"
+
+gcc CalcularSector_V01.c -o calcularsector -lbcm2835 -lwiringPi
+gcc InformacionSectores.c -o informacionsectores -lbcm2835 -lwiringPi 
+gcc InspeccionarSector_V2.c -o inspeccionarsector -lbcm2835 -lwiringPi
+gcc LeerAceleracion_V30.c -o leeraceleracion -lbcm2835 -lwiringPi 
+gcc LeerTiempoNodo_V2.c -o leertiemponodo -lbcm2835 -lwiringPi 
+gcc Muestrear.c -o muestrear -lbcm2835 -lwiringPi
+gcc ResetMaster.c -o resetmaster -lbcm2835 -lwiringPi
+gcc SincronizarTiempoSistema.c -o sincronizartiemposistema -lbcm2835 -lwiringPi
+gcc TestSectores.c -o testsectores -lbcm2835 -lwiringPi 
+
+echo "Compilacion completa"
+
+exit 0

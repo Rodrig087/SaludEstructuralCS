@@ -712,7 +712,8 @@ void ConfiguracionPrincipal(){
  tramaSolicitudSPI[3] = *(ptrnumBytesSPI+1);
 
  RP1 = 1;
- Delay_us(20);
+
+ Delay_us(100);
  RP1 = 0;
  banRespuestaPi = 0;
  }
@@ -938,6 +939,9 @@ void spi_1() org IVT_ADDR_SPI1INTERRUPT {
 
  if ((banSPI8==0)&&(bufferSPI==0xA8)){
  CambiarEstadoBandera(8,1);
+
+
+
  i = 0;
  }
 
@@ -1109,6 +1113,19 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
  TMR2 = 0;
 
  INT_SINC = ~INT_SINC;
+
+
+ banSPI0 = 0;
+ banSPI1 = 0;
+ banSPI2 = 0;
+ banSPI3 = 0;
+ banSPI4 = 0;
+ banSPI5 = 0;
+ banSPI6 = 0;
+ banSPI7 = 0;
+ banSPI8 = 0;
+ banSPI9 = 0;
+ banSPIA = 0;
 
 
  banRSI = 0;

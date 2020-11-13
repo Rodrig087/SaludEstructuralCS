@@ -136,7 +136,7 @@ void main() {
      banGPSI = 0;
      banGPSC = 0;
      banSetGPS = 0;
-         contTimeout1 = 0;
+     contTimeout1 = 0;
          
      //Tiempo:
      banSetReloj = 0;
@@ -300,7 +300,8 @@ void ConfiguracionPrincipal(){
          tramaSolicitudSPI[3] = *(ptrnumBytesSPI+1);                            //MSB numBytesSPI
          //Genera el pulso P1 para producir la interrupcion externa en la RPi:
          RP1 = 1;
-         Delay_us(20);
+         //Delay_us(20);
+         Delay_us(100);
          RP1 = 0;
          banRespuestaPi = 0;
      }
@@ -526,6 +527,9 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
      //Rutina de reenvio de instrucciones a los nodos (C:0xA8   F:0xF8):
      if ((banSPI8==0)&&(bufferSPI==0xA8)){
         CambiarEstadoBandera(8,1);
+        //Inicia el Timeout 2:
+        //T2CON.TON = 1;
+        //TMR2 = 0;
         i = 0;
      }
      //Recupera la cabecera de datos (cabecera, direccion, funcion, #datos):
@@ -565,7 +569,7 @@ void spi_1() org  IVT_ADDR_SPI1INTERRUPT {
         EnviarTramaRS485(2, direccionRS485, funcionRS485, numDatosRS485, outputPyloadRS485);
         //Inicia el Timeout 2:
         T2CON.TON = 1;
-        TMR2 = 0;                
+        TMR2 = 0;
      }
 
      //(C:0xAA   F:0xFA)
@@ -697,6 +701,19 @@ void Timer2Int() org IVT_ADDR_T2INTERRUPT{
      TMR2 = 0;
 
      INT_SINC = ~INT_SINC;//TEST
+     
+     //Limpia estas banderas para restablecer la comunicacion por SPI:
+      banSPI0 = 0;
+      banSPI1 = 0;
+      banSPI2 = 0;
+      banSPI3 = 0;
+      banSPI4 = 0;
+      banSPI5 = 0;
+      banSPI6 = 0;
+      banSPI7 = 0;
+      banSPI8 = 0;
+      banSPI9 = 0;
+      banSPIA = 0;
 
      //Limpia estas banderas para restablecer la comunicacion por RS485:
      banRSI = 0;

@@ -119,6 +119,8 @@ int ConfiguracionPrincipal(){
 //C:0xA0    F:0xF0
 void ObtenerOperacion(){
 	
+	bcm2835_delayMicroseconds(200);
+	
 	unsigned short funcionSPI;
 	unsigned short subFuncionSPI;
 	unsigned short numBytesMSB;

@@ -182,8 +182,13 @@ int main(int argc, char *argv[]) {
 	//Calcula el sector deseado:
 	CalcularSector();
 	
+	//**El error siempre aparece a partir de aqui**
 	//Comprueba el sector calculado:
 	contSolicitud = 0;
+	//ejemplo
+	banInspeccion = 1;
+	banCalculoCompleto = 0;
+	//fin ejemplo
 	while (banCalculoCompleto!=1){
 		while((contSolicitud<6)&&(banCalculoCompleto==0)){
 			if (banInspeccion==1){
@@ -264,6 +269,10 @@ int ConfiguracionPrincipal(){
 //C:0xA0    F:0xF0
 void ObtenerOperacion(){
 	
+	printf(".");
+	
+	bcm2835_delayMicroseconds(200);
+	
 	unsigned short funcionSPI;
 	unsigned short subFuncionSPI;
 	unsigned short numBytesMSB;
@@ -287,6 +296,8 @@ void ObtenerOperacion(){
 
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
+	
+	printf(".\n");
 	
 	//printf("Funcion: %X\n", funcionSPI);
 	//printf("Subfuncion: %X\n", subFuncionSPI);
@@ -313,7 +324,8 @@ void ObtenerOperacion(){
 			   }			   
                break;
           default:
-               printf("Error: Operacion invalida\n");  
+               printf("Error: Operacion invalida %X\n", funcionSPI);  
+			   system("./resetmaster");
 			   exit (-1);
                break;
     }
@@ -323,7 +335,7 @@ void ObtenerOperacion(){
 //C:0xA8	F:0xF8
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
-	printf("\nEnviando solicitud al nodo...\n");
+	printf("\nEnviando solicitud al nodo..");
 			
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
@@ -522,8 +534,6 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 		}
 		
 	}
-	
-	
 		
 	//Guarda el sector en el pyload de peticion:
 	pyloadNodo[0] = subFuncionNodo;
@@ -531,6 +541,10 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 	pyloadNodo[2] = *(ptrSectorReq+1);
 	pyloadNodo[3] = *(ptrSectorReq+2);
 	pyloadNodo[4] = *(ptrSectorReq+3);
+	
+	//prueba
+	delay(10);
+	
 	banInspeccion = 1;	
 	
 }
@@ -584,6 +598,8 @@ void CalcularSector(){
 		pyloadNodo[4] = *(ptrSectorReq+3);
 		printf("Sector Calculado: %d\n", sectorReq);
 	}
+	
+	banInspeccion = 1;
 
 }
 
@@ -736,12 +752,15 @@ void RecuperarEvento(unsigned char* pyloadRS485){
 	}
 	
 	
-	printf("\nInspeccionando sector: %d\n", sectorReq);
+	printf("\nRecuperando sector: %d\n", sectorReq);
 	pyloadNodo[0] = subFuncionNodo;
 	pyloadNodo[1] = *ptrSectorReq;
 	pyloadNodo[2] = *(ptrSectorReq+1);
 	pyloadNodo[3] = *(ptrSectorReq+2);
 	pyloadNodo[4] = *(ptrSectorReq+3);
+	
+	//prueba
+	delay(10);
 	banSolicitud = 0;
 	
 }
@@ -821,48 +840,7 @@ void GuardarTrama(unsigned char* pyloadRS485_2){
 	for (x=0;x<2506;x++){
 		tramaAceleracion[x] = pyloadRS485_2[x+7];
 	}
-	
-	/*
-	//prueba
-	printf("Contenido de la trama guardada: ");
-	printf("| Fuente de reloj: ");
-	if (tramaAceleracion[0]==0){
-		//printf("RPi");
-		strcpy(fuenteTiempoNodo,"RPi");
-	} 
-	if (tramaAceleracion[0]==1){
-		//printf("GPS");
-		strcpy(fuenteTiempoNodo,"GPS");
-	}
-	if (tramaAceleracion[0]==2){
-		//printf("RTC");
-		strcpy(fuenteTiempoNodo,"RTC");
-	}
-	if (tramaAceleracion[0]==5){
-		//printf("RTC_E5");
-		strcpy(fuenteTiempoNodo,"RTC_E5");
-	}
-	if (tramaAceleracion[0]==6){
-		//printf("RTC_E6");
-		strcpy(fuenteTiempoNodo,"RTC_E6");
-	}
-	if (tramaAceleracion[0]==7){
-		//printf("RTC_E7");
-		strcpy(fuenteTiempoNodo,"RTC_E7");
-	}
-	
-	printf("%s", fuenteTiempoNodo);
-	
-	printf(" | ");
-	printf("%0.2d/", tramaAceleracion[2500]);			//hh
-	printf("%0.2d/", tramaAceleracion[2501]);			//mm
-	printf("%0.2d ", tramaAceleracion[2502]);			//dd
-	printf("%0.2d:", tramaAceleracion[2503]);			//hh
-	printf("%0.2d:", tramaAceleracion[2504]);			//mm
-	printf("%0.2d", tramaAceleracion[2505]);			//ss
-	printf(" |\n");
-	*/
-		
+			
 	//Guarda la trama en el archivo binario:
 	if (fp!=NULL){
 		do{
