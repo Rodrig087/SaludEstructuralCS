@@ -1,0 +1,13 @@
+**Para probar los programas hay que agregar los archivos binarios a la carpeta Eventos o modificar la variable nombreEstacion en los programas .py
+
+**GraficarEvento: 
+- Funcion: Grafica el evento descargado de los nodos
+- Parametros de entrada: Nombre del archivo binario
+
+**GraficarRegistroContinuo:
+- Funcion: Grafica con un factor de diezmado de 25 el contenido de todo el archivo binario para permitir localizar los eventos de forma visual
+- Parametros de entrada: Nombre del directorio, nombre del archivo binario  
+
+**GraficarEventoTxt:
+- Funcion: Grafica el evento convertido de binario a txt
+- Parametros de entrada: Nombre del archivo de texto

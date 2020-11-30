@@ -263,7 +263,7 @@ void ObtenerTiempoMaster(){
 						printf("**Error 5: Problemas al recuperar la trama GPRMC del GPS\n");
 						break;
 				case 6:
-						printf("**Error 6: La hora del GPS es invalida\n");
+						printf("**Error 6: La hora del GPS no esta comprobada\n");//Corregir en el concentrador//
 						break;
 				case 7:
 						printf("**Error 7: El GPS tarda en responder\n");
@@ -342,9 +342,16 @@ void SetRelojLocal(unsigned char* tramaTiempo){
 
 //**************************************************************************************************************************************
 
-//Fuenrtes de reloj: 
+//Fuentes de reloj: 
 //0->Red, 1->GPS, 2->RTC
-//Configurar reloj: sudo date --set '2020-09-08 16:10:00'
+
+//Errores:
+//Error E5: Problemas al recuperar la trama GPRMC del GPS
+//Error E6: La hora del GPS es invalida
+//Error E7: El GPS tarda en responder
+
+//Configurar reloj RPi: 
+//sudo date --set '2020-09-08 16:10:00'
 
 
 

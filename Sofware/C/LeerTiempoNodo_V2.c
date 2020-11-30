@@ -311,7 +311,7 @@ void ImprimirTiempoNodo(unsigned char* pyloadRS485){
 		printf("RTC_E5 ");
 	}
 	if (fuenteTiempoNodo==6){
-		printf("RTC_E6 ");
+		printf("GPS_E6 ");
 	}
 	if (fuenteTiempoNodo==7){
 		printf("RTC_E7 ");
@@ -329,7 +329,16 @@ void ImprimirTiempoNodo(unsigned char* pyloadRS485){
 }
 //**************************************************************************************************************************************
 
+//Fuentes de reloj: 
+//0->Red, 1->GPS, 2->RTC
 
+//Errores:
+//Error E5: Problemas al recuperar la trama GPRMC del GPS
+//Error E6: La hora del GPS es invalida
+//Error E7: El GPS tarda en responder
+
+//Configurar reloj RPi: 
+//sudo date --set '2020-09-08 16:10:00'
 
 
 

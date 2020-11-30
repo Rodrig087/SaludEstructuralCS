@@ -1,6 +1,6 @@
 //Compilar:
-//gcc RegistroContinuo_V32.c -o /home/pi/Ejecutables/acelerografo -lbcm2835 -lwiringPi -lm 
-//gcc RegistroContinuo_V32.c -o acelerografo -lbcm2835 -lwiringPi -lm 
+//gcc RegistroContinuo_V33.c -o /home/pi/Ejecutables/acelerografo -lbcm2835 -lwiringPi -lm 
+//gcc RegistroContinuo_V33.c -o acelerografo -lbcm2835 -lwiringPi -lm 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -145,8 +145,8 @@ int main(void) {
 	ConfiguracionPrincipal(); 
 	sleep(1);
 	//ObtenerTiempoGPS();
-	ObtenerTiempoRTC();
-	//EnviarTiempoLocal();
+	//ObtenerTiempoRTC();
+	EnviarTiempoLocal();
 	sleep(5);
 	
 	// Llama al metodo para inicializar el filtro FIR

@@ -788,6 +788,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
 
      //Realiza el procesamiento de la informacion del  pyload:                  //Aqui se realiza cualquier accion con el pyload recuperado
      if (banGPSC==1){
+        /*
         //Verifica que el caracter 12 sea igual a "A" lo cual comprueba que los datos son validos:
         if (tramaGPS[12]==0x41) {
            for (x=0;x<6;x++){
@@ -815,7 +816,34 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
            fuenteReloj = 6;                                                     //**Indica que se obtuvo la hora del RTC
            InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos
         }
-
+        */
+        
+        //Prueba
+        //Guarda los datos de hhmmss:
+        for (x=0;x<6;x++){
+           datosGPS[x] = tramaGPS[x+1];
+        }
+        //Guarda los datos de DDMMAA en la trama datosGPS:
+        for (x=44;x<54;x++){                                                    //Busca el simbolo "," a partir de la posicion 44
+            if (tramaGPS[x]==0x2C){
+                for (y=0;y<6;y++){
+                    datosGPS[6+y] = tramaGPS[x+y+1];
+                }
+            }
+        }
+        horaSistema = RecuperarHoraGPS(datosGPS);                               //Recupera la hora del GPS
+        fechaSistema = RecuperarFechaGPS(datosGPS);                             //Recupera la fecha del GPS
+        AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del gps
+        banSyncReloj = 1;
+        banSetReloj = 0;
+        //Verifica que el caracter 12 sea igual a "A" lo cual comprueba que los datos son validos:
+        if (tramaGPS[12]==0x41) {
+            fuenteReloj = 1;                                                    //Indica que se obtuvo la hora correcta del GPS
+        } else {
+            fuenteReloj = 6;                                                    //Indica que se obtuvo la hora del GPS pero que puede ser erronea
+        }
+        //Fin prueba
+        
         banGPSI = 0;
         banGPSC = 0;
         i_gps = 0;

@@ -1,0 +1,4 @@
+Para usar el programa hay que colocar el archivo binario descargado de los nodos en la carpeta Eventos.
+Los archivos de texto resultantes apareceran en la carpeta Hora Evento
+
+Parametros de entrada: Nombre del archivo binario sin la extension

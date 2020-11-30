@@ -1200,8 +1200,7 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
 
 
  if (banGPSC==1){
-
- if (tramaGPS[12]==0x41) {
+#line 823 "C:/Users/milto/Milton/RSA/Git/Salud Estructural/SaludEstructuralCS/Firmware/Master/dsPIC502/Master.c"
  for (x=0;x<6;x++){
  datosGPS[x] = tramaGPS[x+1];
  }
@@ -1216,17 +1215,15 @@ void urx_1() org IVT_ADDR_U1RXINTERRUPT {
  horaSistema = RecuperarHoraGPS(datosGPS);
  fechaSistema = RecuperarFechaGPS(datosGPS);
  AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
- fuenteReloj = 1;
  banSyncReloj = 1;
  banSetReloj = 0;
- } else {
 
- horaSistema = RecuperarHoraRTC();
- fechaSistema = RecuperarFechaRTC();
- AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);
+ if (tramaGPS[12]==0x41) {
+ fuenteReloj = 1;
+ } else {
  fuenteReloj = 6;
- InterrupcionP1(0xB1,0xD1,8);
  }
+
 
  banGPSI = 0;
  banGPSC = 0;

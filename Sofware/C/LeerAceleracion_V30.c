@@ -676,7 +676,7 @@ void RecuperarEvento(unsigned char* pyloadRS485){
 				   strcpy(fuenteTiempoNodo,"RTC_E5");   
 				   break;
 			  case 6:
-				   strcpy(fuenteTiempoNodo,"RTC_E6");   
+				   strcpy(fuenteTiempoNodo,"GPS_E6");   
 				   break;
 			  case 7:
 				   strcpy(fuenteTiempoNodo,"RTC_E7");   
@@ -775,7 +775,7 @@ void CrearArchivo(unsigned short idConc, unsigned short idNodo, unsigned short d
 	char tiempoNodo[6];
 	char nombreArchivo[50];
 	char idArchivo[8];
-	char tiempoNodoStr[20];
+	char tiempoNodoStr[25];
 	char duracionEventoStr[4];
 	char ext[5];
 	
@@ -792,13 +792,13 @@ void CrearArchivo(unsigned short idConc, unsigned short idNodo, unsigned short d
 			   strcpy(fuenteTiempoNodo,"RTC");   
                break;
 	      case 5:
-			   strcpy(fuenteTiempoNodo,"RTC_E5");   
+			   strcpy(fuenteTiempoNodo,"RTCE5");   
                break;
 		  case 6:
-			   strcpy(fuenteTiempoNodo,"RTC_E6");   
+			   strcpy(fuenteTiempoNodo,"GPSE6");   
                break;
 		  case 7:
-			   strcpy(fuenteTiempoNodo,"RTC_E7");   
+			   strcpy(fuenteTiempoNodo,"RTCE7");   
                break;
           default:
                strcpy(fuenteTiempoNodo,"indet");
@@ -855,7 +855,16 @@ void GuardarTrama(unsigned char* pyloadRS485_2){
 
 //**************************************************************************************************************************************
 
+//Fuentes de reloj: 
+//0->Red, 1->GPS, 2->RTC
 
+//Errores:
+//Error E5: Problemas al recuperar la trama GPRMC del GPS
+//Error E6: La hora del GPS es invalida
+//Error E7: El GPS tarda en responder
+
+//Configurar reloj RPi: 
+//sudo date --set '2020-09-08 16:10:00'
 
 
 

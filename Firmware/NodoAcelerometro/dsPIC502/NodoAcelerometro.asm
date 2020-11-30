@@ -5178,8 +5178,6 @@ L_urx_1322:
 	PUSH	W0
 	CALL	_EnviarTramaRS485
 	SUB	#2, W15
-;NodoAcelerometro.c,1116 :: 		TEST = ~TEST;
-	BTG	LATA2_bit, BitPos(LATA2_bit+0)
 ;NodoAcelerometro.c,1117 :: 		}
 L_urx_1318:
 ;NodoAcelerometro.c,1118 :: 		break;

@@ -1,0 +1,1 @@
+Cuando se pierde la conexion con el GPS y trabaja con el RTC se pierde el prefijo del nombre del archivo

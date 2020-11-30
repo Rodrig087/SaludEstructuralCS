@@ -4082,24 +4082,16 @@ L__urx_1358:
 	BRA Z	L__urx_1524
 	GOTO	L_urx_1192
 L__urx_1524:
-;Master.c,792 :: 		if (tramaGPS[12]==0x41) {
-	MOV	#lo_addr(_tramaGPS+12), W0
-	MOV.B	[W0], W1
-	MOV.B	#65, W0
-	CP.B	W1, W0
-	BRA Z	L__urx_1525
-	GOTO	L_urx_1193
-L__urx_1525:
-;Master.c,793 :: 		for (x=0;x<6;x++){
+;Master.c,823 :: 		for (x=0;x<6;x++){
 	CLR	W0
 	MOV	W0, _x
-L_urx_1194:
+L_urx_1193:
 	MOV	_x, W0
 	CP	W0, #6
-	BRA LTU	L__urx_1526
-	GOTO	L_urx_1195
-L__urx_1526:
-;Master.c,794 :: 		datosGPS[x] = tramaGPS[x+1];                                     //Guarda los datos de hhmmss
+	BRA LTU	L__urx_1525
+	GOTO	L_urx_1194
+L__urx_1525:
+;Master.c,824 :: 		datosGPS[x] = tramaGPS[x+1];
 	MOV	#lo_addr(_datosGPS), W1
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], W2
@@ -4108,43 +4100,43 @@ L__urx_1526:
 	MOV	#lo_addr(_tramaGPS), W0
 	ADD	W0, W1, W0
 	MOV.B	[W0], [W2]
-;Master.c,793 :: 		for (x=0;x<6;x++){
+;Master.c,823 :: 		for (x=0;x<6;x++){
 	MOV	#1, W1
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], [W0]
-;Master.c,795 :: 		}
-	GOTO	L_urx_1194
-L_urx_1195:
-;Master.c,797 :: 		for (x=44;x<54;x++){
+;Master.c,825 :: 		}
+	GOTO	L_urx_1193
+L_urx_1194:
+;Master.c,827 :: 		for (x=44;x<54;x++){                                                    //Busca el simbolo "," a partir de la posicion 44
 	MOV	#44, W0
 	MOV	W0, _x
-L_urx_1197:
+L_urx_1196:
 	MOV	#54, W1
 	MOV	#lo_addr(_x), W0
 	CP	W1, [W0]
-	BRA GTU	L__urx_1527
-	GOTO	L_urx_1198
-L__urx_1527:
-;Master.c,798 :: 		if (tramaGPS[x]==0x2C){
+	BRA GTU	L__urx_1526
+	GOTO	L_urx_1197
+L__urx_1526:
+;Master.c,828 :: 		if (tramaGPS[x]==0x2C){
 	MOV	#lo_addr(_tramaGPS), W1
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], W0
 	MOV.B	[W0], W1
 	MOV.B	#44, W0
 	CP.B	W1, W0
-	BRA Z	L__urx_1528
-	GOTO	L_urx_1200
-L__urx_1528:
-;Master.c,799 :: 		for (y=0;y<6;y++){
+	BRA Z	L__urx_1527
+	GOTO	L_urx_1199
+L__urx_1527:
+;Master.c,829 :: 		for (y=0;y<6;y++){
 	CLR	W0
 	MOV	W0, _y
-L_urx_1201:
+L_urx_1200:
 	MOV	_y, W0
 	CP	W0, #6
-	BRA LTU	L__urx_1529
-	GOTO	L_urx_1202
-L__urx_1529:
-;Master.c,800 :: 		datosGPS[6+y] = tramaGPS[x+y+1];                         //Guarda los datos de DDMMAA en la trama datosGPS
+	BRA LTU	L__urx_1528
+	GOTO	L_urx_1201
+L__urx_1528:
+;Master.c,830 :: 		datosGPS[6+y] = tramaGPS[x+y+1];
 	MOV	_y, W0
 	ADD	W0, #6, W1
 	MOV	#lo_addr(_datosGPS), W0
@@ -4156,33 +4148,33 @@ L__urx_1529:
 	MOV	#lo_addr(_tramaGPS), W0
 	ADD	W0, W1, W0
 	MOV.B	[W0], [W2]
-;Master.c,799 :: 		for (y=0;y<6;y++){
+;Master.c,829 :: 		for (y=0;y<6;y++){
 	MOV	#1, W1
 	MOV	#lo_addr(_y), W0
 	ADD	W1, [W0], [W0]
-;Master.c,801 :: 		}
-	GOTO	L_urx_1201
-L_urx_1202:
-;Master.c,802 :: 		}
-L_urx_1200:
-;Master.c,797 :: 		for (x=44;x<54;x++){
+;Master.c,831 :: 		}
+	GOTO	L_urx_1200
+L_urx_1201:
+;Master.c,832 :: 		}
+L_urx_1199:
+;Master.c,827 :: 		for (x=44;x<54;x++){                                                    //Busca el simbolo "," a partir de la posicion 44
 	MOV	#1, W1
 	MOV	#lo_addr(_x), W0
 	ADD	W1, [W0], [W0]
-;Master.c,803 :: 		}
-	GOTO	L_urx_1197
-L_urx_1198:
-;Master.c,804 :: 		horaSistema = RecuperarHoraGPS(datosGPS);                            //Recupera la hora del GPS
+;Master.c,833 :: 		}
+	GOTO	L_urx_1196
+L_urx_1197:
+;Master.c,834 :: 		horaSistema = RecuperarHoraGPS(datosGPS);                               //Recupera la hora del GPS
 	MOV	#lo_addr(_datosGPS), W10
 	CALL	_RecuperarHoraGPS
 	MOV	W0, _horaSistema
 	MOV	W1, _horaSistema+2
-;Master.c,805 :: 		fechaSistema = RecuperarFechaGPS(datosGPS);                          //Recupera la fecha del GPS
+;Master.c,835 :: 		fechaSistema = RecuperarFechaGPS(datosGPS);                             //Recupera la fecha del GPS
 	MOV	#lo_addr(_datosGPS), W10
 	CALL	_RecuperarFechaGPS
 	MOV	W0, _fechaSistema
 	MOV	W1, _fechaSistema+2
-;Master.c,806 :: 		AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del gps
+;Master.c,836 :: 		AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);                //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del gps
 	MOV.D	W0, W12
 	MOV	_horaSistema, W10
 	MOV	_horaSistema+2, W11
@@ -4190,64 +4182,51 @@ L_urx_1198:
 	PUSH	W0
 	CALL	_AjustarTiempoSistema
 	SUB	#2, W15
-;Master.c,807 :: 		fuenteReloj = 1;                                                     //Indica que se obtuvo la hora del GPS
-	MOV	#lo_addr(_fuenteReloj), W1
-	MOV.B	#1, W0
-	MOV.B	W0, [W1]
-;Master.c,808 :: 		banSyncReloj = 1;
+;Master.c,837 :: 		banSyncReloj = 1;
 	MOV	#lo_addr(_banSyncReloj), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;Master.c,809 :: 		banSetReloj = 0;
+;Master.c,838 :: 		banSetReloj = 0;
 	MOV	#lo_addr(_banSetReloj), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,810 :: 		} else {
+;Master.c,840 :: 		if (tramaGPS[12]==0x41) {
+	MOV	#lo_addr(_tramaGPS+12), W0
+	MOV.B	[W0], W1
+	MOV.B	#65, W0
+	CP.B	W1, W0
+	BRA Z	L__urx_1529
+	GOTO	L_urx_1203
+L__urx_1529:
+;Master.c,841 :: 		fuenteReloj = 1;                                                    //Indica que se obtuvo la hora correcta del GPS
+	MOV	#lo_addr(_fuenteReloj), W1
+	MOV.B	#1, W0
+	MOV.B	W0, [W1]
+;Master.c,842 :: 		} else {
 	GOTO	L_urx_1204
-L_urx_1193:
-;Master.c,812 :: 		horaSistema = RecuperarHoraRTC();                                    //Recupera la hora del RTC
-	CALL	_RecuperarHoraRTC
-	MOV	W0, _horaSistema
-	MOV	W1, _horaSistema+2
-;Master.c,813 :: 		fechaSistema = RecuperarFechaRTC();                                  //Recupera la fecha del RTC
-	CALL	_RecuperarFechaRTC
-	MOV	W0, _fechaSistema
-	MOV	W1, _fechaSistema+2
-;Master.c,814 :: 		AjustarTiempoSistema(horaSistema, fechaSistema, tiempo);             //Actualiza los datos de la trama tiempo con la hora y fecha recuperadas del RTC
-	MOV.D	W0, W12
-	MOV	_horaSistema, W10
-	MOV	_horaSistema+2, W11
-	MOV	#lo_addr(_tiempo), W0
-	PUSH	W0
-	CALL	_AjustarTiempoSistema
-	SUB	#2, W15
-;Master.c,815 :: 		fuenteReloj = 6;                                                     //**Indica que se obtuvo la hora del RTC
+L_urx_1203:
+;Master.c,843 :: 		fuenteReloj = 6;                                                    //Indica que se obtuvo la hora del GPS pero que puede ser erronea
 	MOV	#lo_addr(_fuenteReloj), W1
 	MOV.B	#6, W0
 	MOV.B	W0, [W1]
-;Master.c,816 :: 		InterrupcionP1(0xB1,0xD1,8);                                         //Envia la hora local a la RPi y a los nodos
-	MOV	#8, W12
-	MOV.B	#209, W11
-	MOV.B	#177, W10
-	CALL	_InterrupcionP1
-;Master.c,817 :: 		}
+;Master.c,844 :: 		}
 L_urx_1204:
-;Master.c,819 :: 		banGPSI = 0;
+;Master.c,847 :: 		banGPSI = 0;
 	MOV	#lo_addr(_banGPSI), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,820 :: 		banGPSC = 0;
+;Master.c,848 :: 		banGPSC = 0;
 	MOV	#lo_addr(_banGPSC), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,821 :: 		i_gps = 0;
+;Master.c,849 :: 		i_gps = 0;
 	CLR	W0
 	MOV	W0, _i_gps
-;Master.c,822 :: 		U1MODE.UARTEN = 0;                                                      //Desactiva el UART1
+;Master.c,850 :: 		U1MODE.UARTEN = 0;                                                      //Desactiva el UART1
 	BCLR	U1MODE, #15
-;Master.c,824 :: 		}
+;Master.c,852 :: 		}
 L_urx_1192:
-;Master.c,826 :: 		}
+;Master.c,854 :: 		}
 L_end_urx_1:
 	POP	W13
 	POP	W12
@@ -4272,58 +4251,58 @@ _urx_2:
 	REPEAT	#12
 	PUSH	[W0++]
 
-;Master.c,831 :: 		void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
-;Master.c,834 :: 		U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
+;Master.c,859 :: 		void urx_2() org  IVT_ADDR_U2RXINTERRUPT {
+;Master.c,862 :: 		U2RXIF_bit = 0;                                                            //Limpia la bandera de interrupcion por UART2
 	PUSH	W10
 	PUSH	W11
 	PUSH	W12
 	BCLR	U2RXIF_bit, BitPos(U2RXIF_bit+0)
-;Master.c,835 :: 		byteRS485 = U2RXREG;                                                       //Lee el byte de la trama enviada por el nodo
+;Master.c,863 :: 		byteRS485 = U2RXREG;                                                       //Lee el byte de la trama enviada por el nodo
 	MOV	#lo_addr(_byteRS485), W1
 	MOV.B	U2RXREG, WREG
 	MOV.B	W0, [W1]
-;Master.c,836 :: 		U2STA.OERR = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
+;Master.c,864 :: 		U2STA.OERR = 0;                                                            //Limpia este bit para limpiar el FIFO UART2
 	BCLR	U2STA, #1
-;Master.c,839 :: 		if (banRSI==2){
+;Master.c,867 :: 		if (banRSI==2){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #2
 	BRA Z	L__urx_2531
 	GOTO	L_urx_2205
 L__urx_2531:
-;Master.c,841 :: 		if (i_rs485<(numDatosRS485)){
+;Master.c,869 :: 		if (i_rs485<(numDatosRS485)){
 	MOV	_i_rs485, W1
 	MOV	#lo_addr(_numDatosRS485), W0
 	CP	W1, [W0]
 	BRA LTU	L__urx_2532
 	GOTO	L_urx_2206
 L__urx_2532:
-;Master.c,842 :: 		inputPyloadRS485[i_rs485] = byteRS485;
+;Master.c,870 :: 		inputPyloadRS485[i_rs485] = byteRS485;
 	MOV	#lo_addr(_inputPyloadRS485), W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], W1
 	MOV	#lo_addr(_byteRS485), W0
 	MOV.B	[W0], [W1]
-;Master.c,843 :: 		i_rs485++;
+;Master.c,871 :: 		i_rs485++;
 	MOV	#1, W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], [W0]
-;Master.c,844 :: 		} else {
+;Master.c,872 :: 		} else {
 	GOTO	L_urx_2207
 L_urx_2206:
-;Master.c,845 :: 		banRSI = 0;                                                          //Limpia la bandera de inicio de trama
+;Master.c,873 :: 		banRSI = 0;                                                          //Limpia la bandera de inicio de trama
 	MOV	#lo_addr(_banRSI), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,846 :: 		banRSC = 1;                                                          //Activa la bandera de trama completa
+;Master.c,874 :: 		banRSC = 1;                                                          //Activa la bandera de trama completa
 	MOV	#lo_addr(_banRSC), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;Master.c,847 :: 		}
+;Master.c,875 :: 		}
 L_urx_2207:
-;Master.c,848 :: 		}
+;Master.c,876 :: 		}
 L_urx_2205:
-;Master.c,851 :: 		if ((banRSI==0)&&(banRSC==0)){
+;Master.c,879 :: 		if ((banRSI==0)&&(banRSC==0)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #0
@@ -4337,7 +4316,7 @@ L__urx_2533:
 	GOTO	L__urx_2363
 L__urx_2534:
 L__urx_2362:
-;Master.c,852 :: 		if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
+;Master.c,880 :: 		if (byteRS485==0x3A){                                                   //Verifica si el primer byte recibido sea la cabecera de trama
 	MOV	#lo_addr(_byteRS485), W0
 	MOV.B	[W0], W1
 	MOV.B	#58, W0
@@ -4345,19 +4324,19 @@ L__urx_2362:
 	BRA Z	L__urx_2535
 	GOTO	L_urx_2211
 L__urx_2535:
-;Master.c,853 :: 		banRSI = 1;
+;Master.c,881 :: 		banRSI = 1;
 	MOV	#lo_addr(_banRSI), W1
 	MOV.B	#1, W0
 	MOV.B	W0, [W1]
-;Master.c,854 :: 		i_rs485 = 0;
+;Master.c,882 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;Master.c,855 :: 		}
+;Master.c,883 :: 		}
 L_urx_2211:
-;Master.c,851 :: 		if ((banRSI==0)&&(banRSC==0)){
+;Master.c,879 :: 		if ((banRSI==0)&&(banRSC==0)){
 L__urx_2364:
 L__urx_2363:
-;Master.c,857 :: 		if ((banRSI==1)&&(i_rs485<5)){
+;Master.c,885 :: 		if ((banRSI==1)&&(i_rs485<5)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
@@ -4370,20 +4349,20 @@ L__urx_2536:
 	GOTO	L__urx_2365
 L__urx_2537:
 L__urx_2361:
-;Master.c,858 :: 		tramaCabeceraRS485[i_rs485] = byteRS485;                                 //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
+;Master.c,886 :: 		tramaCabeceraRS485[i_rs485] = byteRS485;                                 //Recupera los datos de cabecera de la trama UART: [0x3A, Direccion, Funcion, NumeroDatos]
 	MOV	#lo_addr(_tramaCabeceraRS485), W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], W1
 	MOV	#lo_addr(_byteRS485), W0
 	MOV.B	[W0], [W1]
-;Master.c,859 :: 		i_rs485++;
+;Master.c,887 :: 		i_rs485++;
 	MOV	#1, W1
 	MOV	#lo_addr(_i_rs485), W0
 	ADD	W1, [W0], [W0]
-;Master.c,857 :: 		if ((banRSI==1)&&(i_rs485<5)){
+;Master.c,885 :: 		if ((banRSI==1)&&(i_rs485<5)){
 L__urx_2366:
 L__urx_2365:
-;Master.c,861 :: 		if ((banRSI==1)&&(i_rs485==5)){
+;Master.c,889 :: 		if ((banRSI==1)&&(i_rs485==5)){
 	MOV	#lo_addr(_banRSI), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
@@ -4396,11 +4375,11 @@ L__urx_2538:
 	GOTO	L__urx_2367
 L__urx_2539:
 L__urx_2360:
-;Master.c,863 :: 		T2CON.TON = 0;
+;Master.c,891 :: 		T2CON.TON = 0;
 	BCLR	T2CON, #15
-;Master.c,864 :: 		TMR2 = 0;
+;Master.c,892 :: 		TMR2 = 0;
 	CLR	TMR2
-;Master.c,866 :: 		if (tramaCabeceraRS485[1]==direccionRS485){
+;Master.c,894 :: 		if (tramaCabeceraRS485[1]==direccionRS485){
 	MOV	#lo_addr(_tramaCabeceraRS485+1), W0
 	MOV.B	[W0], W1
 	MOV	#lo_addr(_direccionRS485), W0
@@ -4408,79 +4387,79 @@ L__urx_2360:
 	BRA Z	L__urx_2540
 	GOTO	L_urx_2218
 L__urx_2540:
-;Master.c,867 :: 		funcionRS485 = tramaCabeceraRS485[2];
+;Master.c,895 :: 		funcionRS485 = tramaCabeceraRS485[2];
 	MOV	#lo_addr(_funcionRS485), W1
 	MOV	#lo_addr(_tramaCabeceraRS485+2), W0
 	MOV.B	[W0], [W1]
-;Master.c,868 :: 		*(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
+;Master.c,896 :: 		*(ptrnumDatosRS485) = tramaCabeceraRS485[3];                         //LSB numDatosRS485
 	MOV	#lo_addr(_tramaCabeceraRS485+3), W1
 	MOV	_ptrnumDatosRS485, W0
 	MOV.B	[W1], [W0]
-;Master.c,869 :: 		*(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
+;Master.c,897 :: 		*(ptrnumDatosRS485+1) = tramaCabeceraRS485[4];                       //MSB numDatosRS485
 	MOV	_ptrnumDatosRS485, W0
 	ADD	W0, #1, W1
 	MOV	#lo_addr(_tramaCabeceraRS485+4), W0
 	MOV.B	[W0], [W1]
-;Master.c,870 :: 		banRSI = 2;
+;Master.c,898 :: 		banRSI = 2;
 	MOV	#lo_addr(_banRSI), W1
 	MOV.B	#2, W0
 	MOV.B	W0, [W1]
-;Master.c,871 :: 		i_rs485 = 0;
+;Master.c,899 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;Master.c,872 :: 		} else {
+;Master.c,900 :: 		} else {
 	GOTO	L_urx_2219
 L_urx_2218:
-;Master.c,873 :: 		banRSI = 0;
+;Master.c,901 :: 		banRSI = 0;
 	MOV	#lo_addr(_banRSI), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,874 :: 		banRSC = 0;
+;Master.c,902 :: 		banRSC = 0;
 	MOV	#lo_addr(_banRSC), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,875 :: 		i_rs485 = 0;
+;Master.c,903 :: 		i_rs485 = 0;
 	CLR	W0
 	MOV	W0, _i_rs485
-;Master.c,876 :: 		}
+;Master.c,904 :: 		}
 L_urx_2219:
-;Master.c,861 :: 		if ((banRSI==1)&&(i_rs485==5)){
+;Master.c,889 :: 		if ((banRSI==1)&&(i_rs485==5)){
 L__urx_2368:
 L__urx_2367:
-;Master.c,880 :: 		if (banRSC==1){
+;Master.c,908 :: 		if (banRSC==1){
 	MOV	#lo_addr(_banRSC), W0
 	MOV.B	[W0], W0
 	CP.B	W0, #1
 	BRA Z	L__urx_2541
 	GOTO	L_urx_2220
 L__urx_2541:
-;Master.c,881 :: 		subFuncionRS485 = inputPyloadRS485[0];
+;Master.c,909 :: 		subFuncionRS485 = inputPyloadRS485[0];
 	MOV	#lo_addr(_subFuncionRS485), W1
 	MOV	#lo_addr(_inputPyloadRS485), W0
 	MOV.B	[W0], [W1]
-;Master.c,882 :: 		switch (funcionRS485){
+;Master.c,910 :: 		switch (funcionRS485){
 	GOTO	L_urx_2221
-;Master.c,883 :: 		case 0xF1:
+;Master.c,911 :: 		case 0xF1:
 L_urx_2223:
-;Master.c,884 :: 		InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
+;Master.c,912 :: 		InterrupcionP1(0xB1,subFuncionRS485,numDatosRS485);
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV	_numDatosRS485, W12
 	MOV.B	[W0], W11
 	MOV.B	#177, W10
 	CALL	_InterrupcionP1
-;Master.c,885 :: 		break;
+;Master.c,913 :: 		break;
 	GOTO	L_urx_2222
-;Master.c,886 :: 		case 0xF3:
+;Master.c,914 :: 		case 0xF3:
 L_urx_2224:
-;Master.c,887 :: 		InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
+;Master.c,915 :: 		InterrupcionP1(0xB3,subFuncionRS485,numDatosRS485);
 	MOV	#lo_addr(_subFuncionRS485), W0
 	MOV	_numDatosRS485, W12
 	MOV.B	[W0], W11
 	MOV.B	#179, W10
 	CALL	_InterrupcionP1
-;Master.c,888 :: 		break;
+;Master.c,916 :: 		break;
 	GOTO	L_urx_2222
-;Master.c,889 :: 		}
+;Master.c,917 :: 		}
 L_urx_2221:
 	MOV	#lo_addr(_funcionRS485), W0
 	MOV.B	[W0], W1
@@ -4497,13 +4476,13 @@ L__urx_2542:
 	GOTO	L_urx_2224
 L__urx_2543:
 L_urx_2222:
-;Master.c,891 :: 		banRSC = 0;
+;Master.c,919 :: 		banRSC = 0;
 	MOV	#lo_addr(_banRSC), W1
 	CLR	W0
 	MOV.B	W0, [W1]
-;Master.c,893 :: 		}
+;Master.c,921 :: 		}
 L_urx_2220:
-;Master.c,894 :: 		}
+;Master.c,922 :: 		}
 L_end_urx_2:
 	POP	W12
 	POP	W11

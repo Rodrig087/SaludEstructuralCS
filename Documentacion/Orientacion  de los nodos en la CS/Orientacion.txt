@@ -1,0 +1,13 @@
+
+>>Sotano
+Nodo 1: XEYN YEZN ZEXN		010 001 100	YnZnXn
+Nodo 2: XEYN YEZN ZEXN
+Nodo 3: XEZN YEYN ZE-XN		001 010 -100	ZnYn-Xn
+Nodo 4: XE-ZN YEYN ZEXN		00-1 010 100	-ZnYnXn
+
+>>Pisos
+Nodo 1: XE-YN YE-ZN ZEXN	0-10 00-1 100	Yn-ZnXn
+Nodo 2: XE-YN YE-ZN ZEXN
+
+
+

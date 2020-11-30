@@ -1113,7 +1113,7 @@ void urx_1() org  IVT_ADDR_U1RXINTERRUPT {
                         outputPyloadRS485[7] = fuenteReloj;
                         delay_ms(10);
                         EnviarTramaRS485(1, IDNODO, 0xF1, 8, outputPyloadRS485);     //Envia la hora local al Master
-                        TEST = ~TEST;
+                        //TEST = ~TEST;
                     }
                     break;
 

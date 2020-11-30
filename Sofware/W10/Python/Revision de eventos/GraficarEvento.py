@@ -32,7 +32,7 @@ offTran = 0
 offVert = 0
 
 #Ingreso de datos:
-nombreEstacion = input("Ingrese el nombre del directorio: ")
+#nombreEstacion = input("Ingrese el nombre del directorio: ")
 nombreArchivo = input("Ingrese el nombre del archivo: ")
 #factorDiezmado = int(input("Ingrese el factor de diezmado: "))
 #horaEvento = int(input("Ingrese la hora del evento (hhmmss): "))
@@ -41,7 +41,7 @@ nombreArchivo = input("Ingrese el nombre del archivo: ")
 factorDiezmado = 1
 duracionEvento = (24 * 3600)
 
-#nombreEstacion = "Eventos"
+nombreEstacion = "Eventos"
 #nombreArchivo = "202003260001"
 #nombreArchivo = "2020" + fechaEvento + "0001"
 #horaEvento = 114845
