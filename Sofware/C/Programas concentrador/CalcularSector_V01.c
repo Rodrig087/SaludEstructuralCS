@@ -1,5 +1,5 @@
 //Compilar:
-//gcc LeerAceleracion_V30.c -o leeraceleracion -lbcm2835 -lwiringPi -lm 
+//gcc CalcularSector_V01.c -o calcularsector -lbcm2835 -lwiringPi 
 
 #define _XOPEN_SOURCE
 #include <stdio.h>
@@ -19,7 +19,7 @@
 #define TEST 29 																//Pin 40 GPIO																						
 #define TIEMPO_SPI 10
 #define FreqSPI 2000000
-#define IDConcentrador 1                                                        //Numero del piso
+#define IDConcentrador 1
 
 //Declaracion de variables
 unsigned int i, x;
@@ -27,6 +27,8 @@ unsigned short buffer;
 unsigned char tiempoPIC[8];
 unsigned char tiempoLocal[8];
 unsigned char tramaPyloadRS485[2600];
+
+short fuenteTiempoPic;
 
 unsigned int tiempoInicial;
 unsigned int tiempoFinal;
@@ -36,7 +38,7 @@ unsigned short banPrueba;
 int direccionNodo, horaReq, fechaReq, duracionSeg, sectorReq;
 int horaSector, fechaSector;
 unsigned short funcionNodo, subFuncionNodo, numDatosNodo;
-unsigned short banInformacion, banInspeccion, banSolicitud, contSolicitud, contInspeccion, contAceleracion, contSegundos, contTimeOut;
+unsigned short banInformacion, banInspeccion, banSolicitud, contSolicitud, contInspeccion, contAceleracion;
 unsigned char *ptrSectorReq; 
 unsigned char pyloadNodo[10];
 unsigned short banNewFile;
@@ -85,14 +87,6 @@ char buffUSEUNIX[15];
 char buffPSCUNIX[15];
 long ReqUNIX, PSEUNIX, PSECUNIX, USEUNIX, PSCUNIX;
 
-//Variables para manejo del archivo binario:
-FILE *fp;
-
-//Variables para calcular la velocidad de descarga de datos:
-struct timeval  tv1, tv2;
-double tiempoEjecucion, velocidadTransmision;
-unsigned long totalBytesTransmitidos;
-
 
 //Declaracion de funciones
 int ConfiguracionPrincipal();
@@ -102,9 +96,8 @@ void ObtenerPyloadRS485(unsigned int numBytesPyload, unsigned char* pyloadRS485)
 void InformacionSectores(unsigned char* pyloadRS485);
 void InspeccionarSector(unsigned char* pyloadRS485);							                     
 void CalcularSector();
-void RecuperarEvento(unsigned char* pyloadRS485);
-void CrearArchivo(unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485);
-void GuardarTrama(unsigned char* pyloadRS485);
+//void ImprimirDatosSector(unsigned char* pyloadRS485);
+//void GuardarTrama(unsigned short banNewFile, unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485);
 
 int main(int argc, char *argv[]) {
 
@@ -115,7 +108,7 @@ int main(int argc, char *argv[]) {
 	direccionNodo = (short)(atoi(argv[1]));
 	fechaReq = atoi(argv[2]);
 	horaReq = atoi(argv[3]);
-	duracionSeg = (short)(atoi(argv[4])); 
+	//duracionSeg = (short)(atoi(argv[4])); 
   
 	//Inicializa las variables:
 	i = 0;
@@ -152,12 +145,6 @@ int main(int argc, char *argv[]) {
 	//Configuracion principal:
 	ConfiguracionPrincipal();
 	
-	//Validacion de datos de entrada:
-	if (horaReq>86400){
-		printf("Error: La hora del evento debe ser expresada en segundos\n");
-		exit(-1);
-	}
-	
 	//Recupera la informacion de los sectores de la SD:
 	if (banInformacion==0){
 		banInformacion = 1;
@@ -167,12 +154,12 @@ int main(int argc, char *argv[]) {
 		EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
 	}
 	
-	//Inspecciona los sectores recuperados:
 	while (banBusquedaCompleta!=1){
 		while((contSolicitud<6)&&(banBusquedaCompleta==0)){
 			//Envia una solicitud de inspeccion del sector:
 			if (banInspeccion==1){
 				printf("\nBusqueda:\n");
+				//Sale del bucle: **REVISAR: Aveces no funciona esta parte
 				banInspeccion = 0;
 				EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
 			}			
@@ -182,13 +169,9 @@ int main(int argc, char *argv[]) {
 	//Calcula el sector deseado:
 	CalcularSector();
 	
-	//**El error siempre aparece a partir de aqui**
 	//Comprueba el sector calculado:
 	contSolicitud = 0;
-	//ejemplo
-	banInspeccion = 1;
-	banCalculoCompleto = 0;
-	//fin ejemplo
+	
 	while (banCalculoCompleto!=1){
 		while((contSolicitud<6)&&(banCalculoCompleto==0)){
 			if (banInspeccion==1){
@@ -198,23 +181,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-	
-	//Recupera el evento deseado:
-	subFuncionNodo = 0xD3;
-	numDatosNodo = 5;
-	pyloadNodo[0] = subFuncionNodo;
-	contSolicitud = 0;
-	gettimeofday(&tv1, NULL);
-	if (banCalculoCompleto==1){
-		while(contSolicitud<6){
-			if (banSolicitud==0){
-				banSolicitud = 1;
-				//Envia la solicitud al nodo:
-				EnviarSolicitudNodo(direccionNodo, funcionNodo, numDatosNodo, pyloadNodo);
-			}
-		}
-	}	
-	
+			
 	sleep(1);
 	bcm2835_spi_end();
 	bcm2835_close();
@@ -269,8 +236,6 @@ int ConfiguracionPrincipal(){
 //C:0xA0    F:0xF0
 void ObtenerOperacion(){
 	
-	printf(".");
-	
 	bcm2835_delayMicroseconds(200);
 	
 	unsigned short funcionSPI;
@@ -297,8 +262,6 @@ void ObtenerOperacion(){
 	*ptrnumBytesSPI = numBytesLSB;
 	*(ptrnumBytesSPI+1) = numBytesMSB;
 	
-	printf(".\n");
-	
 	//printf("Funcion: %X\n", funcionSPI);
 	//printf("Subfuncion: %X\n", subFuncionSPI);
 	//printf("Numero de bytes: %d\n", numBytesSPI);
@@ -316,17 +279,10 @@ void ObtenerOperacion(){
 			   if (subFuncionSPI==0xD2){
 				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
 				   InspeccionarSector(tramaPyloadRS485);
-			   }
-			   //Recuperar evento:
-			   if (subFuncionSPI==0xD3){
-				   ObtenerPyloadRS485(numBytesSPI,tramaPyloadRS485);
-				   RecuperarEvento(tramaPyloadRS485);
 			   }			   
                break;
           default:
-               printf("Error: Operacion invalida %X\n", funcionSPI);  
-			   system("./resetmaster");
-			   exit (-1);
+               printf("Error: Operacion invalida\n");  
                break;
     }
 		
@@ -335,7 +291,7 @@ void ObtenerOperacion(){
 //C:0xA8	F:0xF8
 void EnviarSolicitudNodo(unsigned short direccion, unsigned short funcion, unsigned short numDatos, unsigned char* pyload){
 	
-	printf("\nEnviando solicitud al nodo..");
+	printf("\nEnviando solicitud al nodo...\n");
 			
 	bcm2835_spi_transfer(0xA8);
 	bcm2835_delayMicroseconds(TIEMPO_SPI);
@@ -452,7 +408,7 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 			printf("%0.2d ", pyloadRS485[12]);
 			printf("seg: %d\n", (3600*pyloadRS485[10])+(60*pyloadRS485[11])+(pyloadRS485[12]));
 			banCalculoCompleto = 1;
-			//exit(-1);
+			exit(-1);
 		}
 		if (banPSC==1){
 			banPSC = 0;
@@ -461,12 +417,12 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 			strptime(datePSCStr, "%y/%m/%d %H:%M:%S", &datePSC);
 			strftime(buffPSCUNIX, sizeof(buffPSCUNIX), "%s", &datePSC);
 			PSCUNIX = atoi(buffPSCUNIX);
+			
 			if (ReqUNIX==PSCUNIX){
 				printf("\nSector Calculado: %d\n", sectorReq);
 				printf("Tiempo Sector Calculado: %s", datePSCStr);
 				printf(" seg: %d\n", (3600*pyloadRS485[10])+(60*pyloadRS485[11])+(pyloadRS485[12]));
-				banCalculoCompleto = 1;
-				//exit(-1);
+				exit(-1);
 			} else {
 				printf("Tiempo Primer Sector Calculado: %s\n", datePSCStr);
 				deltaTiempo = ReqUNIX - PSCUNIX;
@@ -525,7 +481,6 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 			}
 		} else {
 			printf("No se pudo realizar la lectura. Revise el sector seleccionado.\n");
-			exit(-1);
 		}
 		
 		contSolicitud++;
@@ -534,6 +489,8 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 		}
 		
 	}
+	
+	
 		
 	//Guarda el sector en el pyload de peticion:
 	pyloadNodo[0] = subFuncionNodo;
@@ -541,10 +498,6 @@ void InspeccionarSector(unsigned char* pyloadRS485){
 	pyloadNodo[2] = *(ptrSectorReq+1);
 	pyloadNodo[3] = *(ptrSectorReq+2);
 	pyloadNodo[4] = *(ptrSectorReq+3);
-	
-	//prueba
-	delay(10);
-	
 	banInspeccion = 1;	
 	
 }
@@ -599,272 +552,14 @@ void CalcularSector(){
 		printf("Sector Calculado: %d\n", sectorReq);
 	}
 	
-	banInspeccion = 1;
 
-}
-
-void RecuperarEvento(unsigned char* pyloadRS485){
-		
-	unsigned short xData[3];
-	unsigned short yData[3];
-	unsigned short zData[3];
-	
-	int xValue;
-	int yValue;
-	int zValue;
-	double xAceleracion;
-	double yAceleracion;
-	double zAceleracion;
-	
-	char fuenteTiempoNodo[10];
-	
-	//printf("Imprimiendo datos de la trama...\n");
-	
-	//Verifica los datos de cabecera:
-	if ((pyloadRS485[1]==0xFF)&&(pyloadRS485[2]==0xFD)&&(pyloadRS485[3]==0xFB)){
-						
-		//Calcula los primeros datos de aceleracion:
-		for (x=0;x<3;x++){
-			xData[x] = pyloadRS485[x+8];	
-			yData[x] = pyloadRS485[x+11];	
-			zData[x] = pyloadRS485[x+14];	
-		}
-		
-		//Calculo aceleracion eje x:
-		xValue = ((xData[0]<<12)&0xFF000)+((xData[1]<<4)&0xFF0)+((xData[2]>>4)&0xF);
-		// Apply two complement
-		if (xValue >= 0x80000) {
-			xValue = xValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-			xValue = -1*(((~xValue)+1)& 0x7FFFF);
-		}
-		xAceleracion = xValue * (9.8/pow(2,18));
-		
-		//Calculo aceleracion eje y:
-		yValue = ((yData[0]<<12)&0xFF000)+((yData[1]<<4)&0xFF0)+((yData[2]>>4)&0xF);
-		// Apply two complement
-		if (yValue >= 0x80000) {
-			yValue = yValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-			yValue = -1*(((~yValue)+1)& 0x7FFFF);
-		}
-		yAceleracion = yValue * (9.8/pow(2,18));
-		
-		//Calculo aceleracion eje z:
-		zValue = ((zData[0]<<12)&0xFF000)+((zData[1]<<4)&0xFF0)+((zData[2]>>4)&0xF);
-		// Apply two complement
-		if (zValue >= 0x80000) {
-			zValue = zValue & 0x7FFFF;		 //Se descarta el bit 20 que indica el signo (1=negativo)
-			zValue = -1*(((~zValue)+1)& 0x7FFFF);
-		}
-		zAceleracion = zValue * (9.8/pow(2,18));	
-
-		//Imprime el segundo actual:
-		printf("Segundo: %d\n", contSegundos);
-		
-		//Extrae la fuente de reloj:
-		switch (pyloadRS485[7]){                                                                     
-			  //Funciones de lectura de sectores:
-			  case 0:
-				   strcpy(fuenteTiempoNodo,"RPi");   
-				   break;
-			  case 1:
-				   strcpy(fuenteTiempoNodo,"GPS");   
-				   break;
-			  case 2:
-				   strcpy(fuenteTiempoNodo,"RTC");   
-				   break;
-			  case 5:
-				   strcpy(fuenteTiempoNodo,"RTC_E5");   
-				   break;
-			  case 6:
-				   strcpy(fuenteTiempoNodo,"GPS_E6");   
-				   break;
-			  case 7:
-				   strcpy(fuenteTiempoNodo,"RTC_E7");   
-				   break;
-			  default:
-				   strcpy(fuenteTiempoNodo,"indet");
-				   break;
-		}
-		
-		//Imprime la hora y fecha recuperada de la trama de datos:
-		printf("| ");
-		printf("%s ", fuenteTiempoNodo);                //Fuente reloj nodo
-		printf("%0.2d/", pyloadRS485[2513-6]);			//aa
-		printf("%0.2d/", pyloadRS485[2513-5]);			//mm
-		printf("%0.2d ", pyloadRS485[2513-4]);			//dd
-		printf("%0.2d:", pyloadRS485[2513-3]);			//hh
-		printf("%0.2d:", pyloadRS485[2513-2]);			//mm
-		printf("%0.2d ", pyloadRS485[2513-1]);			//ss
-		printf("| ");
-		//Imprime los primeros datos de aceleracion:
-		printf("X: ");
-		printf("%2.8f ", xAceleracion);
-		printf("Y: ");
-		printf("%2.8f ", yAceleracion);
-		printf("Z: ");
-		printf("%2.8f ", zAceleracion); 
-		printf("|\n");
-					
-		if (contSegundos==0){
-			CrearArchivo(IDConcentrador, direccionNodo, duracionSeg, pyloadRS485);
-		}
-		GuardarTrama(pyloadRS485);
-		
-		contSolicitud = 0;
-		contSegundos++;
-		sectorReq = sectorReq + 5;
-				
-	} else {
-		
-		if (pyloadRS485[1]==0xEE){
-			if (pyloadRS485[2]==0xE3){
-				printf("Error %X: Error al leer la SD\n", pyloadRS485[2]);
-				sectorReq = sectorReq + 1;
-			}
-			if (pyloadRS485[2]==0xE4){
-				printf("Error %X: Timeout expiro al recuperar la trama RS485\n", pyloadRS485[2]);
-				delay(200);
-				contTimeOut++;
-			}
-			
-		} else {
-			printf("No se pudo realizar la lectura. Revise el sector seleccionado.\n");			
-		}
-		
-		contSolicitud++;
-		
-	}
-	
-	if ((contSegundos==duracionSeg)||(contSolicitud==5)){
-		gettimeofday(&tv2, NULL);
-		tiempoEjecucion = (double)(tv2.tv_sec - tv1.tv_sec)+((double)(tv2.tv_usec - tv1.tv_usec)/1000000);
-		totalBytesTransmitidos = (contSegundos + contSolicitud) *2513;
-		velocidadTransmision = (double)totalBytesTransmitidos / tiempoEjecucion / 1000 * 8;
-				
-		printf ("\nTiempo de descarga = %0.3f segundos", tiempoEjecucion);
-		printf ("\nTotal de bytes descargados = %d bytes", totalBytesTransmitidos);
-		printf ("\nVelocidad de descarga promedio = %0.3f Kbps\n", velocidadTransmision);
-		printf ("\nNumero de TimeOust detectados = %d \n\n", contTimeOut);
-		
-		//Cierra el archivo binario:
-		fclose (fp);
-		exit(-1);
-	}
-	
-	
-	printf("\nRecuperando sector: %d\n", sectorReq);
-	pyloadNodo[0] = subFuncionNodo;
-	pyloadNodo[1] = *ptrSectorReq;
-	pyloadNodo[2] = *(ptrSectorReq+1);
-	pyloadNodo[3] = *(ptrSectorReq+2);
-	pyloadNodo[4] = *(ptrSectorReq+3);
-	
-	//prueba
-	delay(10);
-	banSolicitud = 0;
-	
 }
 
 
 //**************************************************************************************************************************************
-//Manejo de archivos binarios:
 
-void CrearArchivo(unsigned short idConc, unsigned short idNodo, unsigned short duracionEvento, unsigned char* pyloadRS485){
 
-	char fuenteTiempoNodo[10];
-	char tiempoNodo[6];
-	char nombreArchivo[50];
-	char idArchivo[8];
-	char tiempoNodoStr[25];
-	char duracionEventoStr[4];
-	char ext[5];
-	
-	//Extrae la fuente de reloj:
-	switch (pyloadRS485[7]){                                                                     
-		  //Funciones de lectura de sectores:
-          case 0:
-			   strcpy(fuenteTiempoNodo,"RPi");   
-               break;
-		  case 1:
-			   strcpy(fuenteTiempoNodo,"GPS");   
-               break;
-		  case 2:
-			   strcpy(fuenteTiempoNodo,"RTC");   
-               break;
-	      case 5:
-			   strcpy(fuenteTiempoNodo,"RTCE5");   
-               break;
-		  case 6:
-			   strcpy(fuenteTiempoNodo,"GPSE6");   
-               break;
-		  case 7:
-			   strcpy(fuenteTiempoNodo,"RTCE7");   
-               break;
-          default:
-               strcpy(fuenteTiempoNodo,"indet");
-               break;
-    }
-	
-	//Extrae el tiempo de la trama pyload:	
-	tiempoNodo[0] = pyloadRS485[2507];                                    //aa
-	tiempoNodo[1] = pyloadRS485[2508];                                    //mm
-	tiempoNodo[2] = pyloadRS485[2509];                                    //dd
-	tiempoNodo[3] = pyloadRS485[2510];                                    //hh
-	tiempoNodo[4] = pyloadRS485[2511];                                    //mm
-	tiempoNodo[5] = pyloadRS485[2512];                                    //ss		
-	
-	//Realiza la concatenacion para obtner el nombre del archivo:			
-	strcpy(nombreArchivo, "/home/pi/Resultados/");
-	sprintf(idArchivo, "C%0.2dN%0.2d_", idConc, idNodo); 
-	sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d-%0.2d%0.2d%0.2d-%s_", tiempoNodo[0], tiempoNodo[1], tiempoNodo[2], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5], fuenteTiempoNodo);
-	sprintf(duracionEventoStr, "%0.3d", duracionEvento); 
-	strcpy(ext, ".dat");
-	strcat(nombreArchivo, idArchivo);
-	strcat(nombreArchivo, tiempoNodoStr);
-	strcat(nombreArchivo, duracionEventoStr);
-	strcat(nombreArchivo, ext); 
-	
-	//Crea el archivo binario:
-	printf("Se ha creado el archivo: %s\n", nombreArchivo);
-	fp = fopen (nombreArchivo, "ab+");
-	
-}
 
-void GuardarTrama(unsigned char* pyloadRS485_2){
-		
-	unsigned int outFwrite;
-	unsigned char tramaAceleracion[2506];
-	//char fuenteTiempoNodo[10];
-		
-	//Llena la trama de aceleracion con lo valores del pyload:
-	for (x=0;x<2506;x++){
-		tramaAceleracion[x] = pyloadRS485_2[x+7];
-	}
-			
-	//Guarda la trama en el archivo binario:
-	if (fp!=NULL){
-		do{
-		outFwrite = fwrite(tramaAceleracion, sizeof(char), 2506, fp);
-		} while (outFwrite!=2506);
-		fflush(fp);
-	} else {
-		printf("No se pudo escribir el archivo binario\n");
-	}
-		
-}
-
-//**************************************************************************************************************************************
-
-//Fuentes de reloj: 
-//0->Red, 1->GPS, 2->RTC
-
-//Errores:
-//Error E5: Problemas al recuperar la trama GPRMC del GPS
-//Error E6: La hora del GPS es invalida
-//Error E7: El GPS tarda en responder
-
-//Configurar reloj RPi: 
-//sudo date --set '2020-09-08 16:10:00'
 
 
 

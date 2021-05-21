@@ -1,5 +1,5 @@
 //Compilar:
-//gcc LeerAceleracion_V30.c -o leeraceleracion -lbcm2835 -lwiringPi -lm 
+//gcc LeerAceleracion_V40.c -o leeraceleracion2 -lbcm2835 -lwiringPi -lm 
 
 #define _XOPEN_SOURCE
 #include <stdio.h>
@@ -58,6 +58,9 @@ unsigned long PSF;																//Primer Sector Fisico
 unsigned long PSE;																//Primer Sector Escrito
 unsigned long PSEC;																//Pimer Sector Escrito en el Ciclo actual
 unsigned long USE;																//Ultimo Sector Escrito
+
+unsigned long UltimoSector;
+
 unsigned long PSC;																//Primer Sector Calculado
 unsigned char *ptrPSF;                                                      	//Puntero primer sector fisico
 unsigned char *ptrPSC;                                                      	//Puntero primer sector calculado
@@ -116,6 +119,8 @@ int main(int argc, char *argv[]) {
 	fechaReq = atoi(argv[2]);
 	horaReq = atoi(argv[3]);
 	duracionSeg = (short)(atoi(argv[4])); 
+	
+	UltimoSector = atoi(argv[5]);
   
 	//Inicializa las variables:
 	i = 0;
@@ -413,7 +418,8 @@ void InformacionSectores(unsigned char* pyloadRS485){
 	}
 	
 	//Calcula el ultimo sector escrito
-	USE = USE-5;															   
+	//USE = USE-5;	
+	USE = UltimoSector;
 	
 	printf("Primer sector fisico: %d\n", PSF);
 	printf("Primer sector de escritura: %d\n", PSE);
